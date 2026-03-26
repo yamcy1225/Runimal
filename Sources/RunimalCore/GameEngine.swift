@@ -91,6 +91,42 @@ public enum RunimalGameEngine {
         )
     }
 
+    public static func buildCollection(from summaries: [RunSummary]) -> [PetCollectionEntry] {
+        summaries.enumerated().map { index, summary in
+            let pet = generatePet(from: summary)
+            let level = max(1, min(50, Int((summary.distanceKm * 1.2).rounded()) + index + 2))
+            let bond = max(20, min(99, Int(summary.cadence / 2) - index))
+            let headline = [
+                String(format: "%.1fkm", summary.distanceKm),
+                "pace \(paceLabel(seconds: summary.averagePaceSeconds))",
+                "cadence \(summary.cadence)",
+            ].joined(separator: " · ")
+
+            return PetCollectionEntry(
+                id: "pet-\(index)-\(pet.species.rawValue)-\(pet.element.rawValue)",
+                pet: pet,
+                level: level,
+                bond: bond,
+                totalDistanceKm: summary.distanceKm,
+                headline: headline
+            )
+        }
+    }
+
+    public static func buildVariantCodex(from collection: [PetCollectionEntry]) -> [VariantCodexEntry] {
+        let discovered = Set(collection.compactMap(\.pet.rareVariant))
+
+        return RareVariant.allCases.map { variant in
+            VariantCodexEntry(
+                variant: variant,
+                label: RareVariantMeta.labels[variant] ?? variant.rawValue,
+                passive: RareVariantMeta.passives[variant] ?? "",
+                detail: describe(rareVariant: variant),
+                discovered: discovered.contains(variant)
+            )
+        }
+    }
+
     private static func determineSpecies(from summary: RunSummary) -> PetSpecies {
         if summary.distanceKm >= 8 && summary.variability <= 1.6 {
             return .windrunner
@@ -203,6 +239,12 @@ public enum RunimalGameEngine {
 
     private static func clamp(_ value: Double) -> Int {
         Int(max(1, min(9, value.rounded())))
+    }
+
+    private static func paceLabel(seconds: Int) -> String {
+        let minutes = seconds / 60
+        let remaining = seconds % 60
+        return String(format: "%d:%02d/km", minutes, remaining)
     }
 
     private static func inferredPaceSeconds(from snapshot: LiveRunSnapshot) -> Int {

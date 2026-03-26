@@ -160,3 +160,52 @@ public struct WorkoutPlanSuggestion: Codable, Equatable, Sendable {
         self.targetPaceBand = targetPaceBand
     }
 }
+
+public struct PetCollectionEntry: Codable, Equatable, Identifiable, Sendable {
+    public let id: String
+    public let pet: GeneratedPet
+    public let level: Int
+    public let bond: Int
+    public let totalDistanceKm: Double
+    public let headline: String
+
+    public init(
+        id: String,
+        pet: GeneratedPet,
+        level: Int,
+        bond: Int,
+        totalDistanceKm: Double,
+        headline: String
+    ) {
+        self.id = id
+        self.pet = pet
+        self.level = level
+        self.bond = bond
+        self.totalDistanceKm = totalDistanceKm
+        self.headline = headline
+    }
+}
+
+public struct VariantCodexEntry: Codable, Equatable, Identifiable, Sendable {
+    public let id: String
+    public let variant: RareVariant
+    public let label: String
+    public let passive: String
+    public let detail: String
+    public let discovered: Bool
+
+    public init(
+        variant: RareVariant,
+        label: String,
+        passive: String,
+        detail: String,
+        discovered: Bool
+    ) {
+        self.id = variant.rawValue
+        self.variant = variant
+        self.label = label
+        self.passive = passive
+        self.detail = detail
+        self.discovered = discovered
+    }
+}
