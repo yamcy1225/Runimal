@@ -1,0 +1,93 @@
+name: RunimalApple
+options:
+  deploymentTarget:
+    iOS: "26.0"
+    macOS: "15.0"
+    watchOS: "26.0"
+packages:
+  RunimalPackage:
+    path: .
+targets:
+  RunimalMac:
+    type: application
+    platform: macOS
+    sources:
+      - path: RunimalMac
+      - path: SharedUI
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGNING_ALLOWED: NO
+        PRODUCT_BUNDLE_IDENTIFIER: com.jaw.runimal.mac
+        PRODUCT_NAME: RunimalMac
+        MARKETING_VERSION: 1.0
+        CURRENT_PROJECT_VERSION: 1
+        INFOPLIST_KEY_CFBundleDisplayName: RunimalMac
+        INFOPLIST_KEY_CFBundlePackageType: APPL
+    dependencies:
+      - package: RunimalPackage
+        product: RunimalCore
+  RunimalPhone:
+    type: application
+    platform: iOS
+    sources:
+      - path: RunimalPhone
+      - path: SharedUI
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGNING_ALLOWED: NO
+        PRODUCT_BUNDLE_IDENTIFIER: com.jaw.runimal.phone
+        PRODUCT_NAME: RunimalPhone
+        MARKETING_VERSION: 1.0
+        CURRENT_PROJECT_VERSION: 1
+        INFOPLIST_KEY_CFBundleDisplayName: Runimal
+        INFOPLIST_KEY_LSRequiresIPhoneOS: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_CFBundlePackageType: APPL
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone:
+          - UIInterfaceOrientationPortrait
+    dependencies:
+      - package: RunimalPackage
+        product: RunimalCore
+  RunimalWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: RunimalWatch
+      - path: SharedUI
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGNING_ALLOWED: NO
+        PRODUCT_BUNDLE_IDENTIFIER: com.jaw.runimal.watch
+        PRODUCT_NAME: RunimalWatch
+        MARKETING_VERSION: 1.0
+        CURRENT_PROJECT_VERSION: 1
+        INFOPLIST_KEY_CFBundleDisplayName: RunimalWatch
+        INFOPLIST_KEY_CFBundlePackageType: APPL
+        INFOPLIST_KEY_WKApplication: YES
+        INFOPLIST_KEY_WKWatchOnly: YES
+    dependencies:
+      - package: RunimalPackage
+        product: RunimalCore
+schemes:
+  RunimalMac:
+    build:
+      targets:
+        RunimalMac: all
+    run:
+      config: Debug
+  RunimalPhone:
+    build:
+      targets:
+        RunimalPhone: all
+    run:
+      config: Debug
+  RunimalWatch:
+    build:
+      targets:
+        RunimalWatch: all
+    run:
+      config: Debug

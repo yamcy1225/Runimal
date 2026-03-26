@@ -1,0 +1,27 @@
+// swift-tools-version: 6.0
+import PackageDescription
+
+let package = Package(
+    name: "RunimalApple",
+    platforms: [
+        .macOS(.v14),
+    ],
+    products: [
+        .library(name: "RunimalCore", targets: ["RunimalCore"]),
+        .executable(name: "RunimalCLI", targets: ["RunimalCLI"]),
+        .executable(name: "RunimalSelfCheck", targets: ["RunimalSelfCheck"]),
+    ],
+    targets: [
+        .target(
+            name: "RunimalCore"
+        ),
+        .executableTarget(
+            name: "RunimalCLI",
+            dependencies: ["RunimalCore"]
+        ),
+        .executableTarget(
+            name: "RunimalSelfCheck",
+            dependencies: ["RunimalCore"]
+        ),
+    ]
+)

@@ -1,0 +1,611 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		06082EB1FC3ACEFA2285DC8E /* PhoneWorkoutPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2785BF329A8DF8512EC6A0D6 /* PhoneWorkoutPlanner.swift */; };
+		0CA9AD813D11C9396CB7A8F4 /* PixelPetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52C1B6533C1584594BAF166 /* PixelPetView.swift */; };
+		174E2B99B537739F137A619E /* RunimalWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD0541A9CADE432091B248E2 /* RunimalWatchApp.swift */; };
+		1E9074838A9AF2F694709E98 /* PhoneConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C3D26A6D761131D6B9EF6FD /* PhoneConnectivityManager.swift */; };
+		2C74CE3C942228A0B005A2A5 /* PixelPetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52C1B6533C1584594BAF166 /* PixelPetView.swift */; };
+		345F7D630F87517F5CB41228 /* RunimalCore in Frameworks */ = {isa = PBXBuildFile; productRef = BD4FCB625E6957A01DAECE5B /* RunimalCore */; };
+		3C970851FD763E817B29A8FA /* GameSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2B8EE9F33FD02687ADA9AD /* GameSurface.swift */; };
+		5CBD3DBA10183E72DFDCE041 /* WatchDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 568C61E1152F1E38E7B93D90 /* WatchDashboardView.swift */; };
+		5F169DE5191FDFAC59DE3E4A /* WatchConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2897691272A4CDDCCF1F3A37 /* WatchConnectivityManager.swift */; };
+		624DF58C70B351184A9E9B55 /* MacDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9644ED15FC30AD4B82A2D748 /* MacDashboardView.swift */; };
+		62B4899CBEABBF775923FBCD /* WatchRunSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 337BDF1E6CB9C97992B9D7D0 /* WatchRunSessionManager.swift */; };
+		634DB0E7570D3FB1D7968EC4 /* RunimalPhoneApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DFF8DF75A9A4BA2BC92DF2E /* RunimalPhoneApp.swift */; };
+		6A7224029895E527796C8ACC /* PhoneHealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE5C185CFBC7BCD90C4E6838 /* PhoneHealthKitManager.swift */; };
+		837E7AFB0BD2AC92AD116EE6 /* RunimalCore in Frameworks */ = {isa = PBXBuildFile; productRef = DB1D160C34036A51CF28E910 /* RunimalCore */; };
+		8927F4FDE2E36B3C6BFD88F0 /* GameSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2B8EE9F33FD02687ADA9AD /* GameSurface.swift */; };
+		AAEACADD1C4BEA881B02FF44 /* PixelPetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52C1B6533C1584594BAF166 /* PixelPetView.swift */; };
+		ACE2CE5F4EE7FCFAB684E01A /* PhoneDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E385404E47BEE9EBE310AC /* PhoneDashboardView.swift */; };
+		B617C884E06D78A41DBC9F23 /* GameSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2B8EE9F33FD02687ADA9AD /* GameSurface.swift */; };
+		C59A2E40B311A604DE249E96 /* RunimalCore in Frameworks */ = {isa = PBXBuildFile; productRef = 4CDF8B170A2E14071FF0FF18 /* RunimalCore */; };
+		D8B408663CE2E92F670E24E2 /* RunimalMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B169A42C7D63EF680146305 /* RunimalMacApp.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1F2B8EE9F33FD02687ADA9AD /* GameSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSurface.swift; sourceTree = "<group>"; };
+		2785BF329A8DF8512EC6A0D6 /* PhoneWorkoutPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneWorkoutPlanner.swift; sourceTree = "<group>"; };
+		2897691272A4CDDCCF1F3A37 /* WatchConnectivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivityManager.swift; sourceTree = "<group>"; };
+		2B169A42C7D63EF680146305 /* RunimalMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunimalMacApp.swift; sourceTree = "<group>"; };
+		2C3D26A6D761131D6B9EF6FD /* PhoneConnectivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneConnectivityManager.swift; sourceTree = "<group>"; };
+		337BDF1E6CB9C97992B9D7D0 /* WatchRunSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRunSessionManager.swift; sourceTree = "<group>"; };
+		3E2914D59941AF484DDE25BC /* RunimalMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RunimalMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		568C61E1152F1E38E7B93D90 /* WatchDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDashboardView.swift; sourceTree = "<group>"; };
+		7DFF8DF75A9A4BA2BC92DF2E /* RunimalPhoneApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunimalPhoneApp.swift; sourceTree = "<group>"; };
+		9644ED15FC30AD4B82A2D748 /* MacDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacDashboardView.swift; sourceTree = "<group>"; };
+		974FB8F921D130D978735ED6 /* RunimalWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RunimalWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AE5C185CFBC7BCD90C4E6838 /* PhoneHealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneHealthKitManager.swift; sourceTree = "<group>"; };
+		B1B704EA8A439E06F40FDC8D /* runimal-apple */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "runimal-apple"; path = .; sourceTree = SOURCE_ROOT; };
+		CD0541A9CADE432091B248E2 /* RunimalWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunimalWatchApp.swift; sourceTree = "<group>"; };
+		E52C1B6533C1584594BAF166 /* PixelPetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelPetView.swift; sourceTree = "<group>"; };
+		F1E385404E47BEE9EBE310AC /* PhoneDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneDashboardView.swift; sourceTree = "<group>"; };
+		F7140890D3001A701CFAECFB /* RunimalPhone.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = RunimalPhone.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		5BA1FB685E539E3497A97D91 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C59A2E40B311A604DE249E96 /* RunimalCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		899E8B745F692D300C7301FD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				837E7AFB0BD2AC92AD116EE6 /* RunimalCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EE7D919E87B9853432C0909E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				345F7D630F87517F5CB41228 /* RunimalCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		066D5F084715EB9B5C3F2969 /* RunimalWatch */ = {
+			isa = PBXGroup;
+			children = (
+				CD0541A9CADE432091B248E2 /* RunimalWatchApp.swift */,
+				2897691272A4CDDCCF1F3A37 /* WatchConnectivityManager.swift */,
+				568C61E1152F1E38E7B93D90 /* WatchDashboardView.swift */,
+				337BDF1E6CB9C97992B9D7D0 /* WatchRunSessionManager.swift */,
+			);
+			path = RunimalWatch;
+			sourceTree = "<group>";
+		};
+		2B49A9E09B154EF68D67D976 /* RunimalMac */ = {
+			isa = PBXGroup;
+			children = (
+				9644ED15FC30AD4B82A2D748 /* MacDashboardView.swift */,
+				2B169A42C7D63EF680146305 /* RunimalMacApp.swift */,
+			);
+			path = RunimalMac;
+			sourceTree = "<group>";
+		};
+		49BB41E5CC0A9F56E00144E1 /* RunimalPhone */ = {
+			isa = PBXGroup;
+			children = (
+				2C3D26A6D761131D6B9EF6FD /* PhoneConnectivityManager.swift */,
+				F1E385404E47BEE9EBE310AC /* PhoneDashboardView.swift */,
+				AE5C185CFBC7BCD90C4E6838 /* PhoneHealthKitManager.swift */,
+				2785BF329A8DF8512EC6A0D6 /* PhoneWorkoutPlanner.swift */,
+				7DFF8DF75A9A4BA2BC92DF2E /* RunimalPhoneApp.swift */,
+			);
+			path = RunimalPhone;
+			sourceTree = "<group>";
+		};
+		60256566D305A471A093524A /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				B1B704EA8A439E06F40FDC8D /* runimal-apple */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		7EBC18A43D8C2C13F8950D0A /* SharedUI */ = {
+			isa = PBXGroup;
+			children = (
+				1F2B8EE9F33FD02687ADA9AD /* GameSurface.swift */,
+				E52C1B6533C1584594BAF166 /* PixelPetView.swift */,
+			);
+			path = SharedUI;
+			sourceTree = "<group>";
+		};
+		947EFEADA95681DE503C0A1A = {
+			isa = PBXGroup;
+			children = (
+				60256566D305A471A093524A /* Packages */,
+				2B49A9E09B154EF68D67D976 /* RunimalMac */,
+				49BB41E5CC0A9F56E00144E1 /* RunimalPhone */,
+				066D5F084715EB9B5C3F2969 /* RunimalWatch */,
+				7EBC18A43D8C2C13F8950D0A /* SharedUI */,
+				CE884D331EAD9F21F4559113 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		CE884D331EAD9F21F4559113 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3E2914D59941AF484DDE25BC /* RunimalMac.app */,
+				F7140890D3001A701CFAECFB /* RunimalPhone.app */,
+				974FB8F921D130D978735ED6 /* RunimalWatch.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		14E517D05130F4FFF0C7ECDB /* RunimalPhone */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4132FD53FB3D24B3D529C03C /* Build configuration list for PBXNativeTarget "RunimalPhone" */;
+			buildPhases = (
+				16F8D8A625246206388E0AC0 /* Sources */,
+				EE7D919E87B9853432C0909E /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RunimalPhone;
+			packageProductDependencies = (
+				BD4FCB625E6957A01DAECE5B /* RunimalCore */,
+			);
+			productName = RunimalPhone;
+			productReference = F7140890D3001A701CFAECFB /* RunimalPhone.app */;
+			productType = "com.apple.product-type.application";
+		};
+		2748764C314E3BA4EC161B18 /* RunimalMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7D161AA691685B8F62846A8C /* Build configuration list for PBXNativeTarget "RunimalMac" */;
+			buildPhases = (
+				23FC50E5C472D150A40A3565 /* Sources */,
+				899E8B745F692D300C7301FD /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RunimalMac;
+			packageProductDependencies = (
+				DB1D160C34036A51CF28E910 /* RunimalCore */,
+			);
+			productName = RunimalMac;
+			productReference = 3E2914D59941AF484DDE25BC /* RunimalMac.app */;
+			productType = "com.apple.product-type.application";
+		};
+		F6DA5447F7B83CC1E30B4453 /* RunimalWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8E8206862BF975197545D6D3 /* Build configuration list for PBXNativeTarget "RunimalWatch" */;
+			buildPhases = (
+				623FAA2AFB7664D52AA7DEE2 /* Sources */,
+				5BA1FB685E539E3497A97D91 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RunimalWatch;
+			packageProductDependencies = (
+				4CDF8B170A2E14071FF0FF18 /* RunimalCore */,
+			);
+			productName = RunimalWatch;
+			productReference = 974FB8F921D130D978735ED6 /* RunimalWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		2736A22E47CABF101941D071 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = A6D597544A74C7B757746AED /* Build configuration list for PBXProject "RunimalApple" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 947EFEADA95681DE503C0A1A;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				6579471CAECD6CDC1082E915 /* XCLocalSwiftPackageReference "." */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = CE884D331EAD9F21F4559113 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				2748764C314E3BA4EC161B18 /* RunimalMac */,
+				14E517D05130F4FFF0C7ECDB /* RunimalPhone */,
+				F6DA5447F7B83CC1E30B4453 /* RunimalWatch */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		16F8D8A625246206388E0AC0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3C970851FD763E817B29A8FA /* GameSurface.swift in Sources */,
+				1E9074838A9AF2F694709E98 /* PhoneConnectivityManager.swift in Sources */,
+				ACE2CE5F4EE7FCFAB684E01A /* PhoneDashboardView.swift in Sources */,
+				6A7224029895E527796C8ACC /* PhoneHealthKitManager.swift in Sources */,
+				06082EB1FC3ACEFA2285DC8E /* PhoneWorkoutPlanner.swift in Sources */,
+				AAEACADD1C4BEA881B02FF44 /* PixelPetView.swift in Sources */,
+				634DB0E7570D3FB1D7968EC4 /* RunimalPhoneApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		23FC50E5C472D150A40A3565 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B617C884E06D78A41DBC9F23 /* GameSurface.swift in Sources */,
+				624DF58C70B351184A9E9B55 /* MacDashboardView.swift in Sources */,
+				2C74CE3C942228A0B005A2A5 /* PixelPetView.swift in Sources */,
+				D8B408663CE2E92F670E24E2 /* RunimalMacApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		623FAA2AFB7664D52AA7DEE2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8927F4FDE2E36B3C6BFD88F0 /* GameSurface.swift in Sources */,
+				0CA9AD813D11C9396CB7A8F4 /* PixelPetView.swift in Sources */,
+				174E2B99B537739F137A619E /* RunimalWatchApp.swift in Sources */,
+				5F169DE5191FDFAC59DE3E4A /* WatchConnectivityManager.swift in Sources */,
+				5CBD3DBA10183E72DFDCE041 /* WatchDashboardView.swift in Sources */,
+				62B4899CBEABBF775923FBCD /* WatchRunSessionManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		53C4DC1E98952AE23738ED3B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGNING_ALLOWED = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = RunimalMac;
+				INFOPLIST_KEY_CFBundlePackageType = APPL;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jaw.runimal.mac;
+				PRODUCT_NAME = RunimalMac;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		7E50ED7E24E8BB5330C6990E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGNING_ALLOWED = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = RunimalMac;
+				INFOPLIST_KEY_CFBundlePackageType = APPL;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jaw.runimal.mac;
+				PRODUCT_NAME = RunimalMac;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		906281F64CF6FBA387D6F3B0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Runimal;
+				INFOPLIST_KEY_CFBundlePackageType = APPL;
+				INFOPLIST_KEY_LSRequiresIPhoneOS = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = (
+					UIInterfaceOrientationPortrait,
+				);
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jaw.runimal.phone;
+				PRODUCT_NAME = RunimalPhone;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		92F6652B7644717BD20A9C9F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGNING_ALLOWED = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = RunimalWatch;
+				INFOPLIST_KEY_CFBundlePackageType = APPL;
+				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKWatchOnly = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jaw.runimal.watch;
+				PRODUCT_NAME = RunimalWatch;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Debug;
+		};
+		9C56EAEAEEA8F331C4C7ED23 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGNING_ALLOWED = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = RunimalWatch;
+				INFOPLIST_KEY_CFBundlePackageType = APPL;
+				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKWatchOnly = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jaw.runimal.watch;
+				PRODUCT_NAME = RunimalWatch;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Release;
+		};
+		D3FB133D76C27E2801626EA1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
+		DDCA656F5656CF4D0BCBDFD0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		F92ACB7550D58ED1EE60DCED /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Runimal;
+				INFOPLIST_KEY_CFBundlePackageType = APPL;
+				INFOPLIST_KEY_LSRequiresIPhoneOS = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = (
+					UIInterfaceOrientationPortrait,
+				);
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jaw.runimal.phone;
+				PRODUCT_NAME = RunimalPhone;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		4132FD53FB3D24B3D529C03C /* Build configuration list for PBXNativeTarget "RunimalPhone" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F92ACB7550D58ED1EE60DCED /* Debug */,
+				906281F64CF6FBA387D6F3B0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		7D161AA691685B8F62846A8C /* Build configuration list for PBXNativeTarget "RunimalMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				53C4DC1E98952AE23738ED3B /* Debug */,
+				7E50ED7E24E8BB5330C6990E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8E8206862BF975197545D6D3 /* Build configuration list for PBXNativeTarget "RunimalWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				92F6652B7644717BD20A9C9F /* Debug */,
+				9C56EAEAEEA8F331C4C7ED23 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A6D597544A74C7B757746AED /* Build configuration list for PBXProject "RunimalApple" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DDCA656F5656CF4D0BCBDFD0 /* Debug */,
+				D3FB133D76C27E2801626EA1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		6579471CAECD6CDC1082E915 /* XCLocalSwiftPackageReference "." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = .;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4CDF8B170A2E14071FF0FF18 /* RunimalCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RunimalCore;
+		};
+		BD4FCB625E6957A01DAECE5B /* RunimalCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RunimalCore;
+		};
+		DB1D160C34036A51CF28E910 /* RunimalCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RunimalCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 2736A22E47CABF101941D071 /* Project object */;
+}
