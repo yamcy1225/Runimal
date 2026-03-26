@@ -24,6 +24,10 @@ struct MacDashboardView: View {
         RunimalGameEngine.suggestWorkoutPlan(for: pet)
     }
 
+    private var balanceNotes: [String] {
+        RunimalGameEngine.balanceTuningNotes(for: pet)
+    }
+
     var body: some View {
         HStack(spacing: 18) {
             VStack(alignment: .leading, spacing: 18) {
@@ -89,6 +93,16 @@ struct MacDashboardView: View {
                             .font(.caption)
                             .foregroundStyle(.white.opacity(0.72))
                         TraitChip(label: plan.targetPaceBand, accent: pet.accentColor)
+                    }
+                }
+
+                GameSurface(title: "Tuning Notes") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(balanceNotes, id: \.self) { note in
+                            Text(note)
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.72))
+                        }
                     }
                 }
             }

@@ -162,8 +162,8 @@ public enum RunimalGameEngine {
 
     public static func evolutionProgress(for journal: [RunJournalEntry]) -> EvolutionProgress {
         let totalExperience = journal.reduce(0) { $0 + $1.reward.experience }
-        let thresholds = [0, 160, 340, 580, 860]
-        let stageLabels = ["Trace Egg", "Stage 1", "Stage 2", "Ascended", "Mythic"]
+        let thresholds = RunimalBalanceConfig.evolutionThresholds
+        let stageLabels = RunimalBalanceConfig.evolutionStageLabels
 
         var currentStage = 0
 

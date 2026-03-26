@@ -46,7 +46,7 @@ public extension RunimalGameEngine {
         let cadence = snapshot.cadence ?? 166
         let heartRate = snapshot.currentHeartRate ?? 148
 
-        if pace <= 310 && cadence >= 172 {
+        if pace <= RunimalBalanceConfig.surgePaceSeconds && cadence >= RunimalBalanceConfig.surgeCadence {
             return LiveRunFeedback(
                 label: "Surge",
                 headline: "희귀 변이 페이스에 접근 중",
@@ -55,7 +55,7 @@ public extension RunimalGameEngine {
             )
         }
 
-        if pace <= 340 && cadence >= 168 {
+        if pace <= RunimalBalanceConfig.steadyPaceSeconds && cadence >= RunimalBalanceConfig.steadyCadence {
             return LiveRunFeedback(
                 label: "Stable",
                 headline: "지금 리듬이 가장 좋습니다",
@@ -64,7 +64,7 @@ public extension RunimalGameEngine {
             )
         }
 
-        if heartRate >= 172 {
+        if heartRate >= Double(RunimalBalanceConfig.recoveryHeartRate) {
             return LiveRunFeedback(
                 label: "Recover",
                 headline: "조금만 정리하면 더 좋습니다",

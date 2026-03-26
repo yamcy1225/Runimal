@@ -14,6 +14,10 @@ struct PhoneCollectionView: View {
             VStack(alignment: .leading, spacing: 18) {
                 stableCard
                 evolutionCard
+                PhonePetDetailPanel(
+                    companion: store.featuredCompanion,
+                    progress: store.evolutionProgress
+                )
                 collectionGrid
                 growthTimeline
                 variantCodex
