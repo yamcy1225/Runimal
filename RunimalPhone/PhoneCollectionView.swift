@@ -13,7 +13,9 @@ struct PhoneCollectionView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 stableCard
+                evolutionCard
                 collectionGrid
+                growthTimeline
                 variantCodex
             }
             .padding(20)
@@ -42,6 +44,27 @@ struct PhoneCollectionView: View {
                 }
 
                 Text("최근 러닝 패턴을 가장 잘 흡수한 주력 펫입니다. 홈의 추천 러닝과 연동해 성장 루프를 유지합니다.")
+                    .font(.footnote)
+                    .foregroundStyle(.white.opacity(0.72))
+            }
+        }
+    }
+
+    private var evolutionCard: some View {
+        GameSurface(title: "Evolution Pulse") {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text(store.evolutionProgress.stageLabel)
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Spacer()
+                    TraitChip(label: "\(store.evolutionProgress.totalExperience) XP", accent: store.pet.accentColor)
+                }
+
+                ProgressView(value: store.evolutionProgress.progressRatio)
+                    .tint(store.pet.accentColor)
+
+                Text(store.evolutionProgress.headline)
                     .font(.footnote)
                     .foregroundStyle(.white.opacity(0.72))
             }
@@ -110,6 +133,29 @@ struct PhoneCollectionView: View {
                             Text(entry.passive)
                                 .font(.caption2)
                                 .foregroundStyle(.white.opacity(0.6))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var growthTimeline: some View {
+        GameSurface(title: "Growth Timeline") {
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(store.recentJournal.prefix(4)) { entry in
+                    HStack(alignment: .top, spacing: 12) {
+                        PixelPetView(pet: entry.reward.pet, pixelSize: 5)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("\(entry.reward.pet.displayName) · +\(entry.reward.experience) XP")
+                                .foregroundStyle(.white)
+                            Text("\(entry.distanceKm.formatted(.number.precision(.fractionLength(1))))km · \(entry.cadence) spm")
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.72))
+                            Text(entry.createdAt.formatted(date: .abbreviated, time: .shortened))
+                                .font(.caption2)
+                                .foregroundStyle(.white.opacity(0.56))
                         }
                     }
                 }

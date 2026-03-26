@@ -8,6 +8,7 @@ final class PhoneDashboardStore {
     let healthKit = PhoneHealthKitManager()
     let connectivity = PhoneConnectivityManager()
     let planner = PhoneWorkoutPlanner()
+    let progress = PhoneProgressStore()
 
     let summary = RunSummary(
         distanceKm: 10.02,
@@ -57,8 +58,21 @@ final class PhoneDashboardStore {
         RunimalGameEngine.buildVariantCodex(from: collection)
     }
 
+    var evolutionProgress: EvolutionProgress {
+        RunimalGameEngine.evolutionProgress(for: progress.journal)
+    }
+
+    var recentJournal: [RunJournalEntry] {
+        progress.journal
+    }
+
     func activateConnectivity() {
         connectivity.activate()
+    }
+
+    func bootstrap() {
+        progress.load()
+        progress.seedIfNeeded(from: runArchive)
     }
 
     func requestHealthAuthorization() async {
@@ -68,6 +82,11 @@ final class PhoneDashboardStore {
     func syncWorkoutPlan() async {
         let suggestion = await planner.syncSuggestedWorkout(for: pet)
         connectivity.pushSuggestedWorkout(suggestion)
+    }
+
+    func ingestLatestReward() {
+        guard let reward = connectivity.lastReward else { return }
+        progress.append(reward: reward, snapshot: connectivity.lastSnapshot)
     }
 }
 
@@ -93,7 +112,11 @@ struct PhoneDashboardView: View {
             }
         }
         .task {
+            store.bootstrap()
             store.activateConnectivity()
+        }
+        .onChange(of: store.connectivity.lastReward) { _, _ in
+            store.ingestLatestReward()
         }
         .background(
             LinearGradient(

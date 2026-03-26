@@ -145,6 +145,63 @@ public enum RunimalGameEngine {
         evaluateReward(for: summarize(snapshot: snapshot))
     }
 
+    public static func makeJournalEntry(
+        reward: RunRewardSummary,
+        distanceKm: Double,
+        cadence: Int,
+        createdAt: Date = Date()
+    ) -> RunJournalEntry {
+        RunJournalEntry(
+            id: "journal-\(createdAt.timeIntervalSince1970)",
+            createdAt: createdAt,
+            reward: reward,
+            distanceKm: distanceKm,
+            cadence: cadence
+        )
+    }
+
+    public static func evolutionProgress(for journal: [RunJournalEntry]) -> EvolutionProgress {
+        let totalExperience = journal.reduce(0) { $0 + $1.reward.experience }
+        let thresholds = [0, 160, 340, 580, 860]
+        let stageLabels = ["Trace Egg", "Stage 1", "Stage 2", "Ascended", "Mythic"]
+
+        var currentStage = 0
+
+        for index in thresholds.indices where totalExperience >= thresholds[index] {
+            currentStage = index
+        }
+
+        let nextIndex = min(currentStage + 1, thresholds.count - 1)
+        let currentThreshold = thresholds[currentStage]
+        let nextThreshold = thresholds[nextIndex]
+        let ratio: Double
+
+        if currentStage == thresholds.count - 1 {
+            ratio = 1
+        } else {
+            ratio = min(
+                max(Double(totalExperience - currentThreshold) / Double(nextThreshold - currentThreshold), 0),
+                1
+            )
+        }
+
+        let headline: String
+
+        if currentStage == thresholds.count - 1 {
+            headline = "최종 단계에 도달했습니다. 이제 희귀 변이와 고급 루프를 노릴 시점입니다."
+        } else {
+            headline = "다음 진화까지 \(nextThreshold - totalExperience) XP 남았습니다."
+        }
+
+        return EvolutionProgress(
+            stageLabel: stageLabels[currentStage],
+            totalExperience: totalExperience,
+            nextThreshold: nextThreshold,
+            progressRatio: ratio,
+            headline: headline
+        )
+    }
+
     private static func determineSpecies(from summary: RunSummary) -> PetSpecies {
         if summary.distanceKm >= 8 && summary.variability <= 1.6 {
             return .windrunner

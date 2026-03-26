@@ -231,3 +231,47 @@ public struct RunRewardSummary: Codable, Equatable, Sendable {
         self.flavorText = flavorText
     }
 }
+
+public struct RunJournalEntry: Codable, Equatable, Identifiable, Sendable {
+    public let id: String
+    public let createdAt: Date
+    public let reward: RunRewardSummary
+    public let distanceKm: Double
+    public let cadence: Int
+
+    public init(
+        id: String,
+        createdAt: Date,
+        reward: RunRewardSummary,
+        distanceKm: Double,
+        cadence: Int
+    ) {
+        self.id = id
+        self.createdAt = createdAt
+        self.reward = reward
+        self.distanceKm = distanceKm
+        self.cadence = cadence
+    }
+}
+
+public struct EvolutionProgress: Codable, Equatable, Sendable {
+    public let stageLabel: String
+    public let totalExperience: Int
+    public let nextThreshold: Int
+    public let progressRatio: Double
+    public let headline: String
+
+    public init(
+        stageLabel: String,
+        totalExperience: Int,
+        nextThreshold: Int,
+        progressRatio: Double,
+        headline: String
+    ) {
+        self.stageLabel = stageLabel
+        self.totalExperience = totalExperience
+        self.nextThreshold = nextThreshold
+        self.progressRatio = progressRatio
+        self.headline = headline
+    }
+}

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		02F2BC7C3518741679C46073 /* PhoneProgressStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 690BFF1786268BE9D5F3A29A /* PhoneProgressStore.swift */; };
 		06082EB1FC3ACEFA2285DC8E /* PhoneWorkoutPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2785BF329A8DF8512EC6A0D6 /* PhoneWorkoutPlanner.swift */; };
 		0CA9AD813D11C9396CB7A8F4 /* PixelPetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52C1B6533C1584594BAF166 /* PixelPetView.swift */; };
 		0F444E8A966E0A960C219FA9 /* PhoneCollectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6E46300A234E62D872875A0 /* PhoneCollectionView.swift */; };
@@ -40,6 +41,7 @@
 		337BDF1E6CB9C97992B9D7D0 /* WatchRunSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRunSessionManager.swift; sourceTree = "<group>"; };
 		3E2914D59941AF484DDE25BC /* RunimalMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RunimalMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		568C61E1152F1E38E7B93D90 /* WatchDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDashboardView.swift; sourceTree = "<group>"; };
+		690BFF1786268BE9D5F3A29A /* PhoneProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneProgressStore.swift; sourceTree = "<group>"; };
 		7DFF8DF75A9A4BA2BC92DF2E /* RunimalPhoneApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunimalPhoneApp.swift; sourceTree = "<group>"; };
 		9644ED15FC30AD4B82A2D748 /* MacDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacDashboardView.swift; sourceTree = "<group>"; };
 		974FB8F921D130D978735ED6 /* RunimalWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RunimalWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -109,6 +111,7 @@
 				F1E385404E47BEE9EBE310AC /* PhoneDashboardView.swift */,
 				AE5C185CFBC7BCD90C4E6838 /* PhoneHealthKitManager.swift */,
 				AEA95D1D9A9F2C66C78412A2 /* PhoneHomeView.swift */,
+				690BFF1786268BE9D5F3A29A /* PhoneProgressStore.swift */,
 				2785BF329A8DF8512EC6A0D6 /* PhoneWorkoutPlanner.swift */,
 				7DFF8DF75A9A4BA2BC92DF2E /* RunimalPhoneApp.swift */,
 			);
@@ -260,6 +263,7 @@
 				ACE2CE5F4EE7FCFAB684E01A /* PhoneDashboardView.swift in Sources */,
 				6A7224029895E527796C8ACC /* PhoneHealthKitManager.swift in Sources */,
 				82875FD3E02997675454BD44 /* PhoneHomeView.swift in Sources */,
+				02F2BC7C3518741679C46073 /* PhoneProgressStore.swift in Sources */,
 				06082EB1FC3ACEFA2285DC8E /* PhoneWorkoutPlanner.swift in Sources */,
 				AAEACADD1C4BEA881B02FF44 /* PixelPetView.swift in Sources */,
 				634DB0E7570D3FB1D7968EC4 /* RunimalPhoneApp.swift in Sources */,
