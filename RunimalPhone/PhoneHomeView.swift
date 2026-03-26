@@ -11,6 +11,13 @@ struct PhoneHomeView: View {
                 questCard
                 workoutCard
                 syncCard
+                if !store.hatchInsights.isEmpty {
+                    PhoneHatchInsightPanel(
+                        insights: store.hatchInsights,
+                        target: store.evolutionTarget,
+                        accent: store.pet.accentColor
+                    )
+                }
                 if let latestCompletedRun = store.latestCompletedRun {
                     recentRunCard(latestCompletedRun)
                 }

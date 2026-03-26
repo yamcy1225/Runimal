@@ -17,6 +17,7 @@
 		2C74CE3C942228A0B005A2A5 /* PixelPetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52C1B6533C1584594BAF166 /* PixelPetView.swift */; };
 		345F7D630F87517F5CB41228 /* RunimalCore in Frameworks */ = {isa = PBXBuildFile; productRef = BD4FCB625E6957A01DAECE5B /* RunimalCore */; };
 		3C970851FD763E817B29A8FA /* GameSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2B8EE9F33FD02687ADA9AD /* GameSurface.swift */; };
+		517368F2AD7E3D4F4F68045F /* PhoneHatchInsightPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5AFA4A0D0FA515927F493FE /* PhoneHatchInsightPanel.swift */; };
 		5CBD3DBA10183E72DFDCE041 /* WatchDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 568C61E1152F1E38E7B93D90 /* WatchDashboardView.swift */; };
 		5F169DE5191FDFAC59DE3E4A /* WatchConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2897691272A4CDDCCF1F3A37 /* WatchConnectivityManager.swift */; };
 		624DF58C70B351184A9E9B55 /* MacDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9644ED15FC30AD4B82A2D748 /* MacDashboardView.swift */; };
@@ -27,6 +28,7 @@
 		82875FD3E02997675454BD44 /* PhoneHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEA95D1D9A9F2C66C78412A2 /* PhoneHomeView.swift */; };
 		837E7AFB0BD2AC92AD116EE6 /* RunimalCore in Frameworks */ = {isa = PBXBuildFile; productRef = DB1D160C34036A51CF28E910 /* RunimalCore */; };
 		8927F4FDE2E36B3C6BFD88F0 /* GameSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2B8EE9F33FD02687ADA9AD /* GameSurface.swift */; };
+		8CF42C38A3F8DA01536A35DC /* WatchRunPulseCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9022BE50135CB623C706CD5 /* WatchRunPulseCard.swift */; };
 		AAEACADD1C4BEA881B02FF44 /* PixelPetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52C1B6533C1584594BAF166 /* PixelPetView.swift */; };
 		ACE2CE5F4EE7FCFAB684E01A /* PhoneDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E385404E47BEE9EBE310AC /* PhoneDashboardView.swift */; };
 		B617C884E06D78A41DBC9F23 /* GameSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2B8EE9F33FD02687ADA9AD /* GameSurface.swift */; };
@@ -49,10 +51,12 @@
 		7DFF8DF75A9A4BA2BC92DF2E /* RunimalPhoneApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunimalPhoneApp.swift; sourceTree = "<group>"; };
 		9644ED15FC30AD4B82A2D748 /* MacDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacDashboardView.swift; sourceTree = "<group>"; };
 		974FB8F921D130D978735ED6 /* RunimalWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RunimalWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A9022BE50135CB623C706CD5 /* WatchRunPulseCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRunPulseCard.swift; sourceTree = "<group>"; };
 		AE5C185CFBC7BCD90C4E6838 /* PhoneHealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneHealthKitManager.swift; sourceTree = "<group>"; };
 		AEA95D1D9A9F2C66C78412A2 /* PhoneHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneHomeView.swift; sourceTree = "<group>"; };
 		B1B704EA8A439E06F40FDC8D /* runimal-apple */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "runimal-apple"; path = .; sourceTree = SOURCE_ROOT; };
 		B6E46300A234E62D872875A0 /* PhoneCollectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneCollectionView.swift; sourceTree = "<group>"; };
+		C5AFA4A0D0FA515927F493FE /* PhoneHatchInsightPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneHatchInsightPanel.swift; sourceTree = "<group>"; };
 		CD0541A9CADE432091B248E2 /* RunimalWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunimalWatchApp.swift; sourceTree = "<group>"; };
 		E52C1B6533C1584594BAF166 /* PixelPetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelPetView.swift; sourceTree = "<group>"; };
 		F1E385404E47BEE9EBE310AC /* PhoneDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneDashboardView.swift; sourceTree = "<group>"; };
@@ -93,6 +97,7 @@
 				CD0541A9CADE432091B248E2 /* RunimalWatchApp.swift */,
 				2897691272A4CDDCCF1F3A37 /* WatchConnectivityManager.swift */,
 				568C61E1152F1E38E7B93D90 /* WatchDashboardView.swift */,
+				A9022BE50135CB623C706CD5 /* WatchRunPulseCard.swift */,
 				337BDF1E6CB9C97992B9D7D0 /* WatchRunSessionManager.swift */,
 			);
 			path = RunimalWatch;
@@ -113,6 +118,7 @@
 				B6E46300A234E62D872875A0 /* PhoneCollectionView.swift */,
 				2C3D26A6D761131D6B9EF6FD /* PhoneConnectivityManager.swift */,
 				F1E385404E47BEE9EBE310AC /* PhoneDashboardView.swift */,
+				C5AFA4A0D0FA515927F493FE /* PhoneHatchInsightPanel.swift */,
 				AE5C185CFBC7BCD90C4E6838 /* PhoneHealthKitManager.swift */,
 				AEA95D1D9A9F2C66C78412A2 /* PhoneHomeView.swift */,
 				690BFF1786268BE9D5F3A29A /* PhoneProgressStore.swift */,
@@ -266,6 +272,7 @@
 				0F444E8A966E0A960C219FA9 /* PhoneCollectionView.swift in Sources */,
 				1E9074838A9AF2F694709E98 /* PhoneConnectivityManager.swift in Sources */,
 				ACE2CE5F4EE7FCFAB684E01A /* PhoneDashboardView.swift in Sources */,
+				517368F2AD7E3D4F4F68045F /* PhoneHatchInsightPanel.swift in Sources */,
 				6A7224029895E527796C8ACC /* PhoneHealthKitManager.swift in Sources */,
 				82875FD3E02997675454BD44 /* PhoneHomeView.swift in Sources */,
 				02F2BC7C3518741679C46073 /* PhoneProgressStore.swift in Sources */,
@@ -298,6 +305,7 @@
 				174E2B99B537739F137A619E /* RunimalWatchApp.swift in Sources */,
 				5F169DE5191FDFAC59DE3E4A /* WatchConnectivityManager.swift in Sources */,
 				5CBD3DBA10183E72DFDCE041 /* WatchDashboardView.swift in Sources */,
+				8CF42C38A3F8DA01536A35DC /* WatchRunPulseCard.swift in Sources */,
 				62B4899CBEABBF775923FBCD /* WatchRunSessionManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

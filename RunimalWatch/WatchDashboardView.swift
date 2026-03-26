@@ -13,9 +13,15 @@ struct WatchDashboardView: View {
         min(max(runSessionManager.latestSnapshot.distanceMeters / 5000, 0.08), 1)
     }
 
+    private var liveFeedback: LiveRunFeedback {
+        RunimalGameEngine.evaluateLiveFeedback(for: runSessionManager.latestSnapshot)
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
+                WatchRunPulseCard(feedback: liveFeedback, accent: livePet.accentColor)
+
                 GameSurface {
                     VStack(spacing: 10) {
                         Text(runSessionManager.sessionStateLabel == "running" ? "Run Live" : "Trace Egg")
@@ -35,7 +41,7 @@ struct WatchDashboardView: View {
 
                         RunimalProgressBar(progress: growthRatio, accent: livePet.accentColor, height: 8)
 
-                        Text(runSessionManager.sessionStateLabel == "running" ? "달릴수록 펫 오라가 바뀝니다" : "러닝을 시작하면 펫이 깨어납니다")
+                        Text(runSessionManager.sessionStateLabel == "running" ? liveFeedback.headline : "러닝을 시작하면 펫이 깨어납니다")
                             .font(.caption2)
                             .foregroundStyle(.white.opacity(0.72))
                             .multilineTextAlignment(.center)
@@ -61,6 +67,9 @@ struct WatchDashboardView: View {
                         Text("Route \(runSessionManager.locationStatusLabel) · \(runSessionManager.lastSavedWorkoutLabel)")
                             .font(.caption2)
                             .foregroundStyle(.white.opacity(0.65))
+                        Text(liveFeedback.detail)
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.62))
                     }
                 }
 

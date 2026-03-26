@@ -74,6 +74,15 @@ final class PhoneDashboardStore {
         progress.completedRuns.first
     }
 
+    var hatchInsights: [HatchInsight] {
+        guard let latestCompletedRun else { return [] }
+        return RunimalGameEngine.hatchInsights(for: latestCompletedRun)
+    }
+
+    var evolutionTarget: EvolutionTarget {
+        RunimalGameEngine.evolutionTarget(for: evolutionProgress, recentRun: latestCompletedRun)
+    }
+
     func activateConnectivity() {
         connectivity.activate()
     }
