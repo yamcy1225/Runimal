@@ -1,0 +1,112 @@
+{
+  "meta": {
+    "title": "Runimal Post-Run Mock Demo",
+    "description": "iPhone and Apple Watch simulator demo for a post-run growth loop.",
+    "preset": "Landscape-1080p",
+    "fps": 30,
+    "theme": {
+      "aesthetic": "sport arcade field log",
+      "font": {
+        "display": "Chakra Petch",
+        "body": "Outfit",
+        "code": "JetBrains Mono"
+      },
+      "color": {
+        "bg": "#05070d",
+        "surface": "#111827",
+        "accent": "#ff6b35",
+        "text": "#f8fafc",
+        "textMuted": "#cbd5e1"
+      },
+      "gradient": {
+        "hero": "radial-gradient(circle at 18% 24%, rgba(255,107,53,0.24) 0%, transparent 52%), linear-gradient(135deg, #05070d 0%, #0f172a 100%)",
+        "slide": "linear-gradient(160deg, #05070d 0%, #0b1220 55%, #111827 100%)",
+        "glow": "radial-gradient(circle at center, rgba(255,107,53,0.3), transparent 70%)"
+      }
+    }
+  },
+  "elements": [
+    {
+      "id": "title",
+      "type": "title",
+      "durationSec": 3.5,
+      "props": {
+        "title": "Runimal",
+        "subtitle": "Post-run mock demo on iPhone + Apple Watch"
+      },
+      "transition": {
+        "type": "fade",
+        "durationSec": 0.4
+      }
+    },
+    {
+      "id": "motion-principle",
+      "type": "content",
+      "durationSec": 4,
+      "props": {
+        "header": "Motion should exist, but it must explain reward",
+        "bulletPoints": [
+          "Start and finish need visible state change",
+          "Hatch result should land with weight",
+          "Growth progress should move, not just update text",
+          "Idle loops stay subtle on watch"
+        ]
+      },
+      "transition": {
+        "type": "slide",
+        "direction": "from-right",
+        "durationSec": 0.5
+      }
+    },
+    {
+      "id": "iphone-home",
+      "type": "image",
+      "durationSec": 4.5,
+      "props": {
+        "src": "runimal-phone-current.png",
+        "title": "Mock test: run completed, reward synced to phone",
+        "caption": "Home shows the active pet and companion sync after a simulated run.",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "fade",
+        "durationSec": 0.4
+      }
+    },
+    {
+      "id": "watch-surface",
+      "type": "image",
+      "durationSec": 4,
+      "props": {
+        "src": "runimal-watch-current.png",
+        "title": "Watch companion in simulator",
+        "caption": "The watch surface stays glanceable while keeping the pet identity visible.",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "slide",
+        "direction": "from-left",
+        "durationSec": 0.5
+      }
+    },
+    {
+      "id": "mock-check",
+      "type": "content",
+      "durationSec": 4,
+      "props": {
+        "header": "Mock validation done",
+        "bulletPoints": [
+          "Phone build passed and app launched",
+          "Watch build passed and app launched",
+          "Cross-device reward sync path exists",
+          "Growth journal and evolution progress persist locally"
+        ]
+      },
+      "transition": {
+        "type": "fade",
+        "durationSec": 0.4
+      }
+    }
+  ],
+  "audio": []
+}

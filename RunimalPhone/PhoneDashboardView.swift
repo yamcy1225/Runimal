@@ -92,13 +92,15 @@ final class PhoneDashboardStore {
 
 struct PhoneDashboardView: View {
     @State private var store = PhoneDashboardStore()
+    @State private var selectedTab = ProcessInfo.processInfo.environment["RUNIMAL_OPEN_COLLECTION_ON_LAUNCH"] == "1" ? 1 : 0
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             NavigationStack {
                 PhoneHomeView(store: store)
                     .navigationTitle("Runimal")
             }
+            .tag(0)
             .tabItem {
                 Label("Home", systemImage: "bolt.heart")
             }
@@ -107,6 +109,7 @@ struct PhoneDashboardView: View {
                 PhoneCollectionView(store: store)
                     .navigationTitle("Collection")
             }
+            .tag(1)
             .tabItem {
                 Label("Codex", systemImage: "sparkles.rectangle.stack")
             }

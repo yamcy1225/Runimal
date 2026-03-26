@@ -33,8 +33,7 @@ struct WatchDashboardView: View {
                                 .foregroundStyle(.white.opacity(0.75))
                         }
 
-                        ProgressView(value: growthRatio)
-                            .tint(livePet.accentColor)
+                        RunimalProgressBar(progress: growthRatio, accent: livePet.accentColor, height: 8)
 
                         Text(runSessionManager.sessionStateLabel == "running" ? "달릴수록 펫 오라가 바뀝니다" : "러닝을 시작하면 펫이 깨어납니다")
                             .font(.caption2)
@@ -88,6 +87,7 @@ struct WatchDashboardView: View {
                                 .foregroundStyle(.white.opacity(0.72))
                         }
                     }
+                    .transition(.scale(scale: 0.92).combined(with: .opacity))
                 }
 
                 Button(runSessionManager.sessionStateLabel == "running" ? "Finish Run" : "Start Run") {
@@ -122,6 +122,7 @@ struct WatchDashboardView: View {
         )
         .task {
             connectivityManager.activate()
+            runSessionManager.autoplayDemoIfNeeded()
         }
         .onChange(of: runSessionManager.latestSnapshot) { _, snapshot in
             connectivityManager.send(snapshot: snapshot)
@@ -130,6 +131,7 @@ struct WatchDashboardView: View {
             guard let reward else { return }
             connectivityManager.send(reward: reward)
         }
+        .animation(.spring(response: 0.7, dampingFraction: 0.84), value: runSessionManager.lastReward != nil)
     }
 
     private func metric(_ label: String, _ value: String) -> some View {

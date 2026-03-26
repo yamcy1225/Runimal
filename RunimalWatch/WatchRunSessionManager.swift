@@ -10,6 +10,7 @@ final class WatchRunSessionManager: NSObject, HKWorkoutSessionDelegate, HKLiveWo
     private var workoutSession: HKWorkoutSession?
     private var workoutBuilder: HKLiveWorkoutBuilder?
     private var startedAt: Date?
+    private var demoTask: Task<Void, Never>?
 
     var authorizationStatus = "not requested"
     var sessionStateLabel = "idle"
@@ -22,6 +23,9 @@ final class WatchRunSessionManager: NSObject, HKWorkoutSessionDelegate, HKLiveWo
         averagePaceSeconds: nil
     )
     var lastReward: RunRewardSummary?
+    var isDemoMode: Bool {
+        ProcessInfo.processInfo.environment["RUNIMAL_AUTOPLAY_DEMO"] == "1"
+    }
 
     func requestAuthorization() async {
         guard HKHealthStore.isHealthDataAvailable() else {
@@ -47,6 +51,11 @@ final class WatchRunSessionManager: NSObject, HKWorkoutSessionDelegate, HKLiveWo
     }
 
     func startRun() async {
+        if isDemoMode {
+            startDemoRun()
+            return
+        }
+
         do {
             let configuration = HKWorkoutConfiguration()
             configuration.activityType = .running
@@ -73,6 +82,11 @@ final class WatchRunSessionManager: NSObject, HKWorkoutSessionDelegate, HKLiveWo
     }
 
     func endRun() async {
+        if demoTask != nil {
+            finishDemoRun()
+            return
+        }
+
         guard let workoutSession, let workoutBuilder else { return }
 
         let endDate = Date()
@@ -91,8 +105,54 @@ final class WatchRunSessionManager: NSObject, HKWorkoutSessionDelegate, HKLiveWo
         self.workoutBuilder = nil
     }
 
+    func autoplayDemoIfNeeded() {
+        guard isDemoMode, demoTask == nil, sessionStateLabel == "idle" else { return }
+        startDemoRun()
+    }
+
     var livePet: GeneratedPet {
         RunimalGameEngine.generatePet(from: latestSnapshot)
+    }
+
+    private func startDemoRun() {
+        authorizationStatus = "demo"
+        sessionStateLabel = "running"
+        lastReward = nil
+        latestSnapshot = LiveRunSnapshot(
+            elapsedSeconds: 0,
+            distanceMeters: 0,
+            currentHeartRate: 118,
+            cadence: 166,
+            elevationGainM: 0,
+            averagePaceSeconds: 350
+        )
+
+        demoTask?.cancel()
+        demoTask = Task { @MainActor in
+            for step in 1...8 {
+                try? await Task.sleep(for: .seconds(1))
+
+                guard !Task.isCancelled else { return }
+
+                latestSnapshot = LiveRunSnapshot(
+                    elapsedSeconds: step * 45,
+                    distanceMeters: Double(step) * 420,
+                    currentHeartRate: 118 + Double(step * 5),
+                    cadence: 166 + step,
+                    elevationGainM: step * 3,
+                    averagePaceSeconds: max(300, 352 - step * 7)
+                )
+            }
+
+            finishDemoRun()
+        }
+    }
+
+    private func finishDemoRun() {
+        demoTask?.cancel()
+        demoTask = nil
+        sessionStateLabel = "finished"
+        lastReward = RunimalGameEngine.evaluateReward(for: latestSnapshot)
     }
 
     nonisolated func workoutSession(

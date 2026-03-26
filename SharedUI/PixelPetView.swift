@@ -4,6 +4,7 @@ import SwiftUI
 struct PixelPetView: View {
     let pet: GeneratedPet
     var pixelSize: CGFloat = 10
+    @State private var hovering = false
 
     var body: some View {
         let bodyPixels = sprite(for: pet.species)
@@ -17,6 +18,8 @@ struct PixelPetView: View {
             pixelLayer(accentPixels, color: .white.opacity(0.95))
         }
         .frame(width: 10 * pixelSize, height: 10 * pixelSize)
+        .offset(y: hovering ? -pixelSize * 0.24 : 0)
+        .scaleEffect(hovering ? 1.03 : 0.98)
         .shadow(color: pet.accentColor.opacity(0.35), radius: 12, y: 10)
         .overlay(alignment: .bottom) {
             RoundedRectangle(cornerRadius: pixelSize)
@@ -25,6 +28,10 @@ struct PixelPetView: View {
                 .blur(radius: 6)
                 .offset(y: pixelSize * 1.8)
         }
+        .onAppear {
+            hovering = true
+        }
+        .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: hovering)
     }
 
     private func pixelLayer(_ pixels: [(Int, Int)], color: Color, inset: CGFloat = 0) -> some View {

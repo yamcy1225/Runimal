@@ -36,7 +36,10 @@ struct PhoneHomeView: View {
                         HStack {
                             TraitChip(label: "\(store.summary.distanceKm.formatted(.number.precision(.fractionLength(1)))) km", accent: store.pet.accentColor)
                             TraitChip(label: "\(store.summary.cadence) spm", accent: .white.opacity(0.3))
+                            TraitChip(label: store.evolutionProgress.stageLabel, accent: .white.opacity(0.22))
                         }
+
+                        RunimalProgressBar(progress: store.evolutionProgress.progressRatio, accent: store.pet.accentColor, height: 8)
 
                         Text(store.pet.explanation.first ?? "")
                             .font(.footnote)
@@ -136,8 +139,10 @@ struct PhoneHomeView: View {
                                 .foregroundStyle(.white.opacity(0.68))
                         }
                     }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
         }
+        .animation(.spring(response: 0.7, dampingFraction: 0.85), value: store.connectivity.lastReward != nil)
     }
 }

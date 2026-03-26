@@ -61,8 +61,7 @@ struct PhoneCollectionView: View {
                     TraitChip(label: "\(store.evolutionProgress.totalExperience) XP", accent: store.pet.accentColor)
                 }
 
-                ProgressView(value: store.evolutionProgress.progressRatio)
-                    .tint(store.pet.accentColor)
+                RunimalProgressBar(progress: store.evolutionProgress.progressRatio, accent: store.pet.accentColor, height: 10)
 
                 Text(store.evolutionProgress.headline)
                     .font(.footnote)
