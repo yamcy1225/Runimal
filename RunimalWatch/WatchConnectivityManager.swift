@@ -31,6 +31,17 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
         }
     }
 
+    func send(reward: RunRewardSummary) {
+        guard WCSession.isSupported() else { return }
+
+        do {
+            let data = try JSONEncoder().encode(reward)
+            try WCSession.default.updateApplicationContext(["runRewardSummary": data])
+        } catch {
+            lastSyncedWorkoutTitle = "Reward sync failed"
+        }
+    }
+
     nonisolated func session(
         _ session: WCSession,
         activationDidCompleteWith activationState: WCSessionActivationState,

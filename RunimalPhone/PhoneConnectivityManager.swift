@@ -9,6 +9,7 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
     var activationStateLabel = "inactive"
     var reachabilityLabel = "offline"
     var lastSnapshot: LiveRunSnapshot?
+    var lastReward: RunRewardSummary?
     var lastMessage = "No watch sync yet"
 
     func activate() {
@@ -63,6 +64,12 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
                let snapshot = try? JSONDecoder().decode(LiveRunSnapshot.self, from: data) {
                 self.lastSnapshot = snapshot
                 self.lastMessage = "Watch snapshot received"
+            }
+
+            if let data = applicationContext["runRewardSummary"] as? Data,
+               let reward = try? JSONDecoder().decode(RunRewardSummary.self, from: data) {
+                self.lastReward = reward
+                self.lastMessage = "Run reward synced"
             }
         }
     }

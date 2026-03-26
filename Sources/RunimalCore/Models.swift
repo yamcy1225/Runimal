@@ -209,3 +209,25 @@ public struct VariantCodexEntry: Codable, Equatable, Identifiable, Sendable {
         self.discovered = discovered
     }
 }
+
+public struct RunRewardSummary: Codable, Equatable, Sendable {
+    public let pet: GeneratedPet
+    public let coreLabel: String
+    public let experience: Int
+    public let completedQuestCount: Int
+    public let flavorText: String
+
+    public init(
+        pet: GeneratedPet,
+        coreLabel: String,
+        experience: Int,
+        completedQuestCount: Int,
+        flavorText: String
+    ) {
+        self.pet = pet
+        self.coreLabel = coreLabel
+        self.experience = experience
+        self.completedQuestCount = completedQuestCount
+        self.flavorText = flavorText
+    }
+}

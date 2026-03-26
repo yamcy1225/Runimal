@@ -127,6 +127,24 @@ public enum RunimalGameEngine {
         }
     }
 
+    public static func evaluateReward(for summary: RunSummary) -> RunRewardSummary {
+        let pet = generatePet(from: summary)
+        let completedQuestCount = evaluateRunQuests(for: summary).filter(\.completed).count
+        let experience = max(40, Int(summary.distanceKm * 14) + completedQuestCount * 18)
+
+        return RunRewardSummary(
+            pet: pet,
+            coreLabel: rewardCoreLabel(for: pet),
+            experience: experience,
+            completedQuestCount: completedQuestCount,
+            flavorText: rewardFlavorText(for: pet, completedQuestCount: completedQuestCount)
+        )
+    }
+
+    public static func evaluateReward(for snapshot: LiveRunSnapshot) -> RunRewardSummary {
+        evaluateReward(for: summarize(snapshot: snapshot))
+    }
+
     private static func determineSpecies(from summary: RunSummary) -> PetSpecies {
         if summary.distanceKm >= 8 && summary.variability <= 1.6 {
             return .windrunner
@@ -245,6 +263,24 @@ public enum RunimalGameEngine {
         let minutes = seconds / 60
         let remaining = seconds % 60
         return String(format: "%d:%02d/km", minutes, remaining)
+    }
+
+    private static func rewardCoreLabel(for pet: GeneratedPet) -> String {
+        if let rareVariant = pet.rareVariant {
+            return "\(RareVariantMeta.labels[rareVariant] ?? "Rare") Core"
+        }
+
+        return "\(pet.element.rawValue.capitalized) Core"
+    }
+
+    private static func rewardFlavorText(for pet: GeneratedPet, completedQuestCount: Int) -> String {
+        let speciesLabel = pet.species.rawValue.replacingOccurrences(of: "-", with: " ").capitalized
+
+        if completedQuestCount >= 3 {
+            return "\(speciesLabel)이 강하게 깨어났습니다. 이번 러닝은 진화에 가까운 흔적을 남겼습니다."
+        }
+
+        return "\(speciesLabel)이 러닝 흔적을 흡수해 안정적으로 성장했습니다."
     }
 
     private static func inferredPaceSeconds(from snapshot: LiveRunSnapshot) -> Int {

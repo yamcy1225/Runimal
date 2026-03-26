@@ -21,6 +21,7 @@ final class WatchRunSessionManager: NSObject, HKWorkoutSessionDelegate, HKLiveWo
         elevationGainM: 0,
         averagePaceSeconds: nil
     )
+    var lastReward: RunRewardSummary?
 
     func requestAuthorization() async {
         guard HKHealthStore.isHealthDataAvailable() else {
@@ -62,6 +63,7 @@ final class WatchRunSessionManager: NSObject, HKWorkoutSessionDelegate, HKLiveWo
             workoutSession = session
             workoutBuilder = builder
             sessionStateLabel = "running"
+            lastReward = nil
 
             session.startActivity(with: startDate)
             try await builder.beginCollection(at: startDate)
@@ -80,6 +82,7 @@ final class WatchRunSessionManager: NSObject, HKWorkoutSessionDelegate, HKLiveWo
             try await workoutBuilder.endCollection(at: endDate)
             try await workoutBuilder.finishWorkout()
             sessionStateLabel = "finished"
+            lastReward = RunimalGameEngine.evaluateReward(for: latestSnapshot)
         } catch {
             sessionStateLabel = "finish failed"
         }

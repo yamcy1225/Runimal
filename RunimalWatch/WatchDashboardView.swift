@@ -62,6 +62,34 @@ struct WatchDashboardView: View {
                     }
                 }
 
+                if let reward = runSessionManager.lastReward {
+                    GameSurface(title: "Hatch Result") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 10) {
+                                PixelPetView(pet: reward.pet, pixelSize: 6)
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(reward.pet.displayName)
+                                        .font(.headline)
+                                        .foregroundStyle(.white)
+                                    Text(reward.flavorText)
+                                        .font(.caption2)
+                                        .foregroundStyle(.white.opacity(0.72))
+                                }
+                            }
+
+                            HStack {
+                                TraitChip(label: reward.coreLabel, accent: reward.pet.accentColor)
+                                TraitChip(label: "+\(reward.experience) XP", accent: .green)
+                            }
+
+                            Text("Completed quests \(reward.completedQuestCount)")
+                                .font(.caption2)
+                                .foregroundStyle(.white.opacity(0.72))
+                        }
+                    }
+                }
+
                 Button(runSessionManager.sessionStateLabel == "running" ? "Finish Run" : "Start Run") {
                     Task {
                         if runSessionManager.sessionStateLabel == "running" {
@@ -97,6 +125,10 @@ struct WatchDashboardView: View {
         }
         .onChange(of: runSessionManager.latestSnapshot) { _, snapshot in
             connectivityManager.send(snapshot: snapshot)
+        }
+        .onChange(of: runSessionManager.lastReward) { _, reward in
+            guard let reward else { return }
+            connectivityManager.send(reward: reward)
         }
     }
 

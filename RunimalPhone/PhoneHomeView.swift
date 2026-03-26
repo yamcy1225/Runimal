@@ -117,6 +117,26 @@ struct PhoneHomeView: View {
                         .font(.footnote)
                         .foregroundStyle(.white.opacity(0.72))
                 }
+
+                if let reward = store.connectivity.lastReward {
+                    Divider()
+                        .overlay(.white.opacity(0.14))
+
+                    HStack(alignment: .center, spacing: 12) {
+                        PixelPetView(pet: reward.pet, pixelSize: 6)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Latest Hatch Reward")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.white.opacity(0.78))
+                            Text("\(reward.pet.displayName) · \(reward.coreLabel)")
+                                .foregroundStyle(.white)
+                            Text(reward.flavorText)
+                                .font(.caption2)
+                                .foregroundStyle(.white.opacity(0.68))
+                        }
+                    }
+                }
             }
         }
     }
