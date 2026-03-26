@@ -1,3 +1,4 @@
+import CoreLocation
 import Foundation
 import HealthKit
 import Observation
@@ -5,14 +6,20 @@ import RunimalCore
 
 @MainActor
 @Observable
-final class WatchRunSessionManager: NSObject, HKWorkoutSessionDelegate, HKLiveWorkoutBuilderDelegate {
+final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorkoutSessionDelegate, HKLiveWorkoutBuilderDelegate {
     private let healthStore = HKHealthStore()
+    private let locationManager = CLLocationManager()
     private var workoutSession: HKWorkoutSession?
     private var workoutBuilder: HKLiveWorkoutBuilder?
+    private var routeBuilder: HKWorkoutRouteBuilder?
     private var startedAt: Date?
     private var demoTask: Task<Void, Never>?
+    private var routeLocations: [CLLocation] = []
+    private var routePreview: [RoutePoint] = []
+    private var averageHeartRateAccumulator: [Double] = []
 
     var authorizationStatus = "not requested"
+    var locationStatusLabel = "not requested"
     var sessionStateLabel = "idle"
     var latestSnapshot = LiveRunSnapshot(
         elapsedSeconds: 0,
@@ -23,8 +30,18 @@ final class WatchRunSessionManager: NSObject, HKWorkoutSessionDelegate, HKLiveWo
         averagePaceSeconds: nil
     )
     var lastReward: RunRewardSummary?
+    var lastCompletedRun: CompletedRunRecord?
+    var lastSavedWorkoutLabel = "No workout saved yet"
     var isDemoMode: Bool {
         ProcessInfo.processInfo.environment["RUNIMAL_AUTOPLAY_DEMO"] == "1"
+    }
+
+    override init() {
+        super.init()
+        locationManager.delegate = self
+        locationManager.activityType = .fitness
+        locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        locationManager.distanceFilter = 5
     }
 
     func requestAuthorization() async {
@@ -34,9 +51,13 @@ final class WatchRunSessionManager: NSObject, HKWorkoutSessionDelegate, HKLiveWo
         }
 
         do {
-            let shareTypes: Set<HKSampleType> = [HKObjectType.workoutType()]
+            let shareTypes: Set<HKSampleType> = [
+                HKObjectType.workoutType(),
+                HKSeriesType.workoutRoute(),
+            ]
             let readTypes = Set<HKObjectType>([
                 HKObjectType.workoutType(),
+                HKSeriesType.workoutRoute(),
                 HKObjectType.quantityType(forIdentifier: .heartRate),
                 HKObjectType.quantityType(forIdentifier: .distanceWalkingRunning),
                 HKObjectType.quantityType(forIdentifier: .runningSpeed),
@@ -45,6 +66,7 @@ final class WatchRunSessionManager: NSObject, HKWorkoutSessionDelegate, HKLiveWo
 
             try await healthStore.requestAuthorization(toShare: shareTypes, read: readTypes)
             authorizationStatus = "authorized"
+            requestLocationAuthorizationIfNeeded()
         } catch {
             authorizationStatus = "failed: \(error.localizedDescription)"
         }
@@ -71,9 +93,16 @@ final class WatchRunSessionManager: NSObject, HKWorkoutSessionDelegate, HKLiveWo
             startedAt = startDate
             workoutSession = session
             workoutBuilder = builder
+            routeBuilder = HKWorkoutRouteBuilder(healthStore: healthStore, device: .local())
             sessionStateLabel = "running"
             lastReward = nil
+            lastCompletedRun = nil
+            lastSavedWorkoutLabel = "Saving run..."
+            routeLocations = []
+            routePreview = []
+            averageHeartRateAccumulator = []
 
+            startLocationCaptureIfAuthorized()
             session.startActivity(with: startDate)
             try await builder.beginCollection(at: startDate)
         } catch {
@@ -91,18 +120,43 @@ final class WatchRunSessionManager: NSObject, HKWorkoutSessionDelegate, HKLiveWo
 
         let endDate = Date()
         workoutSession.end()
+        stopLocationCapture()
 
         do {
             try await workoutBuilder.endCollection(at: endDate)
-            try await workoutBuilder.finishWorkout()
+            let workout = try await finishWorkout(using: workoutBuilder)
             sessionStateLabel = "finished"
-            lastReward = RunimalGameEngine.evaluateReward(for: latestSnapshot)
+            let reward = RunimalGameEngine.evaluateReward(for: latestSnapshot)
+            let averageHeartRate = averageHeartRateAccumulator.isEmpty ? nil : averageHeartRateAccumulator.reduce(0, +) / Double(averageHeartRateAccumulator.count)
+
+            if let routeBuilder, !routeLocations.isEmpty {
+                try await insertRouteData(routeLocations, into: routeBuilder)
+                try await finishRoute(using: routeBuilder, workout: workout)
+                lastSavedWorkoutLabel = "Saved workout + route to HealthKit"
+            } else {
+                lastSavedWorkoutLabel = "Saved workout to HealthKit"
+            }
+
+            let record = RunimalGameEngine.makeCompletedRunRecord(
+                reward: reward,
+                snapshot: latestSnapshot,
+                startedAt: startedAt ?? endDate,
+                endedAt: endDate,
+                averageHeartRate: averageHeartRate,
+                route: routePreview,
+                source: "watch-healthkit"
+            )
+
+            lastReward = reward
+            lastCompletedRun = record
         } catch {
             sessionStateLabel = "finish failed"
+            lastSavedWorkoutLabel = "Save failed"
         }
 
         self.workoutSession = nil
         self.workoutBuilder = nil
+        self.routeBuilder = nil
     }
 
     func autoplayDemoIfNeeded() {
@@ -116,8 +170,11 @@ final class WatchRunSessionManager: NSObject, HKWorkoutSessionDelegate, HKLiveWo
 
     private func startDemoRun() {
         authorizationStatus = "demo"
+        locationStatusLabel = "demo"
         sessionStateLabel = "running"
         lastReward = nil
+        lastCompletedRun = nil
+        lastSavedWorkoutLabel = "Demo session recording"
         latestSnapshot = LiveRunSnapshot(
             elapsedSeconds: 0,
             distanceMeters: 0,
@@ -152,7 +209,22 @@ final class WatchRunSessionManager: NSObject, HKWorkoutSessionDelegate, HKLiveWo
         demoTask?.cancel()
         demoTask = nil
         sessionStateLabel = "finished"
-        lastReward = RunimalGameEngine.evaluateReward(for: latestSnapshot)
+        let reward = RunimalGameEngine.evaluateReward(for: latestSnapshot)
+        let endedAt = Date()
+        let startedAt = endedAt.addingTimeInterval(-Double(latestSnapshot.elapsedSeconds))
+        let record = RunimalGameEngine.makeCompletedRunRecord(
+            reward: reward,
+            snapshot: latestSnapshot,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            averageHeartRate: latestSnapshot.currentHeartRate,
+            route: sampledDemoRoute(from: startedAt),
+            source: "watch-demo"
+        )
+
+        lastReward = reward
+        lastCompletedRun = record
+        lastSavedWorkoutLabel = "Demo workout prepared"
     }
 
     nonisolated func workoutSession(
@@ -191,6 +263,10 @@ final class WatchRunSessionManager: NSObject, HKWorkoutSessionDelegate, HKLiveWo
             let elapsed = Int(Date().timeIntervalSince(self.startedAt ?? Date()))
             let derivedPace = speed > 0 ? Int(1000 / speed) : nil
 
+            if heartRate > 0 {
+                self.averageHeartRateAccumulator.append(heartRate)
+            }
+
             self.latestSnapshot = LiveRunSnapshot(
                 elapsedSeconds: max(elapsed, 0),
                 distanceMeters: distance,
@@ -222,6 +298,155 @@ final class WatchRunSessionManager: NSObject, HKWorkoutSessionDelegate, HKLiveWo
         case ..<330: return 174
         case ..<360: return 168
         default: return 160
+        }
+    }
+
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        Task { @MainActor in
+            self.updateLocationStatus(manager.authorizationStatus)
+            if self.sessionStateLabel == "running" {
+                self.startLocationCaptureIfAuthorized()
+            }
+        }
+    }
+
+    nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        Task { @MainActor in
+            let validLocations = locations.filter { $0.horizontalAccuracy >= 0 }
+            guard !validLocations.isEmpty else { return }
+
+            self.routeLocations.append(contentsOf: validLocations)
+            self.routePreview = self.sampleRoutePreview(from: self.routeLocations)
+        }
+    }
+
+    nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        Task { @MainActor in
+            self.locationStatusLabel = "location failed: \(error.localizedDescription)"
+        }
+    }
+
+    private func requestLocationAuthorizationIfNeeded() {
+        switch locationManager.authorizationStatus {
+        case .notDetermined:
+            locationManager.requestWhenInUseAuthorization()
+        default:
+            updateLocationStatus(locationManager.authorizationStatus)
+        }
+    }
+
+    private func startLocationCaptureIfAuthorized() {
+        switch locationManager.authorizationStatus {
+        case .authorizedAlways, .authorizedWhenInUse:
+            locationManager.startUpdatingLocation()
+            locationStatusLabel = "tracking route"
+        case .notDetermined:
+            requestLocationAuthorizationIfNeeded()
+        case .denied, .restricted:
+            locationStatusLabel = "location denied"
+        @unknown default:
+            locationStatusLabel = "location unknown"
+        }
+    }
+
+    private func stopLocationCapture() {
+        locationManager.stopUpdatingLocation()
+        if locationStatusLabel == "tracking route" {
+            locationStatusLabel = "route captured"
+        }
+    }
+
+    private func updateLocationStatus(_ status: CLAuthorizationStatus) {
+        switch status {
+        case .notDetermined:
+            locationStatusLabel = "requesting"
+        case .restricted:
+            locationStatusLabel = "restricted"
+        case .denied:
+            locationStatusLabel = "denied"
+        case .authorizedAlways, .authorizedWhenInUse:
+            locationStatusLabel = "authorized"
+        @unknown default:
+            locationStatusLabel = "unknown"
+        }
+    }
+
+    private func finishWorkout(using builder: HKLiveWorkoutBuilder) async throws -> HKWorkout {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<HKWorkout, Error>) in
+            builder.finishWorkout { workout, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+
+                guard let workout else {
+                    continuation.resume(throwing: NSError(domain: "RunimalWatch", code: 10, userInfo: nil))
+                    return
+                }
+
+                continuation.resume(returning: workout)
+            }
+        }
+    }
+
+    private func insertRouteData(_ locations: [CLLocation], into builder: HKWorkoutRouteBuilder) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            builder.insertRouteData(locations) { success, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+
+                if success {
+                    continuation.resume(returning: ())
+                } else {
+                    continuation.resume(throwing: NSError(domain: "RunimalWatch", code: 11, userInfo: nil))
+                }
+            }
+        }
+    }
+
+    private func finishRoute(using builder: HKWorkoutRouteBuilder, workout: HKWorkout) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            builder.finishRoute(with: workout, metadata: nil) { _, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+
+                continuation.resume(returning: ())
+            }
+        }
+    }
+
+    private func sampleRoutePreview(from locations: [CLLocation]) -> [RoutePoint] {
+        guard !locations.isEmpty else { return [] }
+
+        let targetCount = 24
+        let stride = max(1, locations.count / targetCount)
+
+        return locations.enumerated().compactMap { index, location in
+            guard index.isMultiple(of: stride) || index == locations.count - 1 else {
+                return nil
+            }
+
+            return RoutePoint(
+                latitude: location.coordinate.latitude,
+                longitude: location.coordinate.longitude,
+                altitude: location.altitude,
+                timestamp: location.timestamp
+            )
+        }
+    }
+
+    private func sampledDemoRoute(from startDate: Date) -> [RoutePoint] {
+        (0..<8).map { index in
+            RoutePoint(
+                latitude: 37.5665 + Double(index) * 0.0007,
+                longitude: 126.9780 + sin(Double(index)) * 0.0005,
+                altitude: 22 + Double(index),
+                timestamp: startDate.addingTimeInterval(Double(index * 45))
+            )
         }
     }
 }

@@ -10,6 +10,7 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
     var reachabilityLabel = "offline"
     var lastSnapshot: LiveRunSnapshot?
     var lastReward: RunRewardSummary?
+    var lastCompletedRun: CompletedRunRecord?
     var lastMessage = "No watch sync yet"
 
     func activate() {
@@ -70,6 +71,12 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
                let reward = try? JSONDecoder().decode(RunRewardSummary.self, from: data) {
                 self.lastReward = reward
                 self.lastMessage = "Run reward synced"
+            }
+
+            if let data = applicationContext["completedRunRecord"] as? Data,
+               let record = try? JSONDecoder().decode(CompletedRunRecord.self, from: data) {
+                self.lastCompletedRun = record
+                self.lastMessage = "Completed run synced"
             }
         }
     }

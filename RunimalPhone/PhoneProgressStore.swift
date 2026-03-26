@@ -7,44 +7,83 @@ import RunimalCore
 final class PhoneProgressStore {
     private enum Keys {
         static let journal = "runimal.phone.journal"
+        static let completedRuns = "runimal.phone.completedRuns"
     }
 
     private let defaults: UserDefaults
     var journal: [RunJournalEntry] = []
+    var completedRuns: [CompletedRunRecord] = []
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
     }
 
     func load() {
-        guard let data = defaults.data(forKey: Keys.journal) else {
+        if let data = defaults.data(forKey: Keys.journal) {
+            do {
+                journal = try JSONDecoder().decode([RunJournalEntry].self, from: data)
+            } catch {
+                journal = []
+            }
+        } else {
             journal = []
-            return
         }
 
-        do {
-            journal = try JSONDecoder().decode([RunJournalEntry].self, from: data)
-        } catch {
-            journal = []
+        if let data = defaults.data(forKey: Keys.completedRuns) {
+            do {
+                completedRuns = try JSONDecoder().decode([CompletedRunRecord].self, from: data)
+            } catch {
+                completedRuns = []
+            }
+        } else {
+            completedRuns = []
         }
     }
 
     func seedIfNeeded(from summaries: [RunSummary]) {
-        guard journal.isEmpty else { return }
+        if journal.isEmpty {
+            let seededEntries = summaries.enumerated().map { index, summary in
+                let reward = RunimalGameEngine.evaluateReward(for: summary)
+                let createdAt = Calendar.current.date(byAdding: .day, value: -(index + 1), to: Date()) ?? Date()
 
-        let seededEntries = summaries.enumerated().map { index, summary in
-            let reward = RunimalGameEngine.evaluateReward(for: summary)
-            let createdAt = Calendar.current.date(byAdding: .day, value: -(index + 1), to: Date()) ?? Date()
+                return RunimalGameEngine.makeJournalEntry(
+                    reward: reward,
+                    distanceKm: summary.distanceKm,
+                    cadence: summary.cadence,
+                    createdAt: createdAt
+                )
+            }
 
-            return RunimalGameEngine.makeJournalEntry(
-                reward: reward,
-                distanceKm: summary.distanceKm,
-                cadence: summary.cadence,
-                createdAt: createdAt
-            )
+            journal = seededEntries
         }
 
-        journal = seededEntries
+        if completedRuns.isEmpty, let summary = summaries.first {
+            let reward = RunimalGameEngine.evaluateReward(for: summary)
+            let endedAt = Date().addingTimeInterval(-3600)
+            let startedAt = endedAt.addingTimeInterval(-summary.distanceKm * Double(summary.averagePaceSeconds))
+            let snapshot = LiveRunSnapshot(
+                elapsedSeconds: Int(summary.distanceKm * Double(summary.averagePaceSeconds)),
+                distanceMeters: summary.distanceKm * 1000,
+                currentHeartRate: 152,
+                cadence: summary.cadence,
+                elevationGainM: summary.elevationGainM,
+                averagePaceSeconds: summary.averagePaceSeconds
+            )
+
+            completedRuns = [
+                RunimalGameEngine.makeCompletedRunRecord(
+                    reward: reward,
+                    snapshot: snapshot,
+                    startedAt: startedAt,
+                    endedAt: endedAt,
+                    averageHeartRate: 152,
+                    route: [],
+                    source: "seeded-archive",
+                    id: "seeded-archive-run"
+                )
+            ]
+        }
+
         save()
     }
 
@@ -64,12 +103,29 @@ final class PhoneProgressStore {
         save()
     }
 
+    func append(completedRun: CompletedRunRecord) {
+        if completedRuns.contains(where: { $0.id == completedRun.id }) {
+            return
+        }
+
+        completedRuns.insert(completedRun, at: 0)
+        completedRuns = Array(completedRuns.prefix(12))
+        save()
+    }
+
     private func save() {
         do {
-            let data = try JSONEncoder().encode(journal)
-            defaults.set(data, forKey: Keys.journal)
+            let journalData = try JSONEncoder().encode(journal)
+            defaults.set(journalData, forKey: Keys.journal)
         } catch {
             defaults.removeObject(forKey: Keys.journal)
+        }
+
+        do {
+            let completedRunData = try JSONEncoder().encode(completedRuns)
+            defaults.set(completedRunData, forKey: Keys.completedRuns)
+        } catch {
+            defaults.removeObject(forKey: Keys.completedRuns)
         }
     }
 }

@@ -275,3 +275,64 @@ public struct EvolutionProgress: Codable, Equatable, Sendable {
         self.headline = headline
     }
 }
+
+public struct RoutePoint: Codable, Equatable, Identifiable, Sendable {
+    public let latitude: Double
+    public let longitude: Double
+    public let altitude: Double
+    public let timestamp: Date
+
+    public var id: String {
+        "\(timestamp.timeIntervalSince1970)-\(latitude)-\(longitude)"
+    }
+
+    public init(latitude: Double, longitude: Double, altitude: Double, timestamp: Date) {
+        self.latitude = latitude
+        self.longitude = longitude
+        self.altitude = altitude
+        self.timestamp = timestamp
+    }
+}
+
+public struct CompletedRunRecord: Codable, Equatable, Identifiable, Sendable {
+    public let id: String
+    public let startedAt: Date
+    public let endedAt: Date
+    public let distanceMeters: Double
+    public let durationSeconds: Int
+    public let averageHeartRate: Double?
+    public let averagePaceSeconds: Int?
+    public let cadence: Int?
+    public let elevationGainM: Int
+    public let reward: RunRewardSummary
+    public let route: [RoutePoint]
+    public let source: String
+
+    public init(
+        id: String,
+        startedAt: Date,
+        endedAt: Date,
+        distanceMeters: Double,
+        durationSeconds: Int,
+        averageHeartRate: Double?,
+        averagePaceSeconds: Int?,
+        cadence: Int?,
+        elevationGainM: Int,
+        reward: RunRewardSummary,
+        route: [RoutePoint],
+        source: String
+    ) {
+        self.id = id
+        self.startedAt = startedAt
+        self.endedAt = endedAt
+        self.distanceMeters = distanceMeters
+        self.durationSeconds = durationSeconds
+        self.averageHeartRate = averageHeartRate
+        self.averagePaceSeconds = averagePaceSeconds
+        self.cadence = cadence
+        self.elevationGainM = elevationGainM
+        self.reward = reward
+        self.route = route
+        self.source = source
+    }
+}

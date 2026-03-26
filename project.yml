@@ -46,6 +46,8 @@ targets:
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_CFBundlePackageType: APPL
+        INFOPLIST_KEY_NSHealthShareUsageDescription: Runimal stores your runs and workout routes to grow your pet journal.
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: Runimal writes completed run rewards back into your training history.
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone:
           - UIInterfaceOrientationPortrait
     dependencies:
@@ -69,6 +71,9 @@ targets:
         INFOPLIST_KEY_CFBundlePackageType: APPL
         INFOPLIST_KEY_WKApplication: YES
         INFOPLIST_KEY_WKWatchOnly: YES
+        INFOPLIST_KEY_NSHealthShareUsageDescription: Runimal reads live run data to hatch and grow your companion.
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: Runimal saves completed workouts and routes after each run.
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: Runimal needs your route during runs so your companion can learn the path you took.
     dependencies:
       - package: RunimalPackage
         product: RunimalCore

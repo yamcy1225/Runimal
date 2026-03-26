@@ -58,6 +58,9 @@ struct WatchDashboardView: View {
                         Text("Sync \(connectivityManager.activationStateLabel) · HealthKit \(runSessionManager.authorizationStatus)")
                             .font(.caption2)
                             .foregroundStyle(.white.opacity(0.72))
+                        Text("Route \(runSessionManager.locationStatusLabel) · \(runSessionManager.lastSavedWorkoutLabel)")
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.65))
                     }
                 }
 
@@ -130,6 +133,10 @@ struct WatchDashboardView: View {
         .onChange(of: runSessionManager.lastReward) { _, reward in
             guard let reward else { return }
             connectivityManager.send(reward: reward)
+        }
+        .onChange(of: runSessionManager.lastCompletedRun) { _, record in
+            guard let record else { return }
+            connectivityManager.send(completedRun: record)
         }
         .animation(.spring(response: 0.7, dampingFraction: 0.84), value: runSessionManager.lastReward != nil)
     }

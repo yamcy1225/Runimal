@@ -202,6 +202,32 @@ public enum RunimalGameEngine {
         )
     }
 
+    public static func makeCompletedRunRecord(
+        reward: RunRewardSummary,
+        snapshot: LiveRunSnapshot,
+        startedAt: Date,
+        endedAt: Date,
+        averageHeartRate: Double?,
+        route: [RoutePoint],
+        source: String,
+        id: String = UUID().uuidString
+    ) -> CompletedRunRecord {
+        CompletedRunRecord(
+            id: id,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            distanceMeters: snapshot.distanceMeters,
+            durationSeconds: snapshot.elapsedSeconds,
+            averageHeartRate: averageHeartRate,
+            averagePaceSeconds: snapshot.averagePaceSeconds,
+            cadence: snapshot.cadence,
+            elevationGainM: snapshot.elevationGainM,
+            reward: reward,
+            route: route,
+            source: source
+        )
+    }
+
     private static func determineSpecies(from summary: RunSummary) -> PetSpecies {
         if summary.distanceKm >= 8 && summary.variability <= 1.6 {
             return .windrunner

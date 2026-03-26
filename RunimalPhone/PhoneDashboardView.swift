@@ -66,6 +66,14 @@ final class PhoneDashboardStore {
         progress.journal
     }
 
+    var completedRuns: [CompletedRunRecord] {
+        progress.completedRuns
+    }
+
+    var latestCompletedRun: CompletedRunRecord? {
+        progress.completedRuns.first
+    }
+
     func activateConnectivity() {
         connectivity.activate()
     }
@@ -87,6 +95,11 @@ final class PhoneDashboardStore {
     func ingestLatestReward() {
         guard let reward = connectivity.lastReward else { return }
         progress.append(reward: reward, snapshot: connectivity.lastSnapshot)
+    }
+
+    func ingestCompletedRun() {
+        guard let record = connectivity.lastCompletedRun else { return }
+        progress.append(completedRun: record)
     }
 }
 
@@ -120,6 +133,9 @@ struct PhoneDashboardView: View {
         }
         .onChange(of: store.connectivity.lastReward) { _, _ in
             store.ingestLatestReward()
+        }
+        .onChange(of: store.connectivity.lastCompletedRun) { _, _ in
+            store.ingestCompletedRun()
         }
         .background(
             LinearGradient(
