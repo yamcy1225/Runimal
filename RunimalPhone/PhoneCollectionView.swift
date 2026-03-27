@@ -34,7 +34,8 @@ struct PhoneCollectionView: View {
                 PhonePetDetailPanel(
                     companion: store.featuredCompanion,
                     progress: store.evolutionProgress,
-                    activeEffects: store.activeWeeklyEffects
+                    activeEffects: store.activeWeeklyEffects,
+                    season: store.weeklyBoard.season
                 )
                 PhoneGrowthDockPanel(
                     activeCompanion: store.featuredCompanion,

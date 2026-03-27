@@ -30,8 +30,12 @@ public struct EvolutionTreeNode: Codable, Equatable, Identifiable, Sendable {
 }
 
 public extension RunimalGameEngine {
-    static func evolutionTree(for pet: GeneratedPet, progress: EvolutionProgress) -> [EvolutionTreeNode] {
-        let titles = evolutionTitles(for: pet)
+    static func evolutionTree(
+        for pet: GeneratedPet,
+        progress: EvolutionProgress,
+        season: WeeklySeason? = nil
+    ) -> [EvolutionTreeNode] {
+        let titles = evolutionTitles(for: pet, season: season)
         let currentIndex = max(
             0,
             RunimalBalanceConfig.evolutionStageLabels.firstIndex(of: progress.stageLabel) ?? 0
@@ -51,12 +55,16 @@ public extension RunimalGameEngine {
             return EvolutionTreeNode(
                 id: "stage-\(index)-\(title)",
                 title: title,
-                detail: evolutionDetail(for: pet, stageIndex: index),
+                detail: evolutionDetail(for: pet, stageIndex: index, season: season),
                 status: status,
                 unlocked: index <= currentIndex,
                 current: index == currentIndex
             )
         }
+    }
+
+    static func seasonAffinity(for pet: GeneratedPet, season: WeeklySeason) -> Bool {
+        pet.species == season.focusSpecies || pet.rareVariant == season.focusVariant
     }
 
     static func balanceTuningNotes(for pet: GeneratedPet) -> [String] {
@@ -77,22 +85,26 @@ public extension RunimalGameEngine {
         return notes
     }
 
-    private static func evolutionTitles(for pet: GeneratedPet) -> [String] {
+    private static func evolutionTitles(for pet: GeneratedPet, season: WeeklySeason?) -> [String] {
         let apexTitle: String
 
-        switch pet.rareVariant {
-        case .tempoSurge:
-            apexTitle = "Velocity Crown"
-        case .zenBloom:
-            apexTitle = "Halo Current"
-        case .summitHeart:
-            apexTitle = "Summit Forge"
-        case .eclipseMark:
-            apexTitle = "Night Relay"
-        case .loopSigil:
-            apexTitle = "Sigil Orbit"
-        case nil:
-            apexTitle = "\(pet.displayBaseName) Prime"
+        if let season, seasonAffinity(for: pet, season: season) {
+            apexTitle = season.evolutionTitle
+        } else {
+            switch pet.rareVariant {
+            case .tempoSurge:
+                apexTitle = "Velocity Crown"
+            case .zenBloom:
+                apexTitle = "Halo Current"
+            case .summitHeart:
+                apexTitle = "Summit Forge"
+            case .eclipseMark:
+                apexTitle = "Night Relay"
+            case .loopSigil:
+                apexTitle = "Sigil Orbit"
+            case nil:
+                apexTitle = "\(pet.displayBaseName) Prime"
+            }
         }
 
         return [
@@ -104,7 +116,7 @@ public extension RunimalGameEngine {
         ]
     }
 
-    private static func evolutionDetail(for pet: GeneratedPet, stageIndex: Int) -> String {
+    private static func evolutionDetail(for pet: GeneratedPet, stageIndex: Int, season: WeeklySeason?) -> String {
         switch stageIndex {
         case 0:
             return "첫 러닝 흔적을 흡수하는 준비 단계입니다."
@@ -117,6 +129,9 @@ public extension RunimalGameEngine {
         default:
             let variantLabel = pet.rareVariant.map { RareVariantMeta.labels[$0] ?? $0.rawValue } ?? "Standard"
             let elementLabel = elementLabel(for: pet.element)
+            if let season, seasonAffinity(for: pet, season: season) {
+                return "\(elementLabel) • \(variantLabel) 최종 형태입니다. 이번 시즌 전용 진화명 \(season.evolutionTitle)로 승격됩니다."
+            }
             return "\(elementLabel) • \(variantLabel) 최종 형태입니다. 장기 루프용 보너스가 붙습니다."
         }
     }

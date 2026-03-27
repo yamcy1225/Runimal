@@ -110,25 +110,41 @@ public extension RunimalGameEngine {
             return WeeklySeason(
                 title: "Verdant Loop",
                 subtitle: "안정 루프와 장거리 리듬을 밀어주는 봄 시즌",
-                bonus: "Leaf / Zen Bloom 트랙의 연구 가치가 상승합니다."
+                bonus: "Leaf / Zen Bloom 트랙의 연구 가치가 상승합니다.",
+                rewardTitle: "Bloom Relay Cache",
+                evolutionTitle: "Bloom Sovereign",
+                focusSpecies: .mosshop,
+                focusVariant: .zenBloom
             )
         case 6...8:
             return WeeklySeason(
                 title: "Ember Circuit",
                 subtitle: "고케이던스와 빠른 템포를 밀어주는 여름 시즌",
-                bonus: "Flame / Tempo Surge 트랙의 목표 효율이 높아집니다."
+                bonus: "Flame / Tempo Surge 트랙의 목표 효율이 높아집니다.",
+                rewardTitle: "Circuit Overdrive Kit",
+                evolutionTitle: "Circuit Sovereign",
+                focusSpecies: .sparkfang,
+                focusVariant: .tempoSurge
             )
         case 9...11:
             return WeeklySeason(
                 title: "Crag Harvest",
                 subtitle: "언덕과 누적 거리 루프를 밀어주는 가을 시즌",
-                bonus: "Earth / Summit Heart 계열의 성장 보상이 커집니다."
+                bonus: "Earth / Summit Heart 계열의 성장 보상이 커집니다.",
+                rewardTitle: "Harvest Forge Cache",
+                evolutionTitle: "Harvest Sovereign",
+                focusSpecies: .stoneback,
+                focusVariant: .summitHeart
             )
         default:
             return WeeklySeason(
                 title: "Lunar Drift",
                 subtitle: "야간 러닝과 희귀 변이 연구를 밀어주는 겨울 시즌",
-                bonus: "Lunar / Eclipse Mark 계열의 희귀 창이 자주 열립니다."
+                bonus: "Lunar / Eclipse Mark 계열의 희귀 창이 자주 열립니다.",
+                rewardTitle: "Drift Eclipse Vault",
+                evolutionTitle: "Drift Sovereign",
+                focusSpecies: .shadebit,
+                focusVariant: .eclipseMark
             )
         }
     }

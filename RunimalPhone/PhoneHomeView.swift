@@ -12,6 +12,7 @@ struct PhoneHomeView: View {
                     pet: store.pet,
                     progress: store.evolutionProgress,
                     activeEffects: store.activeWeeklyEffects,
+                    season: store.weeklyBoard.season,
                     claimableReward: store.claimableWeeklyReward,
                     onClaim: store.claimableWeeklyReward == nil ? nil : { store.claimWeeklyReward() }
                 )

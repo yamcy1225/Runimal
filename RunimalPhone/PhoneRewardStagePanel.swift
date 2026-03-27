@@ -5,6 +5,7 @@ struct PhoneRewardStagePanel: View {
     let pet: GeneratedPet
     let progress: EvolutionProgress
     let activeEffects: [WeeklyRewardEffect]
+    let season: WeeklySeason
     let claimableReward: WeeklyReward?
     let onClaim: (() -> Void)?
 
@@ -12,7 +13,7 @@ struct PhoneRewardStagePanel: View {
 
     private var stageTitle: String {
         if let claimableReward {
-            return "Reward Reveal: \(claimableReward.title)"
+            return "Reward Reveal: \(season.rewardTitle)"
         }
 
         if activeEffects.isEmpty == false {
@@ -28,7 +29,7 @@ struct PhoneRewardStagePanel: View {
 
     private var stageDetail: String {
         if let claimableReward {
-            return claimableReward.detail
+            return "\(claimableReward.detail) 이번 시즌 한정 보상 이름은 \(season.rewardTitle)입니다."
         }
 
         if activeEffects.isEmpty == false {
@@ -83,6 +84,7 @@ struct PhoneRewardStagePanel: View {
 
                         HStack {
                             TraitChip(label: progress.stageLabel, accent: stageAccent)
+                            TraitChip(label: season.title, accent: .white.opacity(0.22))
                             if activeEffects.isEmpty == false {
                                 TraitChip(label: "\(activeEffects.count) effects", accent: .white.opacity(0.22))
                             }

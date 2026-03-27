@@ -66,11 +66,27 @@ public struct WeeklySeason: Codable, Equatable, Sendable {
     public let title: String
     public let subtitle: String
     public let bonus: String
+    public let rewardTitle: String
+    public let evolutionTitle: String
+    public let focusSpecies: PetSpecies
+    public let focusVariant: RareVariant?
 
-    public init(title: String, subtitle: String, bonus: String) {
+    public init(
+        title: String,
+        subtitle: String,
+        bonus: String,
+        rewardTitle: String,
+        evolutionTitle: String,
+        focusSpecies: PetSpecies,
+        focusVariant: RareVariant?
+    ) {
         self.title = title
         self.subtitle = subtitle
         self.bonus = bonus
+        self.rewardTitle = rewardTitle
+        self.evolutionTitle = evolutionTitle
+        self.focusSpecies = focusSpecies
+        self.focusVariant = focusVariant
     }
 }
 

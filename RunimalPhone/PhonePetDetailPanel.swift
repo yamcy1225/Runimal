@@ -5,9 +5,10 @@ struct PhonePetDetailPanel: View {
     let companion: PetCollectionEntry
     let progress: EvolutionProgress
     let activeEffects: [WeeklyRewardEffect]
+    let season: WeeklySeason
 
     private var tree: [EvolutionTreeNode] {
-        RunimalGameEngine.evolutionTree(for: companion.pet, progress: progress)
+        RunimalGameEngine.evolutionTree(for: companion.pet, progress: progress, season: season)
     }
 
     private var tuningNotes: [String] {
@@ -38,6 +39,9 @@ struct PhonePetDetailPanel: View {
                         HStack {
                             TraitChip(label: "Lv.\(companion.level)", accent: companion.pet.accentColor)
                             TraitChip(label: "Bond \(companion.bond)", accent: .white.opacity(0.22))
+                            if RunimalGameEngine.seasonAffinity(for: companion.pet, season: season) {
+                                TraitChip(label: season.title, accent: .mint.opacity(0.7))
+                            }
                         }
                     }
                 }
@@ -108,6 +112,12 @@ struct PhonePetDetailPanel: View {
                         Text(note)
                             .font(.caption)
                             .foregroundStyle(.white.opacity(0.72))
+                    }
+
+                    if RunimalGameEngine.seasonAffinity(for: companion.pet, season: season) {
+                        Text("시즌 전용 진화명 \(season.evolutionTitle)과 보상 \(season.rewardTitle)이 이 펫에게 연결됩니다.")
+                            .font(.caption)
+                            .foregroundStyle(.mint.opacity(0.84))
                     }
                 }
             }
