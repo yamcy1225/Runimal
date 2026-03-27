@@ -21,6 +21,7 @@
 		5CBD3DBA10183E72DFDCE041 /* WatchDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 568C61E1152F1E38E7B93D90 /* WatchDashboardView.swift */; };
 		5F169DE5191FDFAC59DE3E4A /* WatchConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2897691272A4CDDCCF1F3A37 /* WatchConnectivityManager.swift */; };
 		624DF58C70B351184A9E9B55 /* MacDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9644ED15FC30AD4B82A2D748 /* MacDashboardView.swift */; };
+		6276F09AB75F654F6C71BF20 /* WatchGoalTrackCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CA3F4B6AEEC0743273A3AB2 /* WatchGoalTrackCard.swift */; };
 		62B4899CBEABBF775923FBCD /* WatchRunSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 337BDF1E6CB9C97992B9D7D0 /* WatchRunSessionManager.swift */; };
 		634DB0E7570D3FB1D7968EC4 /* RunimalPhoneApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DFF8DF75A9A4BA2BC92DF2E /* RunimalPhoneApp.swift */; };
 		6A7224029895E527796C8ACC /* PhoneHealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE5C185CFBC7BCD90C4E6838 /* PhoneHealthKitManager.swift */; };
@@ -53,6 +54,7 @@
 		568C61E1152F1E38E7B93D90 /* WatchDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDashboardView.swift; sourceTree = "<group>"; };
 		690BFF1786268BE9D5F3A29A /* PhoneProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneProgressStore.swift; sourceTree = "<group>"; };
 		6D52108AD744AAE198D6A811 /* PhoneRewardStagePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneRewardStagePanel.swift; sourceTree = "<group>"; };
+		7CA3F4B6AEEC0743273A3AB2 /* WatchGoalTrackCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchGoalTrackCard.swift; sourceTree = "<group>"; };
 		7DFF8DF75A9A4BA2BC92DF2E /* RunimalPhoneApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunimalPhoneApp.swift; sourceTree = "<group>"; };
 		9644ED15FC30AD4B82A2D748 /* MacDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacDashboardView.swift; sourceTree = "<group>"; };
 		974FB8F921D130D978735ED6 /* RunimalWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RunimalWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -105,6 +107,7 @@
 				CD0541A9CADE432091B248E2 /* RunimalWatchApp.swift */,
 				2897691272A4CDDCCF1F3A37 /* WatchConnectivityManager.swift */,
 				568C61E1152F1E38E7B93D90 /* WatchDashboardView.swift */,
+				7CA3F4B6AEEC0743273A3AB2 /* WatchGoalTrackCard.swift */,
 				A9022BE50135CB623C706CD5 /* WatchRunPulseCard.swift */,
 				337BDF1E6CB9C97992B9D7D0 /* WatchRunSessionManager.swift */,
 			);
@@ -321,6 +324,7 @@
 				174E2B99B537739F137A619E /* RunimalWatchApp.swift in Sources */,
 				5F169DE5191FDFAC59DE3E4A /* WatchConnectivityManager.swift in Sources */,
 				5CBD3DBA10183E72DFDCE041 /* WatchDashboardView.swift in Sources */,
+				6276F09AB75F654F6C71BF20 /* WatchGoalTrackCard.swift in Sources */,
 				8CF42C38A3F8DA01536A35DC /* WatchRunPulseCard.swift in Sources */,
 				62B4899CBEABBF775923FBCD /* WatchRunSessionManager.swift in Sources */,
 			);

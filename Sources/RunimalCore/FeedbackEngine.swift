@@ -40,6 +40,22 @@ public struct EvolutionTarget: Codable, Equatable, Sendable {
     }
 }
 
+public struct LiveGoalTarget: Codable, Equatable, Identifiable, Sendable {
+    public let id: String
+    public let title: String
+    public let detail: String
+    public let progress: Double
+    public let status: String
+
+    public init(id: String, title: String, detail: String, progress: Double, status: String) {
+        self.id = id
+        self.title = title
+        self.detail = detail
+        self.progress = progress
+        self.status = status
+    }
+}
+
 public extension RunimalGameEngine {
     static func evaluateLiveFeedback(for snapshot: LiveRunSnapshot, claimedRewardIDs: Set<String> = []) -> LiveRunFeedback {
         let pace = snapshot.averagePaceSeconds ?? 360
@@ -152,6 +168,44 @@ public extension RunimalGameEngine {
             detail: "5km 이상 안정적으로 유지하는 러닝을 반복하면 상위 성장 단계가 빨라집니다.",
             status: "\(progress.totalExperience) XP"
         )
+    }
+
+    static func liveGoals(for snapshot: LiveRunSnapshot, claimedRewardIDs: Set<String> = []) -> [LiveGoalTarget] {
+        let pace = snapshot.averagePaceSeconds ?? 360
+        let cadence = snapshot.cadence ?? 166
+        let distanceKm = snapshot.distanceMeters / 1000
+        let rareDistanceTarget = claimedRewardIDs.contains("weekly-core-cache") ? 8.5 : 10.0
+        let tempoPaceTarget = claimedRewardIDs.contains("weekly-core-cache") ? 325 : 315
+        let tempoCadenceTarget = claimedRewardIDs.contains("weekly-core-cache") ? 170 : 172
+
+        let tempoCadenceProgress = min(Double(cadence) / Double(tempoCadenceTarget), 1)
+        let tempoPaceProgress = min(Double(tempoPaceTarget) / Double(max(pace, 1)), 1)
+        let tempoProgress = min((tempoCadenceProgress + tempoPaceProgress) / 2, 1)
+
+        let zenDistanceProgress = min(distanceKm / rareDistanceTarget, 1)
+        let zenPaceProgress = min(Double(RunimalBalanceConfig.steadyPaceSeconds) / Double(max(pace, 1)), 1)
+        let zenProgress = min((zenDistanceProgress + zenPaceProgress) / 2, 1)
+
+        return [
+            LiveGoalTarget(
+                id: "tempo-window",
+                title: "Tempo Surge Window",
+                detail: cadence >= tempoCadenceTarget && pace <= tempoPaceTarget
+                    ? "지금 템포 변이 창에 들어왔습니다."
+                    : "케이던스 \(tempoCadenceTarget) / 페이스 \(formattedPace(seconds: tempoPaceTarget))를 맞추면 열립니다.",
+                progress: tempoProgress,
+                status: cadence >= tempoCadenceTarget && pace <= tempoPaceTarget ? "ready" : "\(Int(tempoProgress * 100))%"
+            ),
+            LiveGoalTarget(
+                id: "zen-window",
+                title: "Zen Bloom Track",
+                detail: distanceKm >= rareDistanceTarget && pace <= RunimalBalanceConfig.steadyPaceSeconds
+                    ? "장거리 안정 구간이 완성되었습니다."
+                    : "\(String(format: "%.1f", max(rareDistanceTarget - distanceKm, 0)))km 더 유지하면 장거리 안정 트랙에 접근합니다.",
+                progress: zenProgress,
+                status: distanceKm >= rareDistanceTarget && pace <= RunimalBalanceConfig.steadyPaceSeconds ? "armed" : "\(Int(zenProgress * 100))%"
+            ),
+        ]
     }
 
     private static func formattedPace(seconds: Int?) -> String {

@@ -39,6 +39,13 @@ struct WatchDashboardView: View {
         )
     }
 
+    private var liveGoals: [LiveGoalTarget] {
+        RunimalGameEngine.liveGoals(
+            for: runSessionManager.latestSnapshot,
+            claimedRewardIDs: runSessionManager.claimedWeeklyRewardIDs
+        )
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
@@ -46,6 +53,11 @@ struct WatchDashboardView: View {
                     feedback: liveFeedback,
                     accent: stageAccent,
                     badges: Array(stageBadges.prefix(2))
+                )
+
+                WatchGoalTrackCard(
+                    goals: liveGoals,
+                    accent: stageAccent
                 )
 
                 GameSurface {
