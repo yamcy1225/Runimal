@@ -328,6 +328,44 @@ public struct EssenceForgeOption: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
+public enum CompanionRole: String, Codable, CaseIterable, Sendable {
+    case vanguard
+    case relay
+    case oracle
+}
+
+public struct CompanionBuildState: Codable, Equatable, Identifiable, Sendable {
+    public let companionID: String
+    public let selectedRole: CompanionRole
+    public let unlockedNodeIDs: [String]
+
+    public var id: String {
+        companionID
+    }
+
+    public init(companionID: String, selectedRole: CompanionRole, unlockedNodeIDs: [String]) {
+        self.companionID = companionID
+        self.selectedRole = selectedRole
+        self.unlockedNodeIDs = unlockedNodeIDs
+    }
+}
+
+public struct CompanionSkillNode: Codable, Equatable, Identifiable, Sendable {
+    public let id: String
+    public let title: String
+    public let detail: String
+    public let cost: Int
+    public let unlocked: Bool
+
+    public init(id: String, title: String, detail: String, cost: Int, unlocked: Bool) {
+        self.id = id
+        self.title = title
+        self.detail = detail
+        self.cost = cost
+        self.unlocked = unlocked
+    }
+}
+
 public struct RoutePoint: Codable, Equatable, Identifiable, Sendable {
     public let latitude: Double
     public let longitude: Double

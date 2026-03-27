@@ -15,6 +15,7 @@ final class PhoneProgressStore {
         static let essenceBalance = "runimal.phone.essenceBalance"
         static let overdriveCharges = "runimal.phone.overdriveCharges"
         static let seasonSigils = "runimal.phone.seasonSigils"
+        static let buildStates = "runimal.phone.buildStates"
     }
 
     private let defaults: UserDefaults
@@ -27,6 +28,7 @@ final class PhoneProgressStore {
     var essenceBalance = 0
     var overdriveCharges = 0
     var seasonSigils = 0
+    var buildStates: [CompanionBuildState] = []
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -70,6 +72,16 @@ final class PhoneProgressStore {
         essenceBalance = defaults.integer(forKey: Keys.essenceBalance)
         overdriveCharges = defaults.integer(forKey: Keys.overdriveCharges)
         seasonSigils = defaults.integer(forKey: Keys.seasonSigils)
+
+        if let data = defaults.data(forKey: Keys.buildStates) {
+            do {
+                buildStates = try JSONDecoder().decode([CompanionBuildState].self, from: data)
+            } catch {
+                buildStates = []
+            }
+        } else {
+            buildStates = []
+        }
     }
 
     func seedIfNeeded(from summaries: [RunSummary]) {
@@ -128,6 +140,10 @@ final class PhoneProgressStore {
         growthRecords.first(where: { $0.companionID == companionID })
     }
 
+    func buildState(for companionID: String) -> CompanionBuildState? {
+        buildStates.first(where: { $0.companionID == companionID })
+    }
+
     func unassignedRuns(from runs: [CompletedRunRecord]) -> [CompletedRunRecord] {
         let assigned = Set(growthRecords.flatMap(\.assignedRunIDs))
         return runs.filter { !assigned.contains($0.id) }
@@ -160,10 +176,15 @@ final class PhoneProgressStore {
             companion: companion,
             season: season
         )
+        let buildBonus = RunimalCompanionBuildEngine.feedBonus(
+            for: buildState(for: companion.id),
+            run: run,
+            companion: companion
+        )
 
         let updated = CompanionGrowthRecord(
             companionID: companion.id,
-            totalExperience: (currentRecord?.totalExperience ?? 0) + run.reward.experience + bonusExperience + forgeBonus.bonus,
+            totalExperience: (currentRecord?.totalExperience ?? 0) + run.reward.experience + bonusExperience + forgeBonus.bonus + buildBonus,
             feedCount: (currentRecord?.feedCount ?? 0) + 1,
             assignedRunIDs: (currentRecord?.assignedRunIDs ?? []) + [run.id],
             lastFedAt: run.endedAt
@@ -249,6 +270,40 @@ final class PhoneProgressStore {
         return true
     }
 
+    func selectRole(_ role: CompanionRole, for companionID: String) {
+        let current = buildState(for: companionID)
+        let next = CompanionBuildState(
+            companionID: companionID,
+            selectedRole: role,
+            unlockedNodeIDs: current?.selectedRole == role ? (current?.unlockedNodeIDs ?? []) : []
+        )
+        buildStates.removeAll(where: { $0.companionID == companionID })
+        buildStates.append(next)
+        save()
+    }
+
+    @discardableResult
+    func unlockSkillNode(_ nodeID: String, for companionID: String, cost: Int) -> Bool {
+        guard essenceBalance >= cost else { return false }
+        let current = buildState(for: companionID) ?? CompanionBuildState(
+            companionID: companionID,
+            selectedRole: .relay,
+            unlockedNodeIDs: []
+        )
+        guard !current.unlockedNodeIDs.contains(nodeID) else { return false }
+
+        essenceBalance -= cost
+        let next = CompanionBuildState(
+            companionID: companionID,
+            selectedRole: current.selectedRole,
+            unlockedNodeIDs: current.unlockedNodeIDs + [nodeID]
+        )
+        buildStates.removeAll(where: { $0.companionID == companionID })
+        buildStates.append(next)
+        save()
+        return true
+    }
+
     private func save() {
         do {
             let journalData = try JSONEncoder().encode(journal)
@@ -278,5 +333,12 @@ final class PhoneProgressStore {
         defaults.set(essenceBalance, forKey: Keys.essenceBalance)
         defaults.set(overdriveCharges, forKey: Keys.overdriveCharges)
         defaults.set(seasonSigils, forKey: Keys.seasonSigils)
+
+        do {
+            let buildStateData = try JSONEncoder().encode(buildStates)
+            defaults.set(buildStateData, forKey: Keys.buildStates)
+        } catch {
+            defaults.removeObject(forKey: Keys.buildStates)
+        }
     }
 }

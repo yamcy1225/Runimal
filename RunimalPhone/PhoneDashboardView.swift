@@ -146,6 +146,28 @@ final class PhoneDashboardStore {
         RunimalEssenceForgeEngine.options(for: featuredCompanion, season: weeklyBoard.season)
     }
 
+    var buildState: CompanionBuildState? {
+        progress.buildState(for: featuredCompanion.id)
+    }
+
+    var selectedRole: CompanionRole {
+        buildState?.selectedRole ?? RunimalCompanionBuildEngine.recommendedRoles(for: featuredCompanion.pet).first ?? .relay
+    }
+
+    var buildRoles: [CompanionRole] {
+        RunimalCompanionBuildEngine.recommendedRoles(for: featuredCompanion.pet)
+    }
+
+    var buildNodes: [CompanionSkillNode] {
+        RunimalCompanionBuildEngine.skillTree(
+            for: buildState ?? CompanionBuildState(
+                companionID: featuredCompanion.id,
+                selectedRole: selectedRole,
+                unlockedNodeIDs: []
+            )
+        )
+    }
+
     func activateConnectivity() {
         connectivity.activate()
         syncCompanionEffects()
@@ -206,6 +228,15 @@ final class PhoneDashboardStore {
     func forgeOption(_ optionID: String) {
         guard let option = forgeOptions.first(where: { $0.id == optionID }) else { return }
         _ = progress.purchaseForgeOption(option)
+    }
+
+    func selectRole(_ role: CompanionRole) {
+        progress.selectRole(role, for: featuredCompanion.id)
+    }
+
+    func unlockBuildNode(_ nodeID: String) {
+        guard let node = buildNodes.first(where: { $0.id == nodeID }) else { return }
+        _ = progress.unlockSkillNode(nodeID, for: featuredCompanion.id, cost: node.cost)
     }
 
     func syncCompanionEffects() {

@@ -53,6 +53,15 @@ struct PhoneCollectionView: View {
                     options: store.forgeOptions,
                     onForge: store.forgeOption(_:)
                 )
+                PhoneBuildTreePanel(
+                    companion: store.featuredCompanion,
+                    selectedRole: store.selectedRole,
+                    recommendedRoles: store.buildRoles,
+                    nodes: store.buildNodes,
+                    essenceBalance: store.essenceBalance,
+                    onSelectRole: store.selectRole(_:) ,
+                    onUnlockNode: store.unlockBuildNode(_:)
+                )
                 resonanceCompareBoard
                 collectionGrid
                 growthTimeline
