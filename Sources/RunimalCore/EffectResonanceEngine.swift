@@ -19,6 +19,33 @@ public enum RunimalEffectResonanceEngine {
         }
     }
 
+    public static func compareCollection(
+        _ collection: [PetCollectionEntry],
+        progress: EvolutionProgress,
+        activeEffects: [WeeklyRewardEffect]
+    ) -> [CompanionResonanceSummary] {
+        collection.map { companion in
+            let resonance = effectResonance(for: companion, progress: progress, activeEffects: activeEffects)
+            let totalScore = resonance.isEmpty ? 0 : Int((Double(resonance.reduce(0) { $0 + $1.score }) / Double(resonance.count)).rounded())
+            let topEffect = resonance.max(by: { $0.score < $1.score })
+
+            return CompanionResonanceSummary(
+                companion: companion,
+                totalScore: totalScore,
+                intensityLabel: intensityLabel(for: totalScore),
+                headline: headline(for: companion, totalScore: totalScore, topEffect: topEffect),
+                topEffectTitle: topEffect?.title
+            )
+        }
+        .sorted { lhs, rhs in
+            if lhs.totalScore == rhs.totalScore {
+                return lhs.companion.bond > rhs.companion.bond
+            }
+
+            return lhs.totalScore > rhs.totalScore
+        }
+    }
+
     private static func resonanceScore(
         for effect: WeeklyRewardEffect,
         companion: PetCollectionEntry,
@@ -93,5 +120,25 @@ public enum RunimalEffectResonanceEngine {
         case .shadebit: return "Shadebit"
         case .seedle: return "Seedle"
         }
+    }
+
+    private static func headline(
+        for companion: PetCollectionEntry,
+        totalScore: Int,
+        topEffect: CompanionEffectResonance?
+    ) -> String {
+        guard let topEffect else {
+            return "활성 효과가 아직 없어 기본 성장 상태를 유지합니다."
+        }
+
+        if totalScore >= 85 {
+            return "\(topEffect.title)가 강하게 물려 이번 주 주력 펫으로 가장 적합합니다."
+        }
+
+        if totalScore >= 67 {
+            return "\(topEffect.title)와 안정적으로 동기화되어 꾸준한 성장 기대치가 높습니다."
+        }
+
+        return "\(topEffect.title)는 받지만, 다른 펫보다 보정 효율은 낮습니다."
     }
 }

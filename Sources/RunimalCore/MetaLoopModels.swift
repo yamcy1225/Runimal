@@ -110,3 +110,27 @@ public struct CompanionEffectResonance: Codable, Equatable, Identifiable, Sendab
         self.score = score
     }
 }
+
+public struct CompanionResonanceSummary: Codable, Equatable, Identifiable, Sendable {
+    public let id: String
+    public let companion: PetCollectionEntry
+    public let totalScore: Int
+    public let intensityLabel: String
+    public let headline: String
+    public let topEffectTitle: String?
+
+    public init(
+        companion: PetCollectionEntry,
+        totalScore: Int,
+        intensityLabel: String,
+        headline: String,
+        topEffectTitle: String?
+    ) {
+        self.id = companion.id
+        self.companion = companion
+        self.totalScore = totalScore
+        self.intensityLabel = intensityLabel
+        self.headline = headline
+        self.topEffectTitle = topEffectTitle
+    }
+}

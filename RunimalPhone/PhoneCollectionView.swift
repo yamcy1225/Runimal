@@ -17,6 +17,14 @@ struct PhoneCollectionView: View {
         )
     }
 
+    private var resonanceBoard: [CompanionResonanceSummary] {
+        RunimalEffectResonanceEngine.compareCollection(
+            store.collection,
+            progress: store.evolutionProgress,
+            activeEffects: store.activeWeeklyEffects
+        )
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
@@ -28,6 +36,7 @@ struct PhoneCollectionView: View {
                     progress: store.evolutionProgress,
                     activeEffects: store.activeWeeklyEffects
                 )
+                resonanceCompareBoard
                 collectionGrid
                 growthTimeline
                 variantCodex
@@ -171,6 +180,49 @@ struct PhoneCollectionView: View {
                                 .font(.caption2)
                                 .foregroundStyle(.white.opacity(0.68))
                                 .lineLimit(2)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var resonanceCompareBoard: some View {
+        GameSurface(title: "Resonance Board") {
+            VStack(alignment: .leading, spacing: 12) {
+                if resonanceBoard.isEmpty {
+                    Text("비교할 컬렉션 데이터가 아직 없습니다.")
+                        .font(.footnote)
+                        .foregroundStyle(.white.opacity(0.72))
+                } else {
+                    ForEach(Array(resonanceBoard.prefix(3).enumerated()), id: \.element.id) { index, item in
+                        HStack(alignment: .top, spacing: 12) {
+                            TraitChip(
+                                label: "#\(index + 1)",
+                                accent: index == 0 ? .green.opacity(0.82) : .white.opacity(0.18)
+                            )
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Text(item.companion.pet.displayName)
+                                        .foregroundStyle(.white)
+                                    Spacer()
+                                    TraitChip(
+                                        label: "\(item.intensityLabel) \(item.totalScore)",
+                                        accent: item.companion.pet.accentColor.opacity(0.82)
+                                    )
+                                }
+
+                                Text(item.headline)
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.72))
+
+                                if let topEffectTitle = item.topEffectTitle {
+                                    Text("Top effect · \(topEffectTitle)")
+                                        .font(.caption2)
+                                        .foregroundStyle(.white.opacity(0.56))
+                                }
+                            }
                         }
                     }
                 }
