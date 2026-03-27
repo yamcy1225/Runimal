@@ -1,9 +1,13 @@
 import Foundation
 
 public enum RunimalSnapshotMergeEngine {
-    public static func merge(_ lhs: RunimalProgressSnapshot, _ rhs: RunimalProgressSnapshot) -> RunimalProgressSnapshot {
-        let journal = uniqueJournal(lhs.journal + rhs.journal)
-        let completedRuns = uniqueRuns(lhs.completedRuns + rhs.completedRuns)
+    public static func merge(
+        _ lhs: RunimalProgressSnapshot,
+        _ rhs: RunimalProgressSnapshot,
+        priority: SnapshotDuplicatePriority = .newestWins
+    ) -> RunimalProgressSnapshot {
+        let journal = uniqueJournal(lhs.journal, rhs.journal, priority: priority)
+        let completedRuns = uniqueRuns(lhs.completedRuns, rhs.completedRuns, priority: priority)
         let growthRecords = uniqueGrowth(lhs.growthRecords + rhs.growthRecords)
 
         return RunimalProgressSnapshot(
@@ -25,14 +29,33 @@ public enum RunimalSnapshotMergeEngine {
         )
     }
 
-    private static func uniqueJournal(_ entries: [RunJournalEntry]) -> [RunJournalEntry] {
-        Array(Dictionary(uniqueKeysWithValues: entries.map { ($0.id, $0) }).values)
+    private static func uniqueJournal(
+        _ local: [RunJournalEntry],
+        _ cloud: [RunJournalEntry],
+        priority: SnapshotDuplicatePriority
+    ) -> [RunJournalEntry] {
+        Array(Dictionary(uniqueKeysWithValues: prioritized(local, cloud, priority: priority).map { ($0.id, $0) }).values)
             .sorted(by: { $0.createdAt > $1.createdAt })
     }
 
-    private static func uniqueRuns(_ runs: [CompletedRunRecord]) -> [CompletedRunRecord] {
-        Array(Dictionary(uniqueKeysWithValues: runs.map { ($0.id, $0) }).values)
+    private static func uniqueRuns(
+        _ local: [CompletedRunRecord],
+        _ cloud: [CompletedRunRecord],
+        priority: SnapshotDuplicatePriority
+    ) -> [CompletedRunRecord] {
+        Array(Dictionary(uniqueKeysWithValues: prioritized(local, cloud, priority: priority).map { ($0.id, $0) }).values)
             .sorted(by: { $0.endedAt > $1.endedAt })
+    }
+
+    private static func prioritized<T>(_ local: [T], _ cloud: [T], priority: SnapshotDuplicatePriority) -> [T] {
+        switch priority {
+        case .localWins:
+            return cloud + local
+        case .newestWins:
+            return local + cloud
+        case .cloudWins:
+            return local + cloud + cloud
+        }
     }
 
     private static func uniqueGrowth(_ records: [CompanionGrowthRecord]) -> [CompanionGrowthRecord] {

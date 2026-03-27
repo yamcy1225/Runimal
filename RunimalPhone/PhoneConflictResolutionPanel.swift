@@ -4,7 +4,9 @@ import SwiftUI
 struct PhoneConflictResolutionPanel: View {
     let report: SnapshotConflictReport
     let selectedPolicy: SnapshotConflictPolicy
+    let duplicatePriority: SnapshotDuplicatePriority
     let onSelect: (SnapshotConflictPolicy) -> Void
+    let onSelectDuplicatePriority: (SnapshotDuplicatePriority) -> Void
     let onApply: () -> Void
 
     var body: some View {
@@ -31,6 +33,16 @@ struct PhoneConflictResolutionPanel: View {
                         }
                         .buttonStyle(.bordered)
                         .tint(policy == selectedPolicy ? .orange.opacity(0.82) : .white.opacity(0.2))
+                    }
+                }
+
+                HStack {
+                    ForEach(SnapshotDuplicatePriority.allCases, id: \.self) { priority in
+                        Button(priority.rawValue) {
+                            onSelectDuplicatePriority(priority)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(priority == duplicatePriority ? .cyan.opacity(0.82) : .white.opacity(0.2))
                     }
                 }
 

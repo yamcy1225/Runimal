@@ -25,6 +25,7 @@ final class MacContentAuthoringStore {
     var draft = ""
     var status = "Editor idle"
     var validationStatus = "Schema unchecked"
+    var entryIndex = 0
     var formTitle = ""
     var formDetail = ""
     var formReward = ""
@@ -39,6 +40,7 @@ final class MacContentAuthoringStore {
             draft = try String(contentsOf: selectedTarget.url, encoding: .utf8)
             status = "Loaded \(selectedTarget.title)"
             validationStatus = "Schema unchecked"
+            entryIndex = 0
             populateForm()
         } catch {
             draft = ""
@@ -83,7 +85,7 @@ final class MacContentAuthoringStore {
 
     func populateForm() {
         guard let object = try? JSONSerialization.jsonObject(with: Data(draft.utf8)) as? [[String: Any]],
-              let first = object.first else {
+              object.indices.contains(entryIndex) else {
             formTitle = ""
             formDetail = ""
             formReward = ""
@@ -91,23 +93,24 @@ final class MacContentAuthoringStore {
             return
         }
 
-        formTitle = first["title"] as? String ?? ""
-        formDetail = first["detail"] as? String ?? ""
-        formReward = (first["reward"] ?? first["recommendedReward"]) as? String ?? ""
-        formThreshold = first["claimThreshold"].map { String(describing: $0) } ?? ""
+        let entry = object[entryIndex]
+        formTitle = entry["title"] as? String ?? ""
+        formDetail = entry["detail"] as? String ?? ""
+        formReward = (entry["reward"] ?? entry["recommendedReward"]) as? String ?? ""
+        formThreshold = entry["claimThreshold"].map { String(describing: $0) } ?? ""
     }
 
     func applyForm() {
         guard var object = (try? JSONSerialization.jsonObject(with: Data(draft.utf8)) as? [[String: Any]]),
-              !object.isEmpty else { return }
+              object.indices.contains(entryIndex) else { return }
 
-        object[0]["title"] = formTitle
-        object[0]["detail"] = formDetail
+        object[entryIndex]["title"] = formTitle
+        object[entryIndex]["detail"] = formDetail
         if selectedTarget == .rotation {
-            object[0]["reward"] = formReward
+            object[entryIndex]["reward"] = formReward
         } else {
-            object[0]["recommendedReward"] = formReward
-            object[0]["claimThreshold"] = Int(formThreshold) ?? 140
+            object[entryIndex]["recommendedReward"] = formReward
+            object[entryIndex]["claimThreshold"] = Int(formThreshold) ?? 140
         }
 
         guard let data = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted]),
@@ -182,6 +185,10 @@ struct MacContentAuthoringPanel: View {
                     Text("Schema Form")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.white.opacity(0.72))
+                    Stepper("Entry \(store.entryIndex + 1)", value: $store.entryIndex, in: 0...8)
+                        .onChange(of: store.entryIndex) { _, _ in
+                            store.populateForm()
+                        }
                     TextField("Title", text: $store.formTitle)
                     TextField("Detail", text: $store.formDetail)
                     TextField(store.selectedTarget == .rotation ? "Reward" : "Recommended Reward", text: $store.formReward)

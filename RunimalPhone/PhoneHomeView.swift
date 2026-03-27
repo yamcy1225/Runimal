@@ -40,7 +40,9 @@ struct PhoneHomeView: View {
                 PhoneConflictResolutionPanel(
                     report: store.conflictReport,
                     selectedPolicy: store.selectedConflictPolicy,
+                    duplicatePriority: store.selectedDuplicatePriority,
                     onSelect: store.selectConflictPolicy(_:),
+                    onSelectDuplicatePriority: store.selectDuplicatePriority(_:),
                     onApply: store.applyConflictPolicy
                 )
                 PhoneConflictDiffPanel(entries: store.conflictDiffEntries)

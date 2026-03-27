@@ -77,6 +77,8 @@ final class MacAssetPipelineStore {
 
         previewCards = catalog.species.sorted(by: { $0.key < $1.key }).map { key, value in
             "\(key) · hatch \(value.hatchSound) · evo \(value.evolutionSound) · tilt \(String(format: "%.1f", value.tilt))"
+        } + catalog.variants.sorted(by: { $0.key < $1.key }).map { key, value in
+            "\(key) · evo \(value.evolutionSound) · points \(value.points.count)"
         }
     }
 }
@@ -158,6 +160,13 @@ private struct DotPreviewTile: View {
                     Rectangle()
                         .fill(.yellow.opacity(0.8))
                         .frame(width: 8, height: 4)
+                }
+                if label.contains("tempo-surge") || label.contains("loop-sigil") {
+                    HStack(spacing: 2) {
+                        Circle().fill(.white.opacity(0.8)).frame(width: 3, height: 3)
+                        Circle().fill(.white.opacity(0.6)).frame(width: 3, height: 3)
+                        Circle().fill(.white.opacity(0.8)).frame(width: 3, height: 3)
+                    }
                 }
             }
             .rotationEffect(.degrees(label.contains("tilt -") ? -8 : 8))

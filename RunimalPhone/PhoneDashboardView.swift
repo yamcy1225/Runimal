@@ -241,6 +241,10 @@ final class PhoneDashboardStore {
         progress.conflictPolicy
     }
 
+    var selectedDuplicatePriority: SnapshotDuplicatePriority {
+        progress.duplicatePriority
+    }
+
     var primaryRaidEncounter: RaidEncounter? {
         raidEncounters.first
     }
@@ -430,7 +434,7 @@ final class PhoneDashboardStore {
         switch progress.conflictPolicy {
         case .merged:
             if let localSnapshot, let cloudSnapshot {
-                resolved = RunimalSnapshotMergeEngine.merge(localSnapshot, cloudSnapshot)
+                resolved = RunimalSnapshotMergeEngine.merge(localSnapshot, cloudSnapshot, priority: progress.duplicatePriority)
             } else {
                 resolved = localSnapshot ?? cloudSnapshot
             }
@@ -450,6 +454,11 @@ final class PhoneDashboardStore {
         progress.recordVerification(title, passed: passed)
         persistVault()
         telemetry.log("verification_recorded", detail: "\(title):\(passed)")
+    }
+
+    func selectDuplicatePriority(_ priority: SnapshotDuplicatePriority) {
+        progress.setDuplicatePriority(priority)
+        telemetry.log("select_duplicate_priority", detail: priority.rawValue)
     }
 
     func importSelectiveCandidate(_ id: String, type: String) {

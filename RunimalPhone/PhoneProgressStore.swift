@@ -23,6 +23,7 @@ final class PhoneProgressStore {
         static let lastRaidResolution = "runimal.phone.lastRaidResolution"
         static let conflictPolicy = "runimal.phone.conflictPolicy"
         static let verificationRecords = "runimal.phone.verificationRecords"
+        static let duplicatePriority = "runimal.phone.duplicatePriority"
     }
 
     private let defaults: UserDefaults
@@ -43,6 +44,7 @@ final class PhoneProgressStore {
     var lastRaidResolution: RaidResolution?
     var conflictPolicy: SnapshotConflictPolicy = .merged
     var verificationRecords: [DeviceVerificationRecord] = []
+    var duplicatePriority: SnapshotDuplicatePriority = .newestWins
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -116,6 +118,12 @@ final class PhoneProgressStore {
             verificationRecords = (try? JSONDecoder().decode([DeviceVerificationRecord].self, from: data)) ?? []
         } else {
             verificationRecords = []
+        }
+        if let raw = defaults.string(forKey: Keys.duplicatePriority),
+           let decoded = SnapshotDuplicatePriority(rawValue: raw) {
+            duplicatePriority = decoded
+        } else {
+            duplicatePriority = .newestWins
         }
     }
 
@@ -286,6 +294,11 @@ final class PhoneProgressStore {
         save()
     }
 
+    func setDuplicatePriority(_ priority: SnapshotDuplicatePriority) {
+        duplicatePriority = priority
+        save()
+    }
+
     func recordVerification(_ title: String, passed: Bool) {
         verificationRecords.insert(
             DeviceVerificationRecord(
@@ -365,6 +378,19 @@ final class PhoneProgressStore {
         essenceBalance += branchReward?.extraEssence ?? 0
         seasonSigils += branchReward?.extraSigils ?? 0
         overdriveCharges += branchReward?.extraOverdrive ?? 0
+        if let activeCompanionID {
+            if let existing = growthRecord(for: activeCompanionID) {
+                let updated = CompanionGrowthRecord(
+                    companionID: existing.companionID,
+                    totalExperience: existing.totalExperience + (branchReward?.extraEssence ?? 0) + (branchReward?.extraSigils ?? 0) * 18 + (branchReward?.extraOverdrive ?? 0) * 24,
+                    feedCount: existing.feedCount,
+                    assignedRunIDs: existing.assignedRunIDs,
+                    lastFedAt: existing.lastFedAt
+                )
+                growthRecords.removeAll(where: { $0.companionID == activeCompanionID })
+                growthRecords.append(updated)
+            }
+        }
         lastRaidResolution = resolution
         save()
         return true
@@ -517,6 +543,7 @@ final class PhoneProgressStore {
         defaults.set(raidShardBalance, forKey: Keys.raidShardBalance)
         defaults.set(deviceID, forKey: Keys.deviceID)
         defaults.set(conflictPolicy.rawValue, forKey: Keys.conflictPolicy)
+        defaults.set(duplicatePriority.rawValue, forKey: Keys.duplicatePriority)
         if let data = try? JSONEncoder().encode(verificationRecords) {
             defaults.set(data, forKey: Keys.verificationRecords)
         } else {
