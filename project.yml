@@ -33,6 +33,8 @@ targets:
     sources:
       - path: RunimalPhone
       - path: SharedUI
+    resources:
+      - path: RunimalPhone/Content
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

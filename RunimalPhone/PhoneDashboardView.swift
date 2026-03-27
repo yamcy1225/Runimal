@@ -11,6 +11,7 @@ final class PhoneDashboardStore {
     let progress = PhoneProgressStore()
     let vault = PhoneVaultSyncManager()
     let cloudMirror = PhoneCloudMirrorManager()
+    let contentCatalog = PhoneContentCatalog()
 
     let summary = RunSummary(
         distanceKm: 10.02,
@@ -195,15 +196,17 @@ final class PhoneDashboardStore {
     }
 
     var contentRotation: [ContentRotationEntry] {
+        contentCatalog.rotationEntries(for: weeklyBoard.season) ??
         RunimalContentRotationEngine.entries(for: weeklyBoard.season)
     }
 
     var raidEncounters: [RaidEncounter] {
-        RunimalRaidBoardEngine.encounters(
+        let generated = RunimalRaidBoardEngine.encounters(
             for: featuredCompanion,
             progress: evolutionProgress,
             selectedRole: selectedRole
         )
+        return contentCatalog.mergeRaids(generated)
     }
 
     var claimedRaidRewardIDs: Set<String> {

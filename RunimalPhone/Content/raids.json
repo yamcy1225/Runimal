@@ -1,0 +1,16 @@
+[
+  {
+    "id": "apex-husk",
+    "title": "Apex Husk",
+    "detail": "탱크/장거리 축이 강한 펫에게 맞는 고난도 보스입니다.",
+    "recommendedReward": "Ascension shard",
+    "claimThreshold": 150
+  },
+  {
+    "id": "signal-wyrm",
+    "title": "Signal Wyrm",
+    "detail": "속도와 연계가 강한 개체가 우세한 레이드입니다.",
+    "recommendedReward": "Relay crest",
+    "claimThreshold": 145
+  }
+]

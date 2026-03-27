@@ -30,6 +30,7 @@
 		5BF455D18F0537AADA89CCE6 /* PhoneCloudMirrorPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FA42B69A30577005505320D /* PhoneCloudMirrorPanel.swift */; };
 		5CBD3DBA10183E72DFDCE041 /* WatchDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 568C61E1152F1E38E7B93D90 /* WatchDashboardView.swift */; };
 		5F169DE5191FDFAC59DE3E4A /* WatchConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2897691272A4CDDCCF1F3A37 /* WatchConnectivityManager.swift */; };
+		5F64C5E26152DDDB0D94C2AF /* rotation.json in Resources */ = {isa = PBXBuildFile; fileRef = 5B0CC6E15E0E2D94D16EA309 /* rotation.json */; };
 		6148C682421934D18F5AAF9F /* MacDeviceQAPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59A18AB5F32E6EB603FE418A /* MacDeviceQAPanel.swift */; };
 		624DF58C70B351184A9E9B55 /* MacDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9644ED15FC30AD4B82A2D748 /* MacDashboardView.swift */; };
 		6276F09AB75F654F6C71BF20 /* WatchGoalTrackCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CA3F4B6AEEC0743273A3AB2 /* WatchGoalTrackCard.swift */; };
@@ -42,6 +43,7 @@
 		712848BC98C636829FEC9977 /* RunimalProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 385B139873A7AFD4A86EC385 /* RunimalProgressBar.swift */; };
 		72BD240A10F3CAB725790AAD /* HatchBurstView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCCD7FD29177A39ACD44643 /* HatchBurstView.swift */; };
 		783F8FCFD163D58382926D7F /* PhoneVaultSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 154264C7723E8BDEE608F409 /* PhoneVaultSyncManager.swift */; };
+		7D98848B789206995A583559 /* raids.json in Resources */ = {isa = PBXBuildFile; fileRef = A507B13D77009C0F9915ADDA /* raids.json */; };
 		819313421FA9F492950F84A0 /* HatchBurstView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCCD7FD29177A39ACD44643 /* HatchBurstView.swift */; };
 		81F92DF13F4F191AEE7B8946 /* PhoneBuildTreePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17E28684D946FF4AF2DA4B62 /* PhoneBuildTreePanel.swift */; };
 		82875FD3E02997675454BD44 /* PhoneHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEA95D1D9A9F2C66C78412A2 /* PhoneHomeView.swift */; };
@@ -50,6 +52,7 @@
 		8CF42C38A3F8DA01536A35DC /* WatchRunPulseCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9022BE50135CB623C706CD5 /* WatchRunPulseCard.swift */; };
 		91DB87EB4DD59DC1A6282104 /* PhoneDiagnosticsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A401E55FD8B55C113229F30 /* PhoneDiagnosticsPanel.swift */; };
 		AAEACADD1C4BEA881B02FF44 /* PixelPetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52C1B6533C1584594BAF166 /* PixelPetView.swift */; };
+		ACD3B44B257E089410F39529 /* PhoneContentCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7990F4F456F8ED0D942F95B8 /* PhoneContentCatalog.swift */; };
 		ACE2CE5F4EE7FCFAB684E01A /* PhoneDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E385404E47BEE9EBE310AC /* PhoneDashboardView.swift */; };
 		B617C884E06D78A41DBC9F23 /* GameSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2B8EE9F33FD02687ADA9AD /* GameSurface.swift */; };
 		C59A2E40B311A604DE249E96 /* RunimalCore in Frameworks */ = {isa = PBXBuildFile; productRef = 4CDF8B170A2E14071FF0FF18 /* RunimalCore */; };
@@ -84,10 +87,12 @@
 		4FA42B69A30577005505320D /* PhoneCloudMirrorPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneCloudMirrorPanel.swift; sourceTree = "<group>"; };
 		568C61E1152F1E38E7B93D90 /* WatchDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDashboardView.swift; sourceTree = "<group>"; };
 		59A18AB5F32E6EB603FE418A /* MacDeviceQAPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacDeviceQAPanel.swift; sourceTree = "<group>"; };
+		5B0CC6E15E0E2D94D16EA309 /* rotation.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = rotation.json; sourceTree = "<group>"; };
 		63B8A677CC7E7FF91B275ADA /* PhoneSurplusLabPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSurplusLabPanel.swift; sourceTree = "<group>"; };
 		690BFF1786268BE9D5F3A29A /* PhoneProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneProgressStore.swift; sourceTree = "<group>"; };
 		6D52108AD744AAE198D6A811 /* PhoneRewardStagePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneRewardStagePanel.swift; sourceTree = "<group>"; };
 		743E21851D70F82DCAFCA0AD /* MacQAReplayPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacQAReplayPanel.swift; sourceTree = "<group>"; };
+		7990F4F456F8ED0D942F95B8 /* PhoneContentCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneContentCatalog.swift; sourceTree = "<group>"; };
 		7CA3F4B6AEEC0743273A3AB2 /* WatchGoalTrackCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchGoalTrackCard.swift; sourceTree = "<group>"; };
 		7DFF8DF75A9A4BA2BC92DF2E /* RunimalPhoneApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunimalPhoneApp.swift; sourceTree = "<group>"; };
 		8960CBDB8120CE7543CDF1AD /* PhoneRaidBoardPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneRaidBoardPanel.swift; sourceTree = "<group>"; };
@@ -95,6 +100,7 @@
 		974FB8F921D130D978735ED6 /* RunimalWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RunimalWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E1D232A467F7235E20D20A4 /* PhoneEssenceForgePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneEssenceForgePanel.swift; sourceTree = "<group>"; };
 		A11E3E784C3CDB5962B028F5 /* PhoneWeeklyBoardPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneWeeklyBoardPanel.swift; sourceTree = "<group>"; };
+		A507B13D77009C0F9915ADDA /* raids.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = raids.json; sourceTree = "<group>"; };
 		A9022BE50135CB623C706CD5 /* WatchRunPulseCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRunPulseCard.swift; sourceTree = "<group>"; };
 		ABCCD7FD29177A39ACD44643 /* HatchBurstView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HatchBurstView.swift; sourceTree = "<group>"; };
 		AE5C185CFBC7BCD90C4E6838 /* PhoneHealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneHealthKitManager.swift; sourceTree = "<group>"; };
@@ -175,6 +181,7 @@
 				4FA42B69A30577005505320D /* PhoneCloudMirrorPanel.swift */,
 				B6E46300A234E62D872875A0 /* PhoneCollectionView.swift */,
 				2C3D26A6D761131D6B9EF6FD /* PhoneConnectivityManager.swift */,
+				7990F4F456F8ED0D942F95B8 /* PhoneContentCatalog.swift */,
 				18C263EDBDA7A0547340C543 /* PhoneContentRotationPanel.swift */,
 				F1E385404E47BEE9EBE310AC /* PhoneDashboardView.swift */,
 				3A401E55FD8B55C113229F30 /* PhoneDiagnosticsPanel.swift */,
@@ -196,6 +203,7 @@
 				2785BF329A8DF8512EC6A0D6 /* PhoneWorkoutPlanner.swift */,
 				1265F122983A89D1E2844868 /* RunimalPhone.entitlements */,
 				7DFF8DF75A9A4BA2BC92DF2E /* RunimalPhoneApp.swift */,
+				D50CC0AF044583F94A33B9F9 /* Content */,
 			);
 			path = RunimalPhone;
 			sourceTree = "<group>";
@@ -242,6 +250,15 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		D50CC0AF044583F94A33B9F9 /* Content */ = {
+			isa = PBXGroup;
+			children = (
+				A507B13D77009C0F9915ADDA /* raids.json */,
+				5B0CC6E15E0E2D94D16EA309 /* rotation.json */,
+			);
+			path = Content;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -250,6 +267,7 @@
 			buildConfigurationList = 4132FD53FB3D24B3D529C03C /* Build configuration list for PBXNativeTarget "RunimalPhone" */;
 			buildPhases = (
 				16F8D8A625246206388E0AC0 /* Sources */,
+				A513898BBF77744CCD4B1DF8 /* Resources */,
 				EE7D919E87B9853432C0909E /* Frameworks */,
 			);
 			buildRules = (
@@ -337,6 +355,18 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		A513898BBF77744CCD4B1DF8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7D98848B789206995A583559 /* raids.json in Resources */,
+				5F64C5E26152DDDB0D94C2AF /* rotation.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		16F8D8A625246206388E0AC0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -350,6 +380,7 @@
 				5BF455D18F0537AADA89CCE6 /* PhoneCloudMirrorPanel.swift in Sources */,
 				0F444E8A966E0A960C219FA9 /* PhoneCollectionView.swift in Sources */,
 				1E9074838A9AF2F694709E98 /* PhoneConnectivityManager.swift in Sources */,
+				ACD3B44B257E089410F39529 /* PhoneContentCatalog.swift in Sources */,
 				EDD9705F22CE23A4801B2464 /* PhoneContentRotationPanel.swift in Sources */,
 				ACE2CE5F4EE7FCFAB684E01A /* PhoneDashboardView.swift in Sources */,
 				91DB87EB4DD59DC1A6282104 /* PhoneDiagnosticsPanel.swift in Sources */,
