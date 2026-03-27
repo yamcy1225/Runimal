@@ -64,6 +64,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1265F122983A89D1E2844868 /* RunimalPhone.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunimalPhone.entitlements; sourceTree = "<group>"; };
 		154264C7723E8BDEE608F409 /* PhoneVaultSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneVaultSyncManager.swift; sourceTree = "<group>"; };
 		17E28684D946FF4AF2DA4B62 /* PhoneBuildTreePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneBuildTreePanel.swift; sourceTree = "<group>"; };
 		18C263EDBDA7A0547340C543 /* PhoneContentRotationPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneContentRotationPanel.swift; sourceTree = "<group>"; };
@@ -73,6 +74,7 @@
 		2897691272A4CDDCCF1F3A37 /* WatchConnectivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivityManager.swift; sourceTree = "<group>"; };
 		2B169A42C7D63EF680146305 /* RunimalMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunimalMacApp.swift; sourceTree = "<group>"; };
 		2C3D26A6D761131D6B9EF6FD /* PhoneConnectivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneConnectivityManager.swift; sourceTree = "<group>"; };
+		2DD093DBB3D78F84A74EBCD5 /* RunimalWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunimalWatch.entitlements; sourceTree = "<group>"; };
 		337BDF1E6CB9C97992B9D7D0 /* WatchRunSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRunSessionManager.swift; sourceTree = "<group>"; };
 		385B139873A7AFD4A86EC385 /* RunimalProgressBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunimalProgressBar.swift; sourceTree = "<group>"; };
 		39076D48B89EB45273A5F0A8 /* PhoneSeasonEconomyPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSeasonEconomyPanel.swift; sourceTree = "<group>"; };
@@ -142,6 +144,7 @@
 		066D5F084715EB9B5C3F2969 /* RunimalWatch */ = {
 			isa = PBXGroup;
 			children = (
+				2DD093DBB3D78F84A74EBCD5 /* RunimalWatch.entitlements */,
 				CD0541A9CADE432091B248E2 /* RunimalWatchApp.swift */,
 				2897691272A4CDDCCF1F3A37 /* WatchConnectivityManager.swift */,
 				568C61E1152F1E38E7B93D90 /* WatchDashboardView.swift */,
@@ -191,6 +194,7 @@
 				154264C7723E8BDEE608F409 /* PhoneVaultSyncManager.swift */,
 				A11E3E784C3CDB5962B028F5 /* PhoneWeeklyBoardPanel.swift */,
 				2785BF329A8DF8512EC6A0D6 /* PhoneWorkoutPlanner.swift */,
+				1265F122983A89D1E2844868 /* RunimalPhone.entitlements */,
 				7DFF8DF75A9A4BA2BC92DF2E /* RunimalPhoneApp.swift */,
 			);
 			path = RunimalPhone;
@@ -456,6 +460,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_ENTITLEMENTS = RunimalPhone/RunimalPhone.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -486,6 +491,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_ENTITLEMENTS = RunimalWatch/RunimalWatch.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = RunimalWatch;
@@ -509,6 +515,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_ENTITLEMENTS = RunimalWatch/RunimalWatch.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = RunimalWatch;
@@ -653,6 +660,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_ENTITLEMENTS = RunimalPhone/RunimalPhone.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
