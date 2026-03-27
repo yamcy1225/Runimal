@@ -5,128 +5,172 @@ struct PhoneHomeView: View {
     let store: PhoneDashboardStore
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                heroCard
-                PhoneRewardStagePanel(
-                    pet: store.pet,
-                    progress: store.evolutionProgress,
-                    activeEffects: store.activeWeeklyEffects,
-                    season: store.weeklyBoard.season,
-                    claimableReward: store.claimableWeeklyReward,
-                    onClaim: store.claimableWeeklyReward == nil ? nil : { store.claimWeeklyReward() }
-                )
-                PhoneWeeklyBoardPanel(
-                    board: store.weeklyBoard,
-                    accent: store.pet.accentColor,
-                    claimedRewardIDs: store.claimedWeeklyRewardIDs,
-                    activeEffects: store.activeWeeklyEffects
-                )
-                PhoneVaultPanel(
-                    statusLabel: store.vault.statusLabel,
-                    lastSyncedAt: store.vault.lastSyncedAt
-                )
-                PhoneCloudMirrorPanel(
-                    statusLabel: store.cloudMirror.statusLabel,
-                    lastMirroredAt: store.cloudMirror.lastMirroredAt
-                )
-                PhoneCloudValidationPanel(headline: store.cloudMirror.validationHeadline)
-                PhoneSignedCloudPanel(items: store.cloudValidationStates)
-                PhoneCloudRehearsalPanel(steps: store.cloudRehearsalSteps)
-                PhoneCloudVerificationPanel(
-                    records: store.verificationRecords,
-                    onRecord: store.recordVerification(_:passed:)
-                )
-                PhoneConflictResolutionPanel(
-                    report: store.conflictReport,
-                    selectedPolicy: store.selectedConflictPolicy,
-                    duplicatePriority: store.selectedDuplicatePriority,
-                    onSelect: store.selectConflictPolicy(_:),
-                    onSelectDuplicatePriority: store.selectDuplicatePriority(_:),
-                    onApply: store.applyConflictPolicy
-                )
-                PhoneConflictDiffPanel(entries: store.conflictDiffEntries)
-                PhoneSelectiveMergePanel(
-                    candidates: store.selectiveMergeCandidates,
-                    onImport: store.importSelectiveCandidate(_:type:),
-                    onImportAll: store.importAllSelectiveCandidates(_:)
-                )
-                PhoneRecordDiffPanel(
-                    choices: store.recordDiffChoices,
-                    onUseLocal: { id, type in store.resolveRecordDiff(id, type: type, useCloud: false) },
-                    onUseCloud: { id, type in store.resolveRecordDiff(id, type: type, useCloud: true) },
-                    onUseAllLocal: { type in store.resolveAllRecordDiffs(type: type, useCloud: false) },
-                    onUseAllCloud: { type in store.resolveAllRecordDiffs(type: type, useCloud: true) }
-                )
-                PhoneTelemetryPanel(
-                    lastEventLabel: store.telemetry.lastEventLabel,
-                    eventCount: store.telemetry.eventCount,
-                    logPath: store.telemetry.logPath()
-                )
-                PhoneSeasonEconomyPanel(
-                    board: store.seasonEconomyBoard,
-                    onClaim: store.claimSeasonReward
-                )
-                PhoneChallengeBoardPanel(trials: store.challengeTrials)
-                PhoneContentRotationPanel(entries: store.contentRotation)
-                PhoneRaidBoardPanel(
-                    encounters: store.raidEncounters,
-                    claimedRaidRewardIDs: store.claimedRaidRewardIDs,
-                    raidShardBalance: store.raidShardBalance,
-                    onClaim: store.claimRaidReward(_:)
-                )
-                if let raidCombatReport = store.raidCombatReport {
-                    PhoneRaidCombatPanel(report: raidCombatReport, accent: store.pet.accentColor)
-                }
-                if !store.raidBossPatterns.isEmpty {
-                    PhoneRaidBossPatternPanel(
-                        patterns: store.raidBossPatterns,
-                        turns: store.raidTurnResults
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.04, green: 0.05, blue: 0.08),
+                    Color(red: 0.02, green: 0.03, blue: 0.05),
+                    store.pet.accentColor.opacity(0.12)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            RadialGradient(
+                colors: [store.pet.accentColor.opacity(0.16), .clear],
+                center: .top,
+                startRadius: 40,
+                endRadius: 420
+            )
+            .ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    headerDeck
+                    heroCard
+                    PhoneRewardStagePanel(
+                        pet: store.pet,
+                        progress: store.evolutionProgress,
+                        activeEffects: store.activeWeeklyEffects,
+                        season: store.weeklyBoard.season,
+                        claimableReward: store.claimableWeeklyReward,
+                        onClaim: store.claimableWeeklyReward == nil ? nil : { store.claimWeeklyReward() }
                     )
-                }
-                if let seasonalRaidBranchReward = store.seasonalRaidBranchReward {
-                    PhoneRaidBranchPanel(reward: seasonalRaidBranchReward)
-                }
-                PhoneSeasonalUnlockPanel(unlocks: store.seasonalUnlocks)
-                PhoneRaidResolutionPanel(resolution: store.lastRaidResolution)
-                PhoneStarterLoopPanel(steps: store.starterLoop)
-                questCard
-                workoutCard
-                syncCard
-                PhoneDiagnosticsPanel(
-                    events: store.connectivity.recentEvents,
-                    reachabilityLabel: store.connectivity.reachabilityLabel,
-                    activationStateLabel: store.connectivity.activationStateLabel,
-                    queuedTransferCount: store.connectivity.queuedTransferCount
-                )
-                if !store.hatchInsights.isEmpty {
-                    PhoneHatchInsightPanel(
-                        insights: store.hatchInsights,
-                        target: store.evolutionTarget,
-                        accent: store.pet.accentColor
+                    PhoneWeeklyBoardPanel(
+                        board: store.weeklyBoard,
+                        accent: store.pet.accentColor,
+                        claimedRewardIDs: store.claimedWeeklyRewardIDs,
+                        activeEffects: store.activeWeeklyEffects
                     )
+                    PhoneVaultPanel(
+                        statusLabel: store.vault.statusLabel,
+                        lastSyncedAt: store.vault.lastSyncedAt
+                    )
+                    PhoneCloudMirrorPanel(
+                        statusLabel: store.cloudMirror.statusLabel,
+                        lastMirroredAt: store.cloudMirror.lastMirroredAt
+                    )
+                    PhoneCloudValidationPanel(headline: store.cloudMirror.validationHeadline)
+                    PhoneSignedCloudPanel(items: store.cloudValidationStates)
+                    PhoneCloudRehearsalPanel(steps: store.cloudRehearsalSteps)
+                    PhoneCloudVerificationPanel(
+                        records: store.verificationRecords,
+                        onRecord: store.recordVerification(_:passed:)
+                    )
+                    PhoneConflictResolutionPanel(
+                        report: store.conflictReport,
+                        selectedPolicy: store.selectedConflictPolicy,
+                        duplicatePriority: store.selectedDuplicatePriority,
+                        onSelect: store.selectConflictPolicy(_:),
+                        onSelectDuplicatePriority: store.selectDuplicatePriority(_:),
+                        onApply: store.applyConflictPolicy
+                    )
+                    PhoneConflictDiffPanel(entries: store.conflictDiffEntries)
+                    PhoneSelectiveMergePanel(
+                        candidates: store.selectiveMergeCandidates,
+                        onImport: store.importSelectiveCandidate(_:type:),
+                        onImportAll: store.importAllSelectiveCandidates(_:)
+                    )
+                    PhoneRecordDiffPanel(
+                        choices: store.recordDiffChoices,
+                        onUseLocal: { id, type in store.resolveRecordDiff(id, type: type, useCloud: false) },
+                        onUseCloud: { id, type in store.resolveRecordDiff(id, type: type, useCloud: true) },
+                        onUseAllLocal: { type in store.resolveAllRecordDiffs(type: type, useCloud: false) },
+                        onUseAllCloud: { type in store.resolveAllRecordDiffs(type: type, useCloud: true) }
+                    )
+                    PhoneTelemetryPanel(
+                        lastEventLabel: store.telemetry.lastEventLabel,
+                        eventCount: store.telemetry.eventCount,
+                        logPath: store.telemetry.logPath()
+                    )
+                    PhoneSeasonEconomyPanel(
+                        board: store.seasonEconomyBoard,
+                        onClaim: store.claimSeasonReward
+                    )
+                    PhoneChallengeBoardPanel(trials: store.challengeTrials)
+                    PhoneContentRotationPanel(entries: store.contentRotation)
+                    PhoneRaidBoardPanel(
+                        encounters: store.raidEncounters,
+                        claimedRaidRewardIDs: store.claimedRaidRewardIDs,
+                        raidShardBalance: store.raidShardBalance,
+                        onClaim: store.claimRaidReward(_:)
+                    )
+                    if let raidCombatReport = store.raidCombatReport {
+                        PhoneRaidCombatPanel(report: raidCombatReport, accent: store.pet.accentColor)
+                    }
+                    if !store.raidBossPatterns.isEmpty {
+                        PhoneRaidBossPatternPanel(
+                            patterns: store.raidBossPatterns,
+                            turns: store.raidTurnResults
+                        )
+                    }
+                    if let seasonalRaidBranchReward = store.seasonalRaidBranchReward {
+                        PhoneRaidBranchPanel(reward: seasonalRaidBranchReward)
+                    }
+                    PhoneSeasonalUnlockPanel(unlocks: store.seasonalUnlocks)
+                    PhoneRaidResolutionPanel(resolution: store.lastRaidResolution)
+                    PhoneStarterLoopPanel(steps: store.starterLoop)
+                    questCard
+                    workoutCard
+                    syncCard
+                    PhoneDiagnosticsPanel(
+                        events: store.connectivity.recentEvents,
+                        reachabilityLabel: store.connectivity.reachabilityLabel,
+                        activationStateLabel: store.connectivity.activationStateLabel,
+                        queuedTransferCount: store.connectivity.queuedTransferCount
+                    )
+                    if !store.hatchInsights.isEmpty {
+                        PhoneHatchInsightPanel(
+                            insights: store.hatchInsights,
+                            target: store.evolutionTarget,
+                            accent: store.pet.accentColor
+                        )
+                    }
+                    if let latestCompletedRun = store.latestCompletedRun {
+                        recentRunCard(latestCompletedRun)
+                    }
                 }
-                if let latestCompletedRun = store.latestCompletedRun {
-                    recentRunCard(latestCompletedRun)
-                }
+                .padding(20)
             }
-            .padding(20)
+        }
+    }
+
+    private var headerDeck: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("RUNIMAL // FIELD BUILD")
+                    .font(.caption2.weight(.black))
+                    .tracking(1.6)
+                    .foregroundStyle(store.pet.accentColor.opacity(0.92))
+
+                Text("Post-run command deck")
+                    .font(.title.weight(.black))
+                    .foregroundStyle(.white)
+
+                Text("러닝 결과, 시즌 보상, 성장 루프를 한 장의 보상 무대로 압축했습니다.")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.72))
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 6) {
+                TraitChip(label: store.weeklyBoard.season.title, accent: store.pet.accentColor)
+                TraitChip(label: store.pet.displayName, accent: .white.opacity(0.18))
+            }
         }
     }
 
     private var heroCard: some View {
-        GameSurface {
+        GameSurface(accent: store.pet.accentColor, eyebrow: "Active Companion") {
             VStack(alignment: .leading, spacing: 14) {
-                Text("Today’s Hatch")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.75))
-
                 HStack(alignment: .center, spacing: 16) {
                     PixelPetView(pet: store.pet, pixelSize: 12, seasonalLayers: store.seasonalLayers)
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text(store.pet.displayName)
-                            .font(.title2.weight(.bold))
+                            .font(.title.weight(.black))
                             .foregroundStyle(.white)
                         Text(store.pet.subtitle)
                             .foregroundStyle(.white.opacity(0.76))
@@ -144,12 +188,18 @@ struct PhoneHomeView: View {
                             .foregroundStyle(.white.opacity(0.72))
                     }
                 }
+
+                HStack(spacing: 10) {
+                    statPillar(title: "XP", value: "\(store.evolutionProgress.totalExperience)")
+                    statPillar(title: "TRACK", value: store.evolutionProgress.stageLabel)
+                    statPillar(title: "AURA", value: store.weeklyBoard.season.title)
+                }
             }
         }
     }
 
     private var questCard: some View {
-        GameSurface(title: "Growth Route") {
+        GameSurface(title: "Growth Route", accent: store.pet.accentColor, eyebrow: "Mission Loop") {
             VStack(alignment: .leading, spacing: 12) {
                 ForEach(store.quests, id: \.label) { quest in
                     HStack {
@@ -172,7 +222,7 @@ struct PhoneHomeView: View {
     }
 
     private var workoutCard: some View {
-        GameSurface(title: "Suggested Run") {
+        GameSurface(title: "Suggested Run", accent: store.pet.accentColor, eyebrow: "Planner") {
             VStack(alignment: .leading, spacing: 10) {
                 Text(store.suggestedWorkout.title.capitalized)
                     .font(.headline)
@@ -202,7 +252,7 @@ struct PhoneHomeView: View {
     }
 
     private var syncCard: some View {
-        GameSurface(title: "Companion Link") {
+        GameSurface(title: "Companion Link", accent: store.pet.accentColor, eyebrow: "Live Bridge") {
             VStack(alignment: .leading, spacing: 8) {
                 Text("HealthKit \(store.healthKit.authorizationStatus)")
                     .foregroundStyle(.white)
@@ -245,7 +295,7 @@ struct PhoneHomeView: View {
     }
 
     private func recentRunCard(_ run: CompletedRunRecord) -> some View {
-        GameSurface(title: "Latest Synced Run") {
+        GameSurface(title: "Latest Synced Run", accent: store.pet.accentColor, eyebrow: "Field Report") {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .center, spacing: 12) {
                     PixelPetView(pet: run.reward.pet, pixelSize: 7)
@@ -282,6 +332,28 @@ struct PhoneHomeView: View {
                 }
             }
         }
+    }
+
+    private func statPillar(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption2.weight(.black))
+                .tracking(1.1)
+                .foregroundStyle(.white.opacity(0.56))
+            Text(value)
+                .font(.subheadline.weight(.black))
+                .foregroundStyle(.white)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(.white.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(.white.opacity(0.08), lineWidth: 1)
+                )
+        )
     }
 
     private func paceLabel(_ seconds: Int?) -> String {

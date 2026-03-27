@@ -3,38 +3,105 @@ import SwiftUI
 
 struct GameSurface<Content: View>: View {
     let title: String?
+    let accent: Color?
+    let eyebrow: String?
     @ViewBuilder var content: Content
 
-    init(title: String? = nil, @ViewBuilder content: () -> Content) {
+    init(title: String? = nil, accent: Color? = nil, eyebrow: String? = nil, @ViewBuilder content: () -> Content) {
         self.title = title
+        self.accent = accent
+        self.eyebrow = eyebrow
         self.content = content()
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if let title {
-                Text(title)
-                    .font(.headline)
-                    .foregroundStyle(.white.opacity(0.9))
+            if title != nil || eyebrow != nil {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if let eyebrow {
+                            Text(eyebrow.uppercased())
+                                .font(.caption2.weight(.black))
+                                .tracking(1.4)
+                                .foregroundStyle((accent ?? .white).opacity(0.86))
+                        }
+
+                        if let title {
+                            Text(title)
+                                .font(.headline.weight(.bold))
+                                .foregroundStyle(.white.opacity(0.94))
+                        }
+                    }
+
+                    Spacer()
+
+                    if let accent {
+                        Capsule()
+                            .fill(accent.opacity(0.22))
+                            .frame(width: 46, height: 12)
+                            .overlay(
+                                Capsule()
+                                    .fill(accent)
+                                    .frame(width: 18, height: 4)
+                            )
+                    }
+                }
             }
 
             content
         }
-        .padding(16)
+        .padding(18)
         .background(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [.black.opacity(0.88), .black.opacity(0.68)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+            ZStack {
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.08, green: 0.09, blue: 0.12),
+                                Color(red: 0.03, green: 0.04, blue: 0.06)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                )
+
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(
+                        RadialGradient(
+                            colors: [(accent ?? .white).opacity(0.18), .clear],
+                            center: .topLeading,
+                            startRadius: 12,
+                            endRadius: 260
+                        )
+                    )
+
+                VStack(spacing: 10) {
+                    Capsule()
+                        .fill(.white.opacity(0.10))
+                        .frame(height: 1)
+                    Spacer()
+                    HStack(spacing: 10) {
+                        ForEach(0..<7, id: \.self) { _ in
+                            Capsule()
+                                .fill(.white.opacity(0.03))
+                                .frame(height: 2)
+                        }
+                    }
+                }
+                .padding(16)
+                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            }
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .stroke(.white.opacity(0.08), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .strokeBorder(.white.opacity(0.08), lineWidth: 1)
         )
+        .overlay(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .strokeBorder((accent ?? .white).opacity(0.16), lineWidth: 1)
+                .blur(radius: 10)
+                .padding(-1)
+        }
     }
 }
 
@@ -43,12 +110,20 @@ struct TraitChip: View {
     let accent: Color
 
     var body: some View {
-        Text(label)
-            .font(.caption.weight(.semibold))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(accent.opacity(0.22), in: Capsule())
-            .foregroundStyle(.white)
+        Text(label.uppercased())
+            .font(.caption2.weight(.black))
+            .tracking(0.8)
+            .padding(.horizontal, 11)
+            .padding(.vertical, 7)
+            .background(
+                Capsule()
+                    .fill(accent.opacity(0.18))
+                    .overlay(
+                        Capsule()
+                            .stroke(accent.opacity(0.34), lineWidth: 1)
+                    )
+            )
+            .foregroundStyle(.white.opacity(0.96))
     }
 }
 

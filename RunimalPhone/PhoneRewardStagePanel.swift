@@ -57,7 +57,7 @@ struct PhoneRewardStagePanel: View {
     }
 
     var body: some View {
-        GameSurface(title: "Reward Stage") {
+        GameSurface(title: "Reward Stage", accent: stageAccent, eyebrow: "Season Chamber") {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .center, spacing: 16) {
                     ZStack {
@@ -75,10 +75,19 @@ struct PhoneRewardStagePanel: View {
 
                         PixelPetView(pet: pet, pixelSize: 10)
                     }
+                    .frame(width: 124, height: 124)
+                    .background(
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .fill(.white.opacity(0.04))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                    .stroke(stageAccent.opacity(0.22), lineWidth: 1)
+                            )
+                    )
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text(stageTitle)
-                            .font(.headline.weight(.bold))
+                            .font(.title3.weight(.black))
                             .foregroundStyle(.white)
 
                         Text(stageDetail)
@@ -114,6 +123,7 @@ struct PhoneRewardStagePanel: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(stageAccent)
+                    .fontWeight(.black)
                 }
             }
         }
@@ -127,6 +137,19 @@ struct PhoneRewardStagePanel: View {
                     )
                 )
         )
+        .overlay(alignment: .topTrailing) {
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(season.title.uppercased())
+                    .font(.caption2.weight(.black))
+                    .tracking(1.2)
+                Text("STAGE")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.white.opacity(0.62))
+            }
+            .foregroundStyle(stageAccent.opacity(0.92))
+            .padding(.top, 12)
+            .padding(.trailing, 14)
+        }
         .onAppear {
             energized = true
             animateBurst()

@@ -14,24 +14,45 @@ struct PixelPetView: View {
         let accentPixels = accent(for: pet.rareVariant)
 
         ZStack(alignment: .topLeading) {
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [pet.accentColor.opacity(0.32), .clear],
+                        center: .center,
+                        startRadius: pixelSize,
+                        endRadius: pixelSize * 5
+                    )
+                )
+                .frame(width: 9 * pixelSize, height: 9 * pixelSize)
+                .offset(x: pixelSize * 0.5, y: pixelSize * 0.8)
+
             pixelLayer(bodyPixels, color: pet.accentColor)
             pixelLayer(eyePixels, color: .white)
             pixelLayer([(3, 3), (6, 3)], color: .black, inset: pixelSize * 0.22)
             pixelLayer(accentPixels, color: .white.opacity(0.95))
             pixelLayer(seasonShellPixels, color: pet.accentColor.opacity(0.32))
             pixelLayer(raidStripePixels, color: .yellow.opacity(0.92), inset: pixelSize * 0.18)
+            pixelLayer(crestPixels, color: .white.opacity(0.92), inset: pixelSize * 0.12)
         }
         .frame(width: 10 * pixelSize, height: 10 * pixelSize)
         .offset(y: hovering ? -pixelSize * 0.24 : 0)
-        .scaleEffect(hovering ? 1.03 : 0.98)
+        .scaleEffect(hovering ? 1.04 : 0.98)
         .rotationEffect(.degrees(hovering ? tiltDegrees : -tiltDegrees * 0.45))
-        .shadow(color: pet.accentColor.opacity(0.35), radius: 12, y: 10)
+        .shadow(color: pet.accentColor.opacity(0.38), radius: 14, y: 10)
         .overlay(alignment: .bottom) {
             RoundedRectangle(cornerRadius: pixelSize)
                 .fill(.black.opacity(0.25))
                 .frame(width: 6 * pixelSize, height: pixelSize * 0.7)
                 .blur(radius: 6)
                 .offset(y: pixelSize * 1.8)
+        }
+        .overlay {
+            if pet.rareVariant != nil {
+                Circle()
+                    .stroke(pet.accentColor.opacity(0.46), lineWidth: max(1, pixelSize * 0.18))
+                    .frame(width: 9.6 * pixelSize, height: 9.6 * pixelSize)
+                    .blur(radius: 2)
+            }
         }
         .onAppear {
             hovering = true
@@ -110,5 +131,14 @@ struct PixelPetView: View {
     private var raidStripePixels: [(Int, Int)] {
         guard seasonalLayers.contains(.raidStripe) else { return [] }
         return [(2, 5), (3, 6), (4, 7), (6, 5), (5, 6)]
+    }
+
+    private var crestPixels: [(Int, Int)] {
+        if seasonalLayers.contains(.seasonShell) {
+            return [(4, 0), (5, 0)]
+        }
+
+        guard pet.rareVariant != nil else { return [] }
+        return [(4, 1), (5, 1)]
     }
 }
