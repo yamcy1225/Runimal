@@ -9,14 +9,24 @@ struct PhoneCollectionView: View {
         GridItem(.flexible(), spacing: 14),
     ]
 
+    private var effectResonance: [CompanionEffectResonance] {
+        RunimalEffectResonanceEngine.effectResonance(
+            for: store.featuredCompanion,
+            progress: store.evolutionProgress,
+            activeEffects: store.activeWeeklyEffects
+        )
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 stableCard
                 evolutionCard
+                collectionEffectStage
                 PhonePetDetailPanel(
                     companion: store.featuredCompanion,
-                    progress: store.evolutionProgress
+                    progress: store.evolutionProgress,
+                    activeEffects: store.activeWeeklyEffects
                 )
                 collectionGrid
                 growthTimeline
@@ -50,6 +60,14 @@ struct PhoneCollectionView: View {
                 Text("최근 러닝 패턴을 가장 잘 흡수한 주력 펫입니다. 홈의 추천 러닝과 연동해 성장 루프를 유지합니다.")
                     .font(.footnote)
                     .foregroundStyle(.white.opacity(0.72))
+
+                if store.activeWeeklyEffects.isEmpty == false {
+                    HStack(spacing: 8) {
+                        ForEach(store.activeWeeklyEffects) { effect in
+                            TraitChip(label: effect.title, accent: store.featuredCompanion.pet.accentColor.opacity(0.78))
+                        }
+                    }
+                }
             }
         }
     }
@@ -70,6 +88,54 @@ struct PhoneCollectionView: View {
                 Text(store.evolutionProgress.headline)
                     .font(.footnote)
                     .foregroundStyle(.white.opacity(0.72))
+            }
+        }
+    }
+
+    private var collectionEffectStage: some View {
+        GameSurface(title: "Effect Stage") {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .center, spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .fill(store.featuredCompanion.pet.accentColor.opacity(0.2))
+                            .frame(width: 84, height: 84)
+                            .blur(radius: 10)
+
+                        Circle()
+                            .stroke(store.featuredCompanion.pet.accentColor.opacity(0.76), style: StrokeStyle(lineWidth: 2, dash: [4, 4]))
+                            .frame(width: 70, height: 70)
+
+                        PixelPetView(pet: store.featuredCompanion.pet, pixelSize: 8)
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(store.activeWeeklyEffects.isEmpty ? "No active weekly effects" : "Current boost chain")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                        Text(store.activeWeeklyEffects.isEmpty
+                             ? "주간 보상을 수령하면 이 주력 펫의 성장/진화/변이 판정이 여기서 바로 반영됩니다."
+                             : "현재 활성 효과가 주력 펫의 XP, 변이, 진화 속도에 직접 연결되어 있습니다.")
+                            .font(.footnote)
+                            .foregroundStyle(.white.opacity(0.72))
+                    }
+                }
+
+                if effectResonance.isEmpty == false {
+                    ForEach(effectResonance) { effect in
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text(effect.title)
+                                    .foregroundStyle(.white)
+                                Spacer()
+                                TraitChip(label: "\(effect.intensityLabel) \(effect.score)", accent: .green)
+                            }
+                            Text(effect.detail)
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.68))
+                        }
+                    }
+                }
             }
         }
     }
@@ -96,6 +162,9 @@ struct PhoneCollectionView: View {
                             HStack {
                                 TraitChip(label: "Lv.\(entry.level)", accent: entry.pet.accentColor)
                                 TraitChip(label: "\(entry.totalDistanceKm.formatted(.number.precision(.fractionLength(1))))km", accent: .white.opacity(0.24))
+                                if store.activeWeeklyEffects.isEmpty == false && entry.id == store.featuredCompanion.id {
+                                    TraitChip(label: "BUFFED", accent: .green.opacity(0.7))
+                                }
                             }
 
                             Text(entry.headline)

@@ -94,3 +94,19 @@ public struct CompanionEffectContext: Codable, Equatable, Sendable {
         self.activeEffects = activeEffects
     }
 }
+
+public struct CompanionEffectResonance: Codable, Equatable, Identifiable, Sendable {
+    public let id: String
+    public let title: String
+    public let detail: String
+    public let intensityLabel: String
+    public let score: Int
+
+    public init(id: String, title: String, detail: String, intensityLabel: String, score: Int) {
+        self.id = id
+        self.title = title
+        self.detail = detail
+        self.intensityLabel = intensityLabel
+        self.score = score
+    }
+}

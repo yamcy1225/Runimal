@@ -4,6 +4,7 @@ import SwiftUI
 struct PhonePetDetailPanel: View {
     let companion: PetCollectionEntry
     let progress: EvolutionProgress
+    let activeEffects: [WeeklyRewardEffect]
 
     private var tree: [EvolutionTreeNode] {
         RunimalGameEngine.evolutionTree(for: companion.pet, progress: progress)
@@ -11,6 +12,14 @@ struct PhonePetDetailPanel: View {
 
     private var tuningNotes: [String] {
         RunimalGameEngine.balanceTuningNotes(for: companion.pet)
+    }
+
+    private var effectResonance: [CompanionEffectResonance] {
+        RunimalEffectResonanceEngine.effectResonance(
+            for: companion,
+            progress: progress,
+            activeEffects: activeEffects
+        )
     }
 
     var body: some View {
@@ -54,6 +63,32 @@ struct PhonePetDetailPanel: View {
                                 }
 
                                 Text(node.detail)
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.72))
+                            }
+                        }
+                    }
+                }
+
+                if activeEffects.isEmpty == false {
+                    Divider()
+                        .overlay(.white.opacity(0.12))
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Effect Link")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white)
+
+                        ForEach(effectResonance) { effect in
+                            VStack(alignment: .leading, spacing: 3) {
+                                HStack {
+                                    Text(effect.title)
+                                        .foregroundStyle(.white)
+                                    Spacer()
+                                    TraitChip(label: effect.intensityLabel, accent: companion.pet.accentColor.opacity(0.82))
+                                }
+
+                                Text(effect.detail)
                                     .font(.caption)
                                     .foregroundStyle(.white.opacity(0.72))
                             }
