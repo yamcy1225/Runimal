@@ -26,6 +26,10 @@ struct PhoneHomeView: View {
                     statusLabel: store.vault.statusLabel,
                     lastSyncedAt: store.vault.lastSyncedAt
                 )
+                PhoneCloudMirrorPanel(
+                    statusLabel: store.cloudMirror.statusLabel,
+                    lastMirroredAt: store.cloudMirror.lastMirroredAt
+                )
                 PhoneSeasonEconomyPanel(
                     board: store.seasonEconomyBoard,
                     onClaim: store.claimSeasonReward

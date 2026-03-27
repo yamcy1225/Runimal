@@ -10,6 +10,7 @@ final class PhoneDashboardStore {
     let planner = PhoneWorkoutPlanner()
     let progress = PhoneProgressStore()
     let vault = PhoneVaultSyncManager()
+    let cloudMirror = PhoneCloudMirrorManager()
 
     let summary = RunSummary(
         distanceKm: 10.02,
@@ -200,8 +201,14 @@ final class PhoneDashboardStore {
 
     func bootstrap() {
         progress.load()
-        if let snapshot = vault.loadSnapshot() {
-            progress.restore(from: snapshot)
+        let vaultSnapshot = vault.loadSnapshot()
+        let cloudSnapshot = cloudMirror.restoreIfAvailable()
+
+        if let chosen = [vaultSnapshot, cloudSnapshot]
+            .compactMap({ $0 })
+            .sorted(by: { $0.savedAt > $1.savedAt })
+            .first {
+            progress.restore(from: chosen)
         }
         progress.seedIfNeeded(from: runArchive)
         persistVault()
@@ -291,7 +298,9 @@ final class PhoneDashboardStore {
     }
 
     private func persistVault() {
-        vault.save(snapshot: progress.snapshot())
+        let snapshot = progress.snapshot()
+        vault.save(snapshot: snapshot)
+        cloudMirror.mirror(snapshot: snapshot)
     }
 }
 
