@@ -172,10 +172,33 @@ final class MacContentAuthoringStore {
               object.indices.contains(entryIndex) else { return }
         object.remove(at: entryIndex)
         if object.isEmpty { object = [] }
-        if let data = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted]),
+        replaceEntries(object, nextIndex: max(0, min(entryIndex, max(object.count - 1, 0))))
+    }
+
+    func duplicateEntry() {
+        guard var object = (try? JSONSerialization.jsonObject(with: Data(draft.utf8)) as? [[String: Any]]),
+              object.indices.contains(entryIndex) else { return }
+        var duplicate = object[entryIndex]
+        duplicate["id"] = "\(selectedTarget.rawValue)-copy-\(object.count)"
+        object.insert(duplicate, at: min(entryIndex + 1, object.count))
+        replaceEntries(object, nextIndex: min(entryIndex + 1, object.count - 1))
+    }
+
+    func moveEntry(offset: Int) {
+        guard var object = (try? JSONSerialization.jsonObject(with: Data(draft.utf8)) as? [[String: Any]]),
+              object.indices.contains(entryIndex) else { return }
+        let targetIndex = max(0, min(object.count - 1, entryIndex + offset))
+        guard targetIndex != entryIndex else { return }
+        let moved = object.remove(at: entryIndex)
+        object.insert(moved, at: targetIndex)
+        replaceEntries(object, nextIndex: targetIndex)
+    }
+
+    private func replaceEntries(_ entries: [[String: Any]], nextIndex: Int) {
+        if let data = try? JSONSerialization.data(withJSONObject: entries, options: [.prettyPrinted]),
            let text = String(data: data, encoding: .utf8) {
             draft = text
-            entryIndex = max(0, min(entryIndex, max(object.count - 1, 0)))
+            entryIndex = max(0, nextIndex)
             populateForm()
         }
     }
@@ -255,6 +278,21 @@ struct MacContentAuthoringPanel: View {
 
                     Button("Add Entry") {
                         store.appendEntry()
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button("Duplicate Entry") {
+                        store.duplicateEntry()
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button("Move Up") {
+                        store.moveEntry(offset: -1)
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button("Move Down") {
+                        store.moveEntry(offset: 1)
                     }
                     .buttonStyle(.bordered)
 

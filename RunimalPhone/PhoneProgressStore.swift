@@ -424,6 +424,18 @@ final class PhoneProgressStore {
         save()
     }
 
+    func resolveAllRecordDiffs(
+        type: String,
+        useCloud: Bool,
+        local: RunimalProgressSnapshot?,
+        cloud: RunimalProgressSnapshot?
+    ) {
+        let choices = RunimalRecordDiffEngine.choices(local: local, cloud: cloud).filter { $0.type == type }
+        for choice in choices {
+            resolveRecordDiff(id: choice.id, type: choice.type, useCloud: useCloud, local: local, cloud: cloud)
+        }
+    }
+
     func snapshot(savedAt: Date = Date()) -> RunimalProgressSnapshot {
         RunimalProgressSnapshot(
             savedAt: savedAt,

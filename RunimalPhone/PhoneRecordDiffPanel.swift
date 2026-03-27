@@ -5,6 +5,8 @@ struct PhoneRecordDiffPanel: View {
     let choices: [RecordDiffChoice]
     let onUseLocal: (String, String) -> Void
     let onUseCloud: (String, String) -> Void
+    let onUseAllLocal: (String) -> Void
+    let onUseAllCloud: (String) -> Void
 
     var body: some View {
         GameSurface(title: "Record Diff Editor") {
@@ -14,6 +16,24 @@ struct PhoneRecordDiffPanel: View {
                         .font(.caption)
                         .foregroundStyle(.white.opacity(0.72))
                 } else {
+                    HStack {
+                        Button("All Run -> Local") {
+                            onUseAllLocal("run")
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("All Run -> Cloud") {
+                            onUseAllCloud("run")
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("All Journal -> Cloud") {
+                            onUseAllCloud("journal")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.blue.opacity(0.82))
+                    }
+
                     ForEach(choices.prefix(4)) { choice in
                         VStack(alignment: .leading, spacing: 6) {
                             Text(choice.title)

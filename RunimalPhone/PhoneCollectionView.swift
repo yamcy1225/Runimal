@@ -75,7 +75,7 @@ struct PhoneCollectionView: View {
         GameSurface(title: "Active Stable") {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .center, spacing: 16) {
-                    PixelPetView(pet: store.featuredCompanion.pet, pixelSize: 10)
+                    PixelPetView(pet: store.featuredCompanion.pet, pixelSize: 10, seasonalLayers: store.seasonalLayers)
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text(store.featuredCompanion.pet.displayName)
@@ -142,7 +142,7 @@ struct PhoneCollectionView: View {
                             .stroke(store.featuredCompanion.pet.accentColor.opacity(0.76), style: StrokeStyle(lineWidth: 2, dash: [4, 4]))
                             .frame(width: 70, height: 70)
 
-                        PixelPetView(pet: store.featuredCompanion.pet, pixelSize: 8)
+                        PixelPetView(pet: store.featuredCompanion.pet, pixelSize: 8, seasonalLayers: store.seasonalLayers)
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
@@ -186,7 +186,11 @@ struct PhoneCollectionView: View {
                 ForEach(store.collection) { entry in
                     GameSurface {
                         VStack(alignment: .leading, spacing: 10) {
-                            PixelPetView(pet: entry.pet, pixelSize: 8)
+                            PixelPetView(
+                                pet: entry.pet,
+                                pixelSize: 8,
+                                seasonalLayers: entry.id == store.featuredCompanion.id ? store.seasonalLayers : []
+                            )
 
                             Text(entry.pet.displayName)
                                 .font(.subheadline.weight(.bold))

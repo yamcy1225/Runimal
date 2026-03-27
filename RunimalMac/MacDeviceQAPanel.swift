@@ -9,7 +9,14 @@ final class MacDeviceQAStore {
     var status = "QA export idle"
 
     func exportChecklist(_ checklist: [DeviceQACheckItem]) {
-        let lines = checklist.map { "\($0.title)\n\($0.detail)" }.joined(separator: "\n\n")
+        let runbook = [
+            "Signed iCloud Roundtrip Runbook",
+            "1. 같은 Apple ID로 iPhone과 Apple Watch를 로그인합니다.",
+            "2. iPhone에서 vault mirror를 만든 뒤 앱을 재실행합니다.",
+            "3. Watch에서 러닝 종료 후 reward sync가 iPhone에 반영되는지 확인합니다.",
+            "4. conflict panel에서 local/cloud 우선순위와 record diff 편집을 검수합니다.",
+        ].joined(separator: "\n")
+        let lines = runbook + "\n\n" + checklist.map { "\($0.title)\n\($0.detail)" }.joined(separator: "\n\n")
 
         do {
             try lines.write(to: RunimalPaths.repoRoot.appendingPathComponent("docs/device-qa-export.txt"), atomically: true, encoding: .utf8)

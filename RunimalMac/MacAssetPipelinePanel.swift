@@ -83,24 +83,26 @@ final class MacAssetPipelineStore {
         }
 
         let variants = RareVariant.allCases
-        previewEntries = catalog.species.sorted(by: { $0.key < $1.key }).enumerated().compactMap { index, entry in
+        previewEntries = catalog.species.sorted(by: { $0.key < $1.key }).compactMap { entry -> [PreviewEntry]? in
             guard let species = PetSpecies(rawValue: entry.key) else { return nil }
-            let variant = variants[index % max(variants.count, 1)]
-            let pet = GeneratedPet(
-                species: species,
-                element: element(for: species),
-                palette: palette(for: species),
-                rareVariant: variant,
-                explanation: ["asset preview"],
-                stats: PetStats(vitality: 5, agility: 5, dexterity: 5, focus: 5, defense: 5)
-            )
+            return variants.map { variant in
+                let pet = GeneratedPet(
+                    species: species,
+                    element: element(for: species),
+                    palette: palette(for: species),
+                    rareVariant: variant,
+                    explanation: ["asset preview"],
+                    stats: PetStats(vitality: 5, agility: 5, dexterity: 5, focus: 5, defense: 5)
+                )
 
-            return PreviewEntry(
-                id: "\(entry.key)-\(variant.rawValue)",
-                pet: pet,
-                label: "\(entry.key) · hatch \(entry.value.hatchSound) · evo \(entry.value.evolutionSound) · tilt \(String(format: "%.1f", entry.value.tilt))"
-            )
+                return PreviewEntry(
+                    id: "\(entry.key)-\(variant.rawValue)",
+                    pet: pet,
+                    label: "\(entry.key) · \(variant.rawValue)"
+                )
+            }
         }
+        .flatMap { $0 }
     }
 
     private func element(for species: PetSpecies) -> PetElement {
@@ -164,16 +166,21 @@ struct MacAssetPipelinePanel: View {
 
                 if !store.previewEntries.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Preview Render")
+                        Text("Preview Grid")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.white.opacity(0.72))
-                        ForEach(store.previewEntries.prefix(4)) { entry in
-                            HStack(spacing: 10) {
-                                PixelPetView(pet: entry.pet, pixelSize: 4.5)
-                                    .frame(width: 52, height: 52)
-                                Text(entry.label)
-                                    .font(.caption.monospaced())
-                                    .foregroundStyle(.white.opacity(0.72))
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
+                            ForEach(store.previewEntries.prefix(12)) { entry in
+                                VStack(spacing: 6) {
+                                    PixelPetView(pet: entry.pet, pixelSize: 3.6)
+                                        .frame(width: 46, height: 46)
+                                    Text(entry.label)
+                                        .font(.caption2.monospaced())
+                                        .foregroundStyle(.white.opacity(0.72))
+                                        .multilineTextAlignment(.center)
+                                }
+                                .padding(8)
+                                .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                             }
                         }
                     }

@@ -54,7 +54,9 @@ struct PhoneHomeView: View {
                 PhoneRecordDiffPanel(
                     choices: store.recordDiffChoices,
                     onUseLocal: { id, type in store.resolveRecordDiff(id, type: type, useCloud: false) },
-                    onUseCloud: { id, type in store.resolveRecordDiff(id, type: type, useCloud: true) }
+                    onUseCloud: { id, type in store.resolveRecordDiff(id, type: type, useCloud: true) },
+                    onUseAllLocal: { type in store.resolveAllRecordDiffs(type: type, useCloud: false) },
+                    onUseAllCloud: { type in store.resolveAllRecordDiffs(type: type, useCloud: true) }
                 )
                 PhoneTelemetryPanel(
                     lastEventLabel: store.telemetry.lastEventLabel,
@@ -120,7 +122,7 @@ struct PhoneHomeView: View {
                     .foregroundStyle(.white.opacity(0.75))
 
                 HStack(alignment: .center, spacing: 16) {
-                    PixelPetView(pet: store.pet, pixelSize: 12)
+                    PixelPetView(pet: store.pet, pixelSize: 12, seasonalLayers: store.seasonalLayers)
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text(store.pet.displayName)

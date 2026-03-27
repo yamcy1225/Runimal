@@ -315,6 +315,14 @@ final class PhoneDashboardStore {
         )
     }
 
+    var seasonalLayers: [SeasonalVisualLayer] {
+        RunimalSeasonalCosmeticEngine.layers(
+            seasonID: weeklyBoard.season.title.lowercased(),
+            claimedSeasonIDs: progress.claimedSeasonRewardIDs,
+            claimedRaidIDs: progress.claimedRaidRewardIDs
+        )
+    }
+
     func activateConnectivity() {
         connectivity.activate()
         syncCompanionEffects()
@@ -498,6 +506,14 @@ final class PhoneDashboardStore {
         progress.resolveRecordDiff(id: id, type: type, useCloud: useCloud, local: localSnapshot, cloud: cloudSnapshot)
         persistVault()
         telemetry.log("record_diff_resolved", detail: "\(type):\(id):\(useCloud)")
+    }
+
+    func resolveAllRecordDiffs(type: String, useCloud: Bool) {
+        let localSnapshot = vault.loadSnapshot()
+        let cloudSnapshot = cloudMirror.restoreIfAvailable()
+        progress.resolveAllRecordDiffs(type: type, useCloud: useCloud, local: localSnapshot, cloud: cloudSnapshot)
+        persistVault()
+        telemetry.log("record_diff_batch_resolved", detail: "\(type):\(useCloud)")
     }
 
     func syncCompanionEffects() {

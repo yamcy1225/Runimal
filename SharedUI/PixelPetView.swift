@@ -4,6 +4,7 @@ import SwiftUI
 struct PixelPetView: View {
     let pet: GeneratedPet
     var pixelSize: CGFloat = 10
+    var seasonalLayers: [SeasonalVisualLayer] = []
     @State private var hovering = false
     @State private var tiltDegrees = 0.0
 
@@ -17,6 +18,8 @@ struct PixelPetView: View {
             pixelLayer(eyePixels, color: .white)
             pixelLayer([(3, 3), (6, 3)], color: .black, inset: pixelSize * 0.22)
             pixelLayer(accentPixels, color: .white.opacity(0.95))
+            pixelLayer(seasonShellPixels, color: pet.accentColor.opacity(0.32))
+            pixelLayer(raidStripePixels, color: .yellow.opacity(0.92), inset: pixelSize * 0.18)
         }
         .frame(width: 10 * pixelSize, height: 10 * pixelSize)
         .offset(y: hovering ? -pixelSize * 0.24 : 0)
@@ -97,5 +100,15 @@ struct PixelPetView: View {
         case .shadebit: return -1.5
         case .seedle: return 0.8
         }
+    }
+
+    private var seasonShellPixels: [(Int, Int)] {
+        guard seasonalLayers.contains(.seasonShell) else { return [] }
+        return [(1, 2), (1, 3), (1, 4), (8, 2), (8, 3), (8, 4), (3, 0), (6, 0)]
+    }
+
+    private var raidStripePixels: [(Int, Int)] {
+        guard seasonalLayers.contains(.raidStripe) else { return [] }
+        return [(2, 5), (3, 6), (4, 7), (6, 5), (5, 6)]
     }
 }
