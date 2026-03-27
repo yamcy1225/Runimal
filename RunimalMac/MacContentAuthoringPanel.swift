@@ -58,8 +58,24 @@ final class MacContentAuthoringStore {
 
     func validate() {
         do {
-            _ = try JSONSerialization.jsonObject(with: Data(draft.utf8))
-            validationStatus = "Schema ok"
+            guard let object = try JSONSerialization.jsonObject(with: Data(draft.utf8)) as? [[String: Any]],
+                  !object.isEmpty else {
+                validationStatus = "Schema invalid"
+                return
+            }
+
+            let first = object[0]
+            let hasCommonFields = first["title"] is String && first["detail"] is String
+            let targetValid: Bool
+
+            switch selectedTarget {
+            case .rotation:
+                targetValid = hasCommonFields && first["reward"] is String
+            case .raids:
+                targetValid = hasCommonFields && first["recommendedReward"] is String && first["claimThreshold"] != nil
+            }
+
+            validationStatus = targetValid ? "Schema ok" : "Schema invalid"
         } catch {
             validationStatus = "Schema invalid"
         }

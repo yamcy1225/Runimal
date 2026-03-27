@@ -339,7 +339,13 @@ final class PhoneProgressStore {
     }
 
     @discardableResult
-    func claimRaidReward(id: String, title: String, readinessScore: Int, threshold: Int) -> Bool {
+    func claimRaidReward(
+        id: String,
+        title: String,
+        readinessScore: Int,
+        threshold: Int,
+        branchReward: RaidBranchReward?
+    ) -> Bool {
         guard readinessScore >= threshold else { return false }
         guard !claimedRaidRewardIDs.contains(id) else { return false }
 
@@ -356,9 +362,19 @@ final class PhoneProgressStore {
         claimedRaidRewardIDs.append(id)
         raidShardBalance += resolution.shardReward
         essenceBalance += resolution.essenceReward
+        essenceBalance += branchReward?.extraEssence ?? 0
+        seasonSigils += branchReward?.extraSigils ?? 0
+        overdriveCharges += branchReward?.extraOverdrive ?? 0
         lastRaidResolution = resolution
         save()
         return true
+    }
+
+    func importAllSelectiveCandidates(type: String, local: RunimalProgressSnapshot?, cloud: RunimalProgressSnapshot?) {
+        let candidates = RunimalSelectiveMergeEngine.candidates(local: local, cloud: cloud)
+        for candidate in candidates where candidate.type == type {
+            importSelectiveCandidate(id: candidate.id, type: candidate.type, local: local, cloud: cloud)
+        }
     }
 
     func snapshot(savedAt: Date = Date()) -> RunimalProgressSnapshot {

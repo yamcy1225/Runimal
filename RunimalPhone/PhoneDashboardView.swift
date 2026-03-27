@@ -409,7 +409,8 @@ final class PhoneDashboardStore {
             id: encounter.id,
             title: encounter.title,
             readinessScore: encounter.readinessScore,
-            threshold: encounter.claimThreshold
+            threshold: encounter.claimThreshold,
+            branchReward: seasonalRaidBranchReward
         )
         persistVault()
         telemetry.log("claim_raid_reward", detail: encounter.id)
@@ -457,6 +458,14 @@ final class PhoneDashboardStore {
         progress.importSelectiveCandidate(id: id, type: type, local: localSnapshot, cloud: cloudSnapshot)
         persistVault()
         telemetry.log("selective_import", detail: "\(type):\(id)")
+    }
+
+    func importAllSelectiveCandidates(_ type: String) {
+        let localSnapshot = vault.loadSnapshot()
+        let cloudSnapshot = cloudMirror.restoreIfAvailable()
+        progress.importAllSelectiveCandidates(type: type, local: localSnapshot, cloud: cloudSnapshot)
+        persistVault()
+        telemetry.log("selective_import_all", detail: type)
     }
 
     func syncCompanionEffects() {

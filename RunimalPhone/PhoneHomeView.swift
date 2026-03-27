@@ -46,7 +46,8 @@ struct PhoneHomeView: View {
                 PhoneConflictDiffPanel(entries: store.conflictDiffEntries)
                 PhoneSelectiveMergePanel(
                     candidates: store.selectiveMergeCandidates,
-                    onImport: store.importSelectiveCandidate(_:type:)
+                    onImport: store.importSelectiveCandidate(_:type:),
+                    onImportAll: store.importAllSelectiveCandidates(_:)
                 )
                 PhoneTelemetryPanel(
                     lastEventLabel: store.telemetry.lastEventLabel,

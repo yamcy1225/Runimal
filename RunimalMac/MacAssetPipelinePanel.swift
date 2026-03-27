@@ -149,13 +149,37 @@ private struct DotPreviewTile: View {
 
             VStack(spacing: 2) {
                 Rectangle()
-                    .fill(.white.opacity(0.9))
-                    .frame(width: 14, height: 14)
+                    .fill(headColor)
+                    .frame(width: bodyWidth, height: 12)
                 Rectangle()
-                    .fill(.purple.opacity(0.7))
+                    .fill(accentColor)
                     .frame(width: 20, height: 6)
+                if label.contains("sparkfang") || label.contains("windrunner") {
+                    Rectangle()
+                        .fill(.yellow.opacity(0.8))
+                        .frame(width: 8, height: 4)
+                }
             }
             .rotationEffect(.degrees(label.contains("tilt -") ? -8 : 8))
         }
+    }
+
+    private var headColor: Color {
+        if label.contains("stoneback") { return .brown.opacity(0.82) }
+        if label.contains("mosshop") { return .green.opacity(0.82) }
+        if label.contains("shadebit") { return .blue.opacity(0.82) }
+        return .white.opacity(0.9)
+    }
+
+    private var accentColor: Color {
+        if label.contains("sparkfang") { return .orange.opacity(0.82) }
+        if label.contains("windrunner") { return .cyan.opacity(0.82) }
+        return .purple.opacity(0.7)
+    }
+
+    private var bodyWidth: CGFloat {
+        if label.contains("stoneback") { return 18 }
+        if label.contains("seedle") { return 10 }
+        return 14
     }
 }

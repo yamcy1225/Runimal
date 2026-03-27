@@ -4,6 +4,7 @@ import SwiftUI
 struct PhoneSelectiveMergePanel: View {
     let candidates: [MergeCandidate]
     let onImport: (String, String) -> Void
+    let onImportAll: (String) -> Void
 
     var body: some View {
         GameSurface(title: "Selective Merge") {
@@ -29,6 +30,18 @@ struct PhoneSelectiveMergePanel: View {
                             .buttonStyle(.bordered)
                         }
                     }
+                }
+
+                HStack {
+                    Button("Import All Runs") {
+                        onImportAll("run")
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button("Import All Journal") {
+                        onImportAll("journal")
+                    }
+                    .buttonStyle(.bordered)
                 }
             }
         }
