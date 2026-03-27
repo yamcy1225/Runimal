@@ -177,6 +177,14 @@ final class PhoneDashboardStore {
         )
     }
 
+    var challengeTrials: [ChallengeTrial] {
+        RunimalChallengeMetaEngine.trials(
+            for: featuredCompanion,
+            progress: evolutionProgress,
+            selectedRole: selectedRole
+        )
+    }
+
     func activateConnectivity() {
         connectivity.activate()
         syncCompanionEffects()

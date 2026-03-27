@@ -30,6 +30,7 @@ struct PhoneHomeView: View {
                     board: store.seasonEconomyBoard,
                     onClaim: store.claimSeasonReward
                 )
+                PhoneChallengeBoardPanel(trials: store.challengeTrials)
                 questCard
                 workoutCard
                 syncCard

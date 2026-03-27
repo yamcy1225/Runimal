@@ -463,6 +463,22 @@ public struct SeasonEconomyBoard: Codable, Equatable, Sendable {
     }
 }
 
+public struct ChallengeTrial: Codable, Equatable, Identifiable, Sendable {
+    public let id: String
+    public let title: String
+    public let detail: String
+    public let score: Int
+    public let verdict: String
+
+    public init(id: String, title: String, detail: String, score: Int, verdict: String) {
+        self.id = id
+        self.title = title
+        self.detail = detail
+        self.score = score
+        self.verdict = verdict
+    }
+}
+
 public struct RoutePoint: Codable, Equatable, Identifiable, Sendable {
     public let latitude: Double
     public let longitude: Double
