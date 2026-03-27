@@ -206,6 +206,14 @@ final class PhoneDashboardStore {
         )
     }
 
+    var claimedRaidRewardIDs: Set<String> {
+        Set(progress.claimedRaidRewardIDs)
+    }
+
+    var raidShardBalance: Int {
+        progress.raidShardBalance
+    }
+
     func activateConnectivity() {
         connectivity.activate()
         syncCompanionEffects()
@@ -298,6 +306,16 @@ final class PhoneDashboardStore {
 
     func claimSeasonReward() {
         _ = progress.claimSeasonReward(id: seasonEconomyBoard.seasonID)
+        persistVault()
+    }
+
+    func claimRaidReward(_ encounterID: String) {
+        guard let encounter = raidEncounters.first(where: { $0.id == encounterID }) else { return }
+        _ = progress.claimRaidReward(
+            id: encounter.id,
+            readinessScore: encounter.readinessScore,
+            threshold: encounter.claimThreshold
+        )
         persistVault()
     }
 

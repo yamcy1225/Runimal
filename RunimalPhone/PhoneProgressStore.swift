@@ -17,6 +17,8 @@ final class PhoneProgressStore {
         static let seasonSigils = "runimal.phone.seasonSigils"
         static let buildStates = "runimal.phone.buildStates"
         static let claimedSeasonRewardIDs = "runimal.phone.claimedSeasonRewardIDs"
+        static let claimedRaidRewardIDs = "runimal.phone.claimedRaidRewardIDs"
+        static let raidShardBalance = "runimal.phone.raidShardBalance"
     }
 
     private let defaults: UserDefaults
@@ -31,6 +33,8 @@ final class PhoneProgressStore {
     var seasonSigils = 0
     var buildStates: [CompanionBuildState] = []
     var claimedSeasonRewardIDs: [String] = []
+    var claimedRaidRewardIDs: [String] = []
+    var raidShardBalance = 0
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -86,6 +90,8 @@ final class PhoneProgressStore {
         }
 
         claimedSeasonRewardIDs = defaults.stringArray(forKey: Keys.claimedSeasonRewardIDs) ?? []
+        claimedRaidRewardIDs = defaults.stringArray(forKey: Keys.claimedRaidRewardIDs) ?? []
+        raidShardBalance = defaults.integer(forKey: Keys.raidShardBalance)
     }
 
     func seedIfNeeded(from summaries: [RunSummary]) {
@@ -260,6 +266,18 @@ final class PhoneProgressStore {
         return true
     }
 
+    @discardableResult
+    func claimRaidReward(id: String, readinessScore: Int, threshold: Int) -> Bool {
+        guard readinessScore >= threshold else { return false }
+        guard !claimedRaidRewardIDs.contains(id) else { return false }
+
+        claimedRaidRewardIDs.append(id)
+        raidShardBalance += 1
+        essenceBalance += 24
+        save()
+        return true
+    }
+
     func snapshot(savedAt: Date = Date()) -> RunimalProgressSnapshot {
         RunimalProgressSnapshot(
             savedAt: savedAt,
@@ -273,7 +291,9 @@ final class PhoneProgressStore {
             overdriveCharges: overdriveCharges,
             seasonSigils: seasonSigils,
             buildStates: buildStates,
-            claimedSeasonRewardIDs: claimedSeasonRewardIDs
+            claimedSeasonRewardIDs: claimedSeasonRewardIDs,
+            claimedRaidRewardIDs: claimedRaidRewardIDs,
+            raidShardBalance: raidShardBalance
         )
     }
 
@@ -289,6 +309,8 @@ final class PhoneProgressStore {
         seasonSigils = snapshot.seasonSigils
         buildStates = snapshot.buildStates
         claimedSeasonRewardIDs = snapshot.claimedSeasonRewardIDs
+        claimedRaidRewardIDs = snapshot.claimedRaidRewardIDs
+        raidShardBalance = snapshot.raidShardBalance
         save()
     }
 
@@ -388,5 +410,7 @@ final class PhoneProgressStore {
         }
 
         defaults.set(claimedSeasonRewardIDs, forKey: Keys.claimedSeasonRewardIDs)
+        defaults.set(claimedRaidRewardIDs, forKey: Keys.claimedRaidRewardIDs)
+        defaults.set(raidShardBalance, forKey: Keys.raidShardBalance)
     }
 }

@@ -379,6 +379,8 @@ public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
     public let seasonSigils: Int
     public let buildStates: [CompanionBuildState]
     public let claimedSeasonRewardIDs: [String]
+    public let claimedRaidRewardIDs: [String]
+    public let raidShardBalance: Int
 
     public init(
         savedAt: Date,
@@ -392,7 +394,9 @@ public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
         overdriveCharges: Int,
         seasonSigils: Int,
         buildStates: [CompanionBuildState],
-        claimedSeasonRewardIDs: [String]
+        claimedSeasonRewardIDs: [String],
+        claimedRaidRewardIDs: [String],
+        raidShardBalance: Int
     ) {
         self.savedAt = savedAt
         self.journal = journal
@@ -406,6 +410,8 @@ public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
         self.seasonSigils = seasonSigils
         self.buildStates = buildStates
         self.claimedSeasonRewardIDs = claimedSeasonRewardIDs
+        self.claimedRaidRewardIDs = claimedRaidRewardIDs
+        self.raidShardBalance = raidShardBalance
     }
 }
 
@@ -513,13 +519,15 @@ public struct RaidEncounter: Codable, Equatable, Identifiable, Sendable {
     public let detail: String
     public let readinessScore: Int
     public let recommendedReward: String
+    public let claimThreshold: Int
 
-    public init(id: String, title: String, detail: String, readinessScore: Int, recommendedReward: String) {
+    public init(id: String, title: String, detail: String, readinessScore: Int, recommendedReward: String, claimThreshold: Int) {
         self.id = id
         self.title = title
         self.detail = detail
         self.readinessScore = readinessScore
         self.recommendedReward = recommendedReward
+        self.claimThreshold = claimThreshold
     }
 }
 
