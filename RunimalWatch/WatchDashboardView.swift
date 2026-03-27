@@ -4,6 +4,7 @@ import SwiftUI
 struct WatchDashboardView: View {
     @State private var runSessionManager = WatchRunSessionManager()
     @State private var connectivityManager = WatchConnectivityManager()
+    @State private var hatchBurstScale: CGFloat = 0.9
 
     private var livePet: GeneratedPet {
         runSessionManager.livePet
@@ -173,7 +174,10 @@ struct WatchDashboardView: View {
                     GameSurface(title: "Hatch Result") {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(spacing: 10) {
-                                PixelPetView(pet: reward.pet, pixelSize: 6)
+                                ZStack {
+                                    HatchBurstView(accent: reward.pet.accentColor, scale: hatchBurstScale)
+                                    PixelPetView(pet: reward.pet, pixelSize: 6)
+                                }
 
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(reward.pet.displayName)
@@ -250,8 +254,20 @@ struct WatchDashboardView: View {
             guard let record else { return }
             connectivityManager.send(completedRun: record)
         }
+        .onChange(of: runSessionManager.lastReward) { _, reward in
+            guard reward != nil else { return }
+            animateHatchBurst()
+            RunimalCuePlayer.playHatchCue()
+        }
         .animation(.spring(response: 0.7, dampingFraction: 0.84), value: runSessionManager.lastReward != nil)
         .animation(.easeInOut(duration: 0.9), value: liveFeedback.label)
+    }
+
+    private func animateHatchBurst() {
+        hatchBurstScale = 0.82
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.66)) {
+            hatchBurstScale = 1.05
+        }
     }
 
     private func metric(_ label: String, _ value: String) -> some View {

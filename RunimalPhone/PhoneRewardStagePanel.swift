@@ -10,6 +10,7 @@ struct PhoneRewardStagePanel: View {
     let onClaim: (() -> Void)?
 
     @State private var energized = false
+    @State private var burstScale: CGFloat = 0.92
 
     private var stageTitle: String {
         if let claimableReward {
@@ -60,6 +61,8 @@ struct PhoneRewardStagePanel: View {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .center, spacing: 16) {
                     ZStack {
+                        HatchBurstView(accent: stageAccent, scale: burstScale)
+
                         Circle()
                             .fill(stageAccent.opacity(energized ? 0.28 : 0.18))
                             .frame(width: 108, height: 108)
@@ -126,7 +129,23 @@ struct PhoneRewardStagePanel: View {
         )
         .onAppear {
             energized = true
+            animateBurst()
+        }
+        .onChange(of: claimableReward?.id) { _, _ in
+            animateBurst()
+            RunimalCuePlayer.playHatchCue()
+        }
+        .onChange(of: progress.stageLabel) { _, _ in
+            animateBurst()
+            RunimalCuePlayer.playEvolutionCue()
         }
         .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: energized)
+    }
+
+    private func animateBurst() {
+        burstScale = 0.84
+        withAnimation(.spring(response: 0.62, dampingFraction: 0.68)) {
+            burstScale = 1.08
+        }
     }
 }
