@@ -21,6 +21,7 @@ final class MacBalanceLabStore {
     var variability = 0.06
     var aura: RunTimeAura = .day
     var shape: RouteShape = .outAndBack
+    var selectedScenarioID = RunimalQAReplayEngine.scenarios.first?.id ?? "offline-link"
 
     var summary: RunSummary {
         RunSummary(
@@ -182,6 +183,8 @@ struct MacDashboardView: View {
                     }
                 }
             }
+
+            MacQAReplayPanel(selectedScenarioID: $store.selectedScenarioID)
         }
         .frame(width: 360)
     }

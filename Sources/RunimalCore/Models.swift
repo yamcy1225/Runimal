@@ -406,6 +406,32 @@ public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
     }
 }
 
+public struct QAReplayScenario: Codable, Equatable, Identifiable, Sendable {
+    public let id: String
+    public let title: String
+    public let trigger: String
+    public let recoveryExpectation: String
+
+    public init(id: String, title: String, trigger: String, recoveryExpectation: String) {
+        self.id = id
+        self.title = title
+        self.trigger = trigger
+        self.recoveryExpectation = recoveryExpectation
+    }
+}
+
+public struct QAReplayReport: Codable, Equatable, Sendable {
+    public let title: String
+    public let severity: String
+    public let checkpoints: [String]
+
+    public init(title: String, severity: String, checkpoints: [String]) {
+        self.title = title
+        self.severity = severity
+        self.checkpoints = checkpoints
+    }
+}
+
 public struct RoutePoint: Codable, Equatable, Identifiable, Sendable {
     public let latitude: Double
     public let longitude: Double
