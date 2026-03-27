@@ -138,6 +138,14 @@ final class PhoneDashboardStore {
         progress.essenceBalance
     }
 
+    var forgeInventory: ForgeInventory {
+        progress.forgeInventory
+    }
+
+    var forgeOptions: [EssenceForgeOption] {
+        RunimalEssenceForgeEngine.options(for: featuredCompanion, season: weeklyBoard.season)
+    }
+
     func activateConnectivity() {
         connectivity.activate()
         syncCompanionEffects()
@@ -187,12 +195,17 @@ final class PhoneDashboardStore {
 
     func feedActiveCompanion(with runID: String) {
         guard let run = completedRuns.first(where: { $0.id == runID }) else { return }
-        _ = progress.feed(run: run, to: featuredCompanion, activeEffects: activeWeeklyEffects)
+        _ = progress.feed(run: run, to: featuredCompanion, activeEffects: activeWeeklyEffects, season: weeklyBoard.season)
     }
 
     func retireCompanion(_ companionID: String) {
         guard let offer = retirableOffers.first(where: { $0.companion.id == companionID }) else { return }
         _ = progress.retireCompanion(companionID, essenceReward: offer.essenceReward)
+    }
+
+    func forgeOption(_ optionID: String) {
+        guard let option = forgeOptions.first(where: { $0.id == optionID }) else { return }
+        _ = progress.purchaseForgeOption(option)
     }
 
     func syncCompanionEffects() {

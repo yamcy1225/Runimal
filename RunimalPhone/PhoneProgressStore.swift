@@ -13,6 +13,8 @@ final class PhoneProgressStore {
         static let growthRecords = "runimal.phone.growthRecords"
         static let retiredCompanionIDs = "runimal.phone.retiredCompanionIDs"
         static let essenceBalance = "runimal.phone.essenceBalance"
+        static let overdriveCharges = "runimal.phone.overdriveCharges"
+        static let seasonSigils = "runimal.phone.seasonSigils"
     }
 
     private let defaults: UserDefaults
@@ -23,6 +25,8 @@ final class PhoneProgressStore {
     var growthRecords: [CompanionGrowthRecord] = []
     var retiredCompanionIDs: [String] = []
     var essenceBalance = 0
+    var overdriveCharges = 0
+    var seasonSigils = 0
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -64,6 +68,8 @@ final class PhoneProgressStore {
 
         retiredCompanionIDs = defaults.stringArray(forKey: Keys.retiredCompanionIDs) ?? []
         essenceBalance = defaults.integer(forKey: Keys.essenceBalance)
+        overdriveCharges = defaults.integer(forKey: Keys.overdriveCharges)
+        seasonSigils = defaults.integer(forKey: Keys.seasonSigils)
     }
 
     func seedIfNeeded(from summaries: [RunSummary]) {
@@ -131,7 +137,8 @@ final class PhoneProgressStore {
     func feed(
         run: CompletedRunRecord,
         to companion: PetCollectionEntry,
-        activeEffects: [WeeklyRewardEffect]
+        activeEffects: [WeeklyRewardEffect],
+        season: WeeklySeason
     ) -> Bool {
         if growthRecords.flatMap(\.assignedRunIDs).contains(run.id) {
             return false
@@ -148,10 +155,15 @@ final class PhoneProgressStore {
             baseExperience: run.reward.experience,
             resonance: resonance
         )
+        let forgeBonus = RunimalEssenceForgeEngine.bonusExperience(
+            using: forgeInventory,
+            companion: companion,
+            season: season
+        )
 
         let updated = CompanionGrowthRecord(
             companionID: companion.id,
-            totalExperience: (currentRecord?.totalExperience ?? 0) + run.reward.experience + bonusExperience,
+            totalExperience: (currentRecord?.totalExperience ?? 0) + run.reward.experience + bonusExperience + forgeBonus.bonus,
             feedCount: (currentRecord?.feedCount ?? 0) + 1,
             assignedRunIDs: (currentRecord?.assignedRunIDs ?? []) + [run.id],
             lastFedAt: run.endedAt
@@ -160,6 +172,12 @@ final class PhoneProgressStore {
         growthRecords.removeAll(where: { $0.companionID == companion.id })
         growthRecords.append(updated)
         activeCompanionID = companion.id
+        if forgeBonus.consumeOverdrive {
+            overdriveCharges = max(overdriveCharges - 1, 0)
+        }
+        if forgeBonus.consumeSeasonSigil {
+            seasonSigils = max(seasonSigils - 1, 0)
+        }
         save()
         return true
     }
@@ -207,6 +225,30 @@ final class PhoneProgressStore {
         save()
     }
 
+    var forgeInventory: ForgeInventory {
+        ForgeInventory(overdriveCharges: overdriveCharges, seasonSigils: seasonSigils)
+    }
+
+    @discardableResult
+    func purchaseForgeOption(_ option: EssenceForgeOption) -> Bool {
+        guard essenceBalance >= option.cost else { return false }
+
+        essenceBalance -= option.cost
+
+        switch option.id {
+        case "forge-overdrive":
+            overdriveCharges += 1
+        case "forge-season-sigil":
+            seasonSigils += 1
+        default:
+            essenceBalance += option.cost
+            return false
+        }
+
+        save()
+        return true
+    }
+
     private func save() {
         do {
             let journalData = try JSONEncoder().encode(journal)
@@ -234,5 +276,7 @@ final class PhoneProgressStore {
 
         defaults.set(retiredCompanionIDs, forKey: Keys.retiredCompanionIDs)
         defaults.set(essenceBalance, forKey: Keys.essenceBalance)
+        defaults.set(overdriveCharges, forKey: Keys.overdriveCharges)
+        defaults.set(seasonSigils, forKey: Keys.seasonSigils)
     }
 }

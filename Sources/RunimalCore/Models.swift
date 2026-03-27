@@ -302,6 +302,32 @@ public struct CompanionGrowthRecord: Codable, Equatable, Identifiable, Sendable 
     }
 }
 
+public struct ForgeInventory: Codable, Equatable, Sendable {
+    public let overdriveCharges: Int
+    public let seasonSigils: Int
+
+    public init(overdriveCharges: Int, seasonSigils: Int) {
+        self.overdriveCharges = overdriveCharges
+        self.seasonSigils = seasonSigils
+    }
+}
+
+public struct EssenceForgeOption: Codable, Equatable, Identifiable, Sendable {
+    public let id: String
+    public let title: String
+    public let detail: String
+    public let cost: Int
+    public let rewardLabel: String
+
+    public init(id: String, title: String, detail: String, cost: Int, rewardLabel: String) {
+        self.id = id
+        self.title = title
+        self.detail = detail
+        self.cost = cost
+        self.rewardLabel = rewardLabel
+    }
+}
+
 public struct RoutePoint: Codable, Equatable, Identifiable, Sendable {
     public let latitude: Double
     public let longitude: Double

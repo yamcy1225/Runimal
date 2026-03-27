@@ -47,6 +47,12 @@ struct PhoneCollectionView: View {
                     offers: store.retirableOffers,
                     onRetire: store.retireCompanion(_:)
                 )
+                PhoneEssenceForgePanel(
+                    essenceBalance: store.essenceBalance,
+                    inventory: store.forgeInventory,
+                    options: store.forgeOptions,
+                    onForge: store.forgeOption(_:)
+                )
                 resonanceCompareBoard
                 collectionGrid
                 growthTimeline
