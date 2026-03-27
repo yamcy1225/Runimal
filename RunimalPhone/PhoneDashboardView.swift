@@ -218,6 +218,10 @@ final class PhoneDashboardStore {
         progress.raidShardBalance
     }
 
+    var lastRaidResolution: RaidResolution? {
+        progress.lastRaidResolution
+    }
+
     func activateConnectivity() {
         connectivity.activate()
         syncCompanionEffects()
@@ -228,14 +232,14 @@ final class PhoneDashboardStore {
         let vaultSnapshot = vault.loadSnapshot()
         let cloudSnapshot = cloudMirror.restoreIfAvailable()
 
-        if let chosen = [vaultSnapshot, cloudSnapshot]
-            .compactMap({ $0 })
-            .sorted(by: { $0.savedAt > $1.savedAt })
-            .first {
-            progress.restore(from: chosen)
+        if let vaultSnapshot, let cloudSnapshot {
+            progress.restore(from: RunimalSnapshotMergeEngine.merge(vaultSnapshot, cloudSnapshot))
+        } else if let single = vaultSnapshot ?? cloudSnapshot {
+            progress.restore(from: single)
         }
         progress.seedIfNeeded(from: runArchive)
         persistVault()
+        cloudMirror.validateRuntime()
         telemetry.log("bootstrap", detail: "store initialized")
     }
 
@@ -329,6 +333,7 @@ final class PhoneDashboardStore {
         guard let encounter = raidEncounters.first(where: { $0.id == encounterID }) else { return }
         _ = progress.claimRaidReward(
             id: encounter.id,
+            title: encounter.title,
             readinessScore: encounter.readinessScore,
             threshold: encounter.claimThreshold
         )

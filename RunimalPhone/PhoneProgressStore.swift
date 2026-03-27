@@ -19,6 +19,8 @@ final class PhoneProgressStore {
         static let claimedSeasonRewardIDs = "runimal.phone.claimedSeasonRewardIDs"
         static let claimedRaidRewardIDs = "runimal.phone.claimedRaidRewardIDs"
         static let raidShardBalance = "runimal.phone.raidShardBalance"
+        static let deviceID = "runimal.phone.deviceID"
+        static let lastRaidResolution = "runimal.phone.lastRaidResolution"
     }
 
     private let defaults: UserDefaults
@@ -35,6 +37,8 @@ final class PhoneProgressStore {
     var claimedSeasonRewardIDs: [String] = []
     var claimedRaidRewardIDs: [String] = []
     var raidShardBalance = 0
+    var deviceID = UUID().uuidString
+    var lastRaidResolution: RaidResolution?
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -92,6 +96,12 @@ final class PhoneProgressStore {
         claimedSeasonRewardIDs = defaults.stringArray(forKey: Keys.claimedSeasonRewardIDs) ?? []
         claimedRaidRewardIDs = defaults.stringArray(forKey: Keys.claimedRaidRewardIDs) ?? []
         raidShardBalance = defaults.integer(forKey: Keys.raidShardBalance)
+        deviceID = defaults.string(forKey: Keys.deviceID) ?? UUID().uuidString
+        if let data = defaults.data(forKey: Keys.lastRaidResolution) {
+            lastRaidResolution = try? JSONDecoder().decode(RaidResolution.self, from: data)
+        } else {
+            lastRaidResolution = nil
+        }
     }
 
     func seedIfNeeded(from summaries: [RunSummary]) {
@@ -267,13 +277,24 @@ final class PhoneProgressStore {
     }
 
     @discardableResult
-    func claimRaidReward(id: String, readinessScore: Int, threshold: Int) -> Bool {
+    func claimRaidReward(id: String, title: String, readinessScore: Int, threshold: Int) -> Bool {
         guard readinessScore >= threshold else { return false }
         guard !claimedRaidRewardIDs.contains(id) else { return false }
 
+        let resolution = RunimalRaidResolutionEngine.resolve(
+            encounter: RaidEncounter(
+                id: id,
+                title: title,
+                detail: "",
+                readinessScore: readinessScore,
+                recommendedReward: "",
+                claimThreshold: threshold
+            )
+        )
         claimedRaidRewardIDs.append(id)
-        raidShardBalance += 1
-        essenceBalance += 24
+        raidShardBalance += resolution.shardReward
+        essenceBalance += resolution.essenceReward
+        lastRaidResolution = resolution
         save()
         return true
     }
@@ -281,6 +302,7 @@ final class PhoneProgressStore {
     func snapshot(savedAt: Date = Date()) -> RunimalProgressSnapshot {
         RunimalProgressSnapshot(
             savedAt: savedAt,
+            originDeviceID: deviceID,
             journal: journal,
             completedRuns: completedRuns,
             claimedWeeklyRewards: claimedWeeklyRewards,
@@ -311,6 +333,9 @@ final class PhoneProgressStore {
         claimedSeasonRewardIDs = snapshot.claimedSeasonRewardIDs
         claimedRaidRewardIDs = snapshot.claimedRaidRewardIDs
         raidShardBalance = snapshot.raidShardBalance
+        if deviceID.isEmpty {
+            deviceID = snapshot.originDeviceID
+        }
         save()
     }
 
@@ -412,5 +437,13 @@ final class PhoneProgressStore {
         defaults.set(claimedSeasonRewardIDs, forKey: Keys.claimedSeasonRewardIDs)
         defaults.set(claimedRaidRewardIDs, forKey: Keys.claimedRaidRewardIDs)
         defaults.set(raidShardBalance, forKey: Keys.raidShardBalance)
+        defaults.set(deviceID, forKey: Keys.deviceID)
+
+        if let lastRaidResolution,
+           let data = try? JSONEncoder().encode(lastRaidResolution) {
+            defaults.set(data, forKey: Keys.lastRaidResolution)
+        } else {
+            defaults.removeObject(forKey: Keys.lastRaidResolution)
+        }
     }
 }

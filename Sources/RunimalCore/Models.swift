@@ -368,6 +368,7 @@ public struct CompanionSkillNode: Codable, Equatable, Identifiable, Sendable {
 
 public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
     public let savedAt: Date
+    public let originDeviceID: String
     public let journal: [RunJournalEntry]
     public let completedRuns: [CompletedRunRecord]
     public let claimedWeeklyRewards: [String]
@@ -384,6 +385,7 @@ public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
 
     public init(
         savedAt: Date,
+        originDeviceID: String,
         journal: [RunJournalEntry],
         completedRuns: [CompletedRunRecord],
         claimedWeeklyRewards: [String],
@@ -399,6 +401,7 @@ public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
         raidShardBalance: Int
     ) {
         self.savedAt = savedAt
+        self.originDeviceID = originDeviceID
         self.journal = journal
         self.completedRuns = completedRuns
         self.claimedWeeklyRewards = claimedWeeklyRewards
@@ -528,6 +531,22 @@ public struct RaidEncounter: Codable, Equatable, Identifiable, Sendable {
         self.readinessScore = readinessScore
         self.recommendedReward = recommendedReward
         self.claimThreshold = claimThreshold
+    }
+}
+
+public struct RaidResolution: Codable, Equatable, Sendable {
+    public let encounterID: String
+    public let title: String
+    public let tier: String
+    public let shardReward: Int
+    public let essenceReward: Int
+
+    public init(encounterID: String, title: String, tier: String, shardReward: Int, essenceReward: Int) {
+        self.encounterID = encounterID
+        self.title = title
+        self.tier = tier
+        self.shardReward = shardReward
+        self.essenceReward = essenceReward
     }
 }
 

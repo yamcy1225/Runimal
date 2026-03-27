@@ -10,6 +10,7 @@ final class PhoneCloudMirrorManager {
 
     var statusLabel = "Cloud idle"
     var lastMirroredAt: Date?
+    var validationHeadline = "Cloud runtime not checked"
 
     func restoreIfAvailable() -> RunimalProgressSnapshot? {
         guard let encoded = store.string(forKey: snapshotKey),
@@ -34,5 +35,13 @@ final class PhoneCloudMirrorManager {
         } catch {
             statusLabel = "Cloud mirror failed"
         }
+    }
+
+    func validateRuntime() {
+        let hasIdentity = FileManager.default.ubiquityIdentityToken != nil
+        let syncResult = store.synchronize()
+        validationHeadline = hasIdentity
+            ? "iCloud account detected · sync \(syncResult ? "ok" : "failed")"
+            : "No iCloud identity token in current runtime"
     }
 }

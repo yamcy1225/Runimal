@@ -30,6 +30,7 @@ struct PhoneHomeView: View {
                     statusLabel: store.cloudMirror.statusLabel,
                     lastMirroredAt: store.cloudMirror.lastMirroredAt
                 )
+                PhoneCloudValidationPanel(headline: store.cloudMirror.validationHeadline)
                 PhoneTelemetryPanel(
                     lastEventLabel: store.telemetry.lastEventLabel,
                     eventCount: store.telemetry.eventCount,
@@ -47,6 +48,7 @@ struct PhoneHomeView: View {
                     raidShardBalance: store.raidShardBalance,
                     onClaim: store.claimRaidReward(_:)
                 )
+                PhoneRaidResolutionPanel(resolution: store.lastRaidResolution)
                 PhoneStarterLoopPanel(steps: store.starterLoop)
                 questCard
                 workoutCard
