@@ -32,6 +32,8 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     var lastReward: RunRewardSummary?
     var lastCompletedRun: CompletedRunRecord?
     var lastSavedWorkoutLabel = "No workout saved yet"
+    var claimedWeeklyRewardIDs: Set<String> = []
+    var activeWeeklyEffects: [WeeklyRewardEffect] = []
     var isDemoMode: Bool {
         ProcessInfo.processInfo.environment["RUNIMAL_AUTOPLAY_DEMO"] == "1"
     }
@@ -126,7 +128,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             try await workoutBuilder.endCollection(at: endDate)
             let workout = try await finishWorkout(using: workoutBuilder)
             sessionStateLabel = "finished"
-            let reward = RunimalGameEngine.evaluateReward(for: latestSnapshot)
+            let reward = RunimalGameEngine.evaluateReward(for: latestSnapshot, claimedRewardIDs: claimedWeeklyRewardIDs)
             let averageHeartRate = averageHeartRateAccumulator.isEmpty ? nil : averageHeartRateAccumulator.reduce(0, +) / Double(averageHeartRateAccumulator.count)
 
             if let routeBuilder, !routeLocations.isEmpty {
@@ -165,7 +167,12 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     }
 
     var livePet: GeneratedPet {
-        RunimalGameEngine.generatePet(from: latestSnapshot)
+        RunimalGameEngine.generatePet(from: latestSnapshot, claimedRewardIDs: claimedWeeklyRewardIDs)
+    }
+
+    func applyCompanionContext(_ context: CompanionEffectContext) {
+        claimedWeeklyRewardIDs = Set(context.claimedRewardIDs)
+        activeWeeklyEffects = context.activeEffects
     }
 
     private func startDemoRun() {
@@ -209,7 +216,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         demoTask?.cancel()
         demoTask = nil
         sessionStateLabel = "finished"
-        let reward = RunimalGameEngine.evaluateReward(for: latestSnapshot)
+        let reward = RunimalGameEngine.evaluateReward(for: latestSnapshot, claimedRewardIDs: claimedWeeklyRewardIDs)
         let endedAt = Date()
         let startedAt = endedAt.addingTimeInterval(-Double(latestSnapshot.elapsedSeconds))
         let record = RunimalGameEngine.makeCompletedRunRecord(

@@ -108,6 +108,7 @@ final class PhoneDashboardStore {
 
     func activateConnectivity() {
         connectivity.activate()
+        syncCompanionEffects()
     }
 
     func bootstrap() {
@@ -145,6 +146,15 @@ final class PhoneDashboardStore {
     func claimWeeklyReward() {
         guard let reward = claimableWeeklyReward else { return }
         progress.claimWeeklyReward(id: reward.id)
+        syncCompanionEffects()
+    }
+
+    func syncCompanionEffects() {
+        let context = CompanionEffectContext(
+            claimedRewardIDs: Array(claimedWeeklyRewardIDs).sorted(),
+            activeEffects: activeWeeklyEffects
+        )
+        connectivity.pushCompanionEffects(context)
     }
 }
 

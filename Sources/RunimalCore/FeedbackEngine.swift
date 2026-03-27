@@ -41,43 +41,64 @@ public struct EvolutionTarget: Codable, Equatable, Sendable {
 }
 
 public extension RunimalGameEngine {
-    static func evaluateLiveFeedback(for snapshot: LiveRunSnapshot) -> LiveRunFeedback {
+    static func evaluateLiveFeedback(for snapshot: LiveRunSnapshot, claimedRewardIDs: Set<String> = []) -> LiveRunFeedback {
         let pace = snapshot.averagePaceSeconds ?? 360
         let cadence = snapshot.cadence ?? 166
         let heartRate = snapshot.currentHeartRate ?? 148
 
-        if pace <= RunimalBalanceConfig.surgePaceSeconds && cadence >= RunimalBalanceConfig.surgeCadence {
+        if claimedRewardIDs.contains("weekly-core-cache") && pace <= 325 && cadence >= 170 {
             return LiveRunFeedback(
+                label: "Rare Window",
+                headline: "희귀 변이 창이 열렸습니다",
+                detail: "Rare Core Cache가 활성화되어 근접한 러닝도 변이 후보로 승격됩니다.",
+                intensity: 0.96
+            )
+        }
+
+        if pace <= RunimalBalanceConfig.surgePaceSeconds && cadence >= RunimalBalanceConfig.surgeCadence {
+            return decorate(
+                feedback: LiveRunFeedback(
                 label: "Surge",
                 headline: "희귀 변이 페이스에 접근 중",
                 detail: "고케이던스와 빠른 리듬이 tempo 계열 변이를 자극하고 있습니다.",
                 intensity: 0.92
+                ),
+                claimedRewardIDs: claimedRewardIDs
             )
         }
 
         if pace <= RunimalBalanceConfig.steadyPaceSeconds && cadence >= RunimalBalanceConfig.steadyCadence {
-            return LiveRunFeedback(
+            return decorate(
+                feedback: LiveRunFeedback(
                 label: "Stable",
                 headline: "지금 리듬이 가장 좋습니다",
                 detail: "안정적인 페이스입니다. 이 구간을 유지하면 집중형 성장치가 올라갑니다.",
                 intensity: 0.72
+                ),
+                claimedRewardIDs: claimedRewardIDs
             )
         }
 
         if heartRate >= Double(RunimalBalanceConfig.recoveryHeartRate) {
-            return LiveRunFeedback(
+            return decorate(
+                feedback: LiveRunFeedback(
                 label: "Recover",
                 headline: "조금만 정리하면 더 좋습니다",
                 detail: "심박이 높습니다. 호흡을 안정시키면 성장 효율이 다시 올라갑니다.",
                 intensity: 0.48
+                ),
+                claimedRewardIDs: claimedRewardIDs
             )
         }
 
-        return LiveRunFeedback(
+        return decorate(
+            feedback: LiveRunFeedback(
             label: "Warm",
             headline: "펫이 러닝 흔적을 읽는 중",
             detail: "조금 더 달리면 외형과 속성 변화가 분명해집니다.",
             intensity: 0.35
+            ),
+            claimedRewardIDs: claimedRewardIDs
         )
     }
 
@@ -137,5 +158,27 @@ public extension RunimalGameEngine {
         guard let seconds, seconds > 0 else { return "--" }
         let minutes = seconds / 60
         return "\(minutes):\(String(format: "%02d", seconds % 60))/km"
+    }
+
+    private static func decorate(feedback: LiveRunFeedback, claimedRewardIDs: Set<String>) -> LiveRunFeedback {
+        var detail = feedback.detail
+        var intensity = feedback.intensity
+
+        if claimedRewardIDs.contains("weekly-badge") {
+            detail += " Badge Momentum으로 이번 러닝 XP가 증폭됩니다."
+            intensity = min(intensity + 0.03, 1)
+        }
+
+        if claimedRewardIDs.contains("weekly-evo-boost") {
+            detail += " Evolution Fuel이 추가 진화 XP를 적재 중입니다."
+            intensity = min(intensity + 0.05, 1)
+        }
+
+        return LiveRunFeedback(
+            label: feedback.label,
+            headline: feedback.headline,
+            detail: detail,
+            intensity: intensity
+        )
     }
 }

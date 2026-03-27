@@ -8,6 +8,8 @@ import WatchConnectivity
 final class WatchConnectivityManager: NSObject, WCSessionDelegate {
     var activationStateLabel = "inactive"
     var lastSyncedWorkoutTitle = "No plan yet"
+    var claimedRewardIDs: Set<String> = []
+    var activeEffects: [WeeklyRewardEffect] = []
 
     func activate() {
         guard WCSession.isSupported() else {
@@ -71,6 +73,12 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
             if let data = applicationContext["workoutSuggestion"] as? Data,
                let suggestion = try? JSONDecoder().decode(WorkoutPlanSuggestion.self, from: data) {
                 self.lastSyncedWorkoutTitle = suggestion.title
+            }
+
+            if let data = applicationContext["companionEffectContext"] as? Data,
+               let context = try? JSONDecoder().decode(CompanionEffectContext.self, from: data) {
+                self.claimedRewardIDs = Set(context.claimedRewardIDs)
+                self.activeEffects = context.activeEffects
             }
         }
     }

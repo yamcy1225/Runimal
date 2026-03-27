@@ -84,3 +84,13 @@ public struct WeeklyRewardEffect: Codable, Equatable, Identifiable, Sendable {
         self.detail = detail
     }
 }
+
+public struct CompanionEffectContext: Codable, Equatable, Sendable {
+    public let claimedRewardIDs: [String]
+    public let activeEffects: [WeeklyRewardEffect]
+
+    public init(claimedRewardIDs: [String], activeEffects: [WeeklyRewardEffect]) {
+        self.claimedRewardIDs = claimedRewardIDs
+        self.activeEffects = activeEffects
+    }
+}

@@ -39,6 +39,20 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
         }
     }
 
+    func pushCompanionEffects(_ context: CompanionEffectContext) {
+        guard WCSession.isSupported() else { return }
+
+        let session = WCSession.default
+
+        do {
+            let data = try JSONEncoder().encode(context)
+            try session.updateApplicationContext(["companionEffectContext": data])
+            lastMessage = "Synced weekly effects"
+        } catch {
+            lastMessage = "Effect sync failed: \(error.localizedDescription)"
+        }
+    }
+
     nonisolated func session(
         _ session: WCSession,
         activationDidCompleteWith activationState: WCSessionActivationState,

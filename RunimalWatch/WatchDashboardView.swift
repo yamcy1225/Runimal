@@ -14,7 +14,10 @@ struct WatchDashboardView: View {
     }
 
     private var liveFeedback: LiveRunFeedback {
-        RunimalGameEngine.evaluateLiveFeedback(for: runSessionManager.latestSnapshot)
+        RunimalGameEngine.evaluateLiveFeedback(
+            for: runSessionManager.latestSnapshot,
+            claimedRewardIDs: runSessionManager.claimedWeeklyRewardIDs
+        )
     }
 
     var body: some View {
@@ -70,6 +73,11 @@ struct WatchDashboardView: View {
                         Text(liveFeedback.detail)
                             .font(.caption2)
                             .foregroundStyle(.white.opacity(0.62))
+                        if connectivityManager.activeEffects.isEmpty == false {
+                            Text(connectivityManager.activeEffects.map(\.title).joined(separator: " · "))
+                                .font(.caption2)
+                                .foregroundStyle(livePet.accentColor.opacity(0.85))
+                        }
                     }
                 }
 
@@ -135,6 +143,13 @@ struct WatchDashboardView: View {
         .task {
             connectivityManager.activate()
             runSessionManager.autoplayDemoIfNeeded()
+        }
+        .onChange(of: connectivityManager.claimedRewardIDs) { _, rewardIDs in
+            let context = CompanionEffectContext(
+                claimedRewardIDs: Array(rewardIDs).sorted(),
+                activeEffects: connectivityManager.activeEffects
+            )
+            runSessionManager.applyCompanionContext(context)
         }
         .onChange(of: runSessionManager.latestSnapshot) { _, snapshot in
             connectivityManager.send(snapshot: snapshot)
