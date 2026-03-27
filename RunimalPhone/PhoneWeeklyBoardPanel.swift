@@ -6,7 +6,6 @@ struct PhoneWeeklyBoardPanel: View {
     let accent: Color
     let claimedRewardIDs: Set<String>
     let activeEffects: [WeeklyRewardEffect]
-    let onClaim: (() -> Void)?
 
     var body: some View {
         GameSurface(title: "Weekly Board") {
@@ -117,13 +116,6 @@ struct PhoneWeeklyBoardPanel: View {
                     }
                 }
 
-                if let onClaim {
-                    Button("Claim Weekly Reward") {
-                        onClaim()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(accent)
-                }
             }
         }
     }

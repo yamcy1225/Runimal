@@ -8,12 +8,18 @@ struct PhoneHomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 heroCard
+                PhoneRewardStagePanel(
+                    pet: store.pet,
+                    progress: store.evolutionProgress,
+                    activeEffects: store.activeWeeklyEffects,
+                    claimableReward: store.claimableWeeklyReward,
+                    onClaim: store.claimableWeeklyReward == nil ? nil : { store.claimWeeklyReward() }
+                )
                 PhoneWeeklyBoardPanel(
                     board: store.weeklyBoard,
                     accent: store.pet.accentColor,
                     claimedRewardIDs: store.claimedWeeklyRewardIDs,
-                    activeEffects: store.activeWeeklyEffects,
-                    onClaim: store.claimableWeeklyReward == nil ? nil : { store.claimWeeklyReward() }
+                    activeEffects: store.activeWeeklyEffects
                 )
                 questCard
                 workoutCard
