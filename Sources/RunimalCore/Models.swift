@@ -25,14 +25,14 @@ public enum RareVariant: String, Codable, CaseIterable, Sendable {
     case loopSigil = "loop-sigil"
 }
 
-public enum RunTimeAura: String, Codable, Sendable {
+public enum RunTimeAura: String, Codable, CaseIterable, Sendable {
     case dawn
     case day
     case dusk
     case night
 }
 
-public enum RouteShape: String, Codable, Sendable {
+public enum RouteShape: String, Codable, CaseIterable, Sendable {
     case loop
     case outAndBack = "out-and-back"
     case maze
