@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import RunimalCore
 import SwiftUI
 
 @MainActor
@@ -21,9 +22,15 @@ final class MacAssetPipelineStore {
         let points: [[Double]]
     }
 
+    struct PreviewEntry: Identifiable {
+        let id: String
+        let pet: GeneratedPet
+        let label: String
+    }
+
     var draft = ""
     var status = "Asset pipeline idle"
-    var previewCards: [String] = []
+    var previewEntries: [PreviewEntry] = []
 
     init() {
         load()
@@ -37,7 +44,7 @@ final class MacAssetPipelineStore {
         } catch {
             draft = ""
             status = "Load failed"
-            previewCards = []
+            previewEntries = []
         }
     }
 
@@ -71,14 +78,49 @@ final class MacAssetPipelineStore {
 
     private func rebuildPreview() {
         guard let catalog = try? JSONDecoder().decode(Catalog.self, from: Data(draft.utf8)) else {
-            previewCards = []
+            previewEntries = []
             return
         }
 
-        previewCards = catalog.species.sorted(by: { $0.key < $1.key }).map { key, value in
-            "\(key) · hatch \(value.hatchSound) · evo \(value.evolutionSound) · tilt \(String(format: "%.1f", value.tilt))"
-        } + catalog.variants.sorted(by: { $0.key < $1.key }).map { key, value in
-            "\(key) · evo \(value.evolutionSound) · points \(value.points.count)"
+        let variants = RareVariant.allCases
+        previewEntries = catalog.species.sorted(by: { $0.key < $1.key }).enumerated().compactMap { index, entry in
+            guard let species = PetSpecies(rawValue: entry.key) else { return nil }
+            let variant = variants[index % max(variants.count, 1)]
+            let pet = GeneratedPet(
+                species: species,
+                element: element(for: species),
+                palette: palette(for: species),
+                rareVariant: variant,
+                explanation: ["asset preview"],
+                stats: PetStats(vitality: 5, agility: 5, dexterity: 5, focus: 5, defense: 5)
+            )
+
+            return PreviewEntry(
+                id: "\(entry.key)-\(variant.rawValue)",
+                pet: pet,
+                label: "\(entry.key) · hatch \(entry.value.hatchSound) · evo \(entry.value.evolutionSound) · tilt \(String(format: "%.1f", entry.value.tilt))"
+            )
+        }
+    }
+
+    private func element(for species: PetSpecies) -> PetElement {
+        switch species {
+        case .windrunner: return .light
+        case .stoneback: return .earth
+        case .sparkfang: return .flame
+        case .mosshop, .seedle: return .leaf
+        case .shadebit: return .lunar
+        }
+    }
+
+    private func palette(for species: PetSpecies) -> String {
+        switch species {
+        case .windrunner: return "aero"
+        case .stoneback: return "granite"
+        case .sparkfang: return "flare"
+        case .mosshop: return "moss"
+        case .shadebit: return "eclipse"
+        case .seedle: return "sprout"
         }
     }
 }
@@ -120,15 +162,16 @@ struct MacAssetPipelinePanel: View {
                     .buttonStyle(.bordered)
                 }
 
-                if !store.previewCards.isEmpty {
+                if !store.previewEntries.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Preview Render")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.white.opacity(0.72))
-                        ForEach(store.previewCards.prefix(4), id: \.self) { card in
+                        ForEach(store.previewEntries.prefix(4)) { entry in
                             HStack(spacing: 10) {
-                                DotPreviewTile(label: card)
-                                Text(card)
+                                PixelPetView(pet: entry.pet, pixelSize: 4.5)
+                                    .frame(width: 52, height: 52)
+                                Text(entry.label)
                                     .font(.caption.monospaced())
                                     .foregroundStyle(.white.opacity(0.72))
                             }
@@ -137,58 +180,5 @@ struct MacAssetPipelinePanel: View {
                 }
             }
         }
-    }
-}
-
-private struct DotPreviewTile: View {
-    let label: String
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(.white.opacity(0.08))
-                .frame(width: 44, height: 44)
-
-            VStack(spacing: 2) {
-                Rectangle()
-                    .fill(headColor)
-                    .frame(width: bodyWidth, height: 12)
-                Rectangle()
-                    .fill(accentColor)
-                    .frame(width: 20, height: 6)
-                if label.contains("sparkfang") || label.contains("windrunner") {
-                    Rectangle()
-                        .fill(.yellow.opacity(0.8))
-                        .frame(width: 8, height: 4)
-                }
-                if label.contains("tempo-surge") || label.contains("loop-sigil") {
-                    HStack(spacing: 2) {
-                        Circle().fill(.white.opacity(0.8)).frame(width: 3, height: 3)
-                        Circle().fill(.white.opacity(0.6)).frame(width: 3, height: 3)
-                        Circle().fill(.white.opacity(0.8)).frame(width: 3, height: 3)
-                    }
-                }
-            }
-            .rotationEffect(.degrees(label.contains("tilt -") ? -8 : 8))
-        }
-    }
-
-    private var headColor: Color {
-        if label.contains("stoneback") { return .brown.opacity(0.82) }
-        if label.contains("mosshop") { return .green.opacity(0.82) }
-        if label.contains("shadebit") { return .blue.opacity(0.82) }
-        return .white.opacity(0.9)
-    }
-
-    private var accentColor: Color {
-        if label.contains("sparkfang") { return .orange.opacity(0.82) }
-        if label.contains("windrunner") { return .cyan.opacity(0.82) }
-        return .purple.opacity(0.7)
-    }
-
-    private var bodyWidth: CGFloat {
-        if label.contains("stoneback") { return 18 }
-        if label.contains("seedle") { return 10 }
-        return 14
     }
 }

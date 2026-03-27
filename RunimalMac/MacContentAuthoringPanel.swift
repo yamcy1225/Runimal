@@ -151,6 +151,34 @@ final class MacContentAuthoringStore {
         status = "Inserted \(selectedTarget.title) preset"
         validationStatus = "Schema unchecked"
     }
+
+    func appendEntry() {
+        guard var object = (try? JSONSerialization.jsonObject(with: Data(draft.utf8)) as? [[String: Any]]) else { return }
+        if selectedTarget == .rotation {
+            object.append(["id": "new-rotation-\(object.count)", "title": "New Rotation", "detail": "", "reward": ""])
+        } else {
+            object.append(["id": "new-raid-\(object.count)", "title": "New Raid", "detail": "", "recommendedReward": "", "claimThreshold": 140])
+        }
+        if let data = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted]),
+           let text = String(data: data, encoding: .utf8) {
+            draft = text
+            entryIndex = max(0, object.count - 1)
+            populateForm()
+        }
+    }
+
+    func deleteEntry() {
+        guard var object = (try? JSONSerialization.jsonObject(with: Data(draft.utf8)) as? [[String: Any]]),
+              object.indices.contains(entryIndex) else { return }
+        object.remove(at: entryIndex)
+        if object.isEmpty { object = [] }
+        if let data = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted]),
+           let text = String(data: data, encoding: .utf8) {
+            draft = text
+            entryIndex = max(0, min(entryIndex, max(object.count - 1, 0)))
+            populateForm()
+        }
+    }
 }
 
 struct MacContentAuthoringPanel: View {
@@ -222,6 +250,16 @@ struct MacContentAuthoringPanel: View {
 
                     Button("Apply Form") {
                         store.applyForm()
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button("Add Entry") {
+                        store.appendEntry()
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button("Delete Entry") {
+                        store.deleteEntry()
                     }
                     .buttonStyle(.bordered)
                 }

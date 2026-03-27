@@ -295,9 +295,24 @@ final class PhoneDashboardStore {
         )
     }
 
+    var recordDiffChoices: [RecordDiffChoice] {
+        RunimalRecordDiffEngine.choices(
+            local: vault.loadSnapshot(),
+            cloud: cloudMirror.restoreIfAvailable()
+        )
+    }
+
     var seasonalRaidBranchReward: RaidBranchReward? {
         guard let primaryRaidEncounter else { return nil }
         return RunimalSeasonalRaidBranchEngine.reward(for: primaryRaidEncounter, season: weeklyBoard.season)
+    }
+
+    var seasonalUnlocks: [SeasonalUnlock] {
+        RunimalSeasonalUnlockEngine.unlocks(
+            season: weeklyBoard.season,
+            claimedSeasonIDs: progress.claimedSeasonRewardIDs,
+            claimedRaidIDs: progress.claimedRaidRewardIDs
+        )
     }
 
     func activateConnectivity() {
@@ -475,6 +490,14 @@ final class PhoneDashboardStore {
         progress.importAllSelectiveCandidates(type: type, local: localSnapshot, cloud: cloudSnapshot)
         persistVault()
         telemetry.log("selective_import_all", detail: type)
+    }
+
+    func resolveRecordDiff(_ id: String, type: String, useCloud: Bool) {
+        let localSnapshot = vault.loadSnapshot()
+        let cloudSnapshot = cloudMirror.restoreIfAvailable()
+        progress.resolveRecordDiff(id: id, type: type, useCloud: useCloud, local: localSnapshot, cloud: cloudSnapshot)
+        persistVault()
+        telemetry.log("record_diff_resolved", detail: "\(type):\(id):\(useCloud)")
     }
 
     func syncCompanionEffects() {

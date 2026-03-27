@@ -51,6 +51,11 @@ struct PhoneHomeView: View {
                     onImport: store.importSelectiveCandidate(_:type:),
                     onImportAll: store.importAllSelectiveCandidates(_:)
                 )
+                PhoneRecordDiffPanel(
+                    choices: store.recordDiffChoices,
+                    onUseLocal: { id, type in store.resolveRecordDiff(id, type: type, useCloud: false) },
+                    onUseCloud: { id, type in store.resolveRecordDiff(id, type: type, useCloud: true) }
+                )
                 PhoneTelemetryPanel(
                     lastEventLabel: store.telemetry.lastEventLabel,
                     eventCount: store.telemetry.eventCount,
@@ -80,6 +85,7 @@ struct PhoneHomeView: View {
                 if let seasonalRaidBranchReward = store.seasonalRaidBranchReward {
                     PhoneRaidBranchPanel(reward: seasonalRaidBranchReward)
                 }
+                PhoneSeasonalUnlockPanel(unlocks: store.seasonalUnlocks)
                 PhoneRaidResolutionPanel(resolution: store.lastRaidResolution)
                 PhoneStarterLoopPanel(steps: store.starterLoop)
                 questCard

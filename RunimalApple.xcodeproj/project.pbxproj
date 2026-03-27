@@ -59,12 +59,14 @@
 		81F92DF13F4F191AEE7B8946 /* PhoneBuildTreePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17E28684D946FF4AF2DA4B62 /* PhoneBuildTreePanel.swift */; };
 		82875FD3E02997675454BD44 /* PhoneHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEA95D1D9A9F2C66C78412A2 /* PhoneHomeView.swift */; };
 		837E7AFB0BD2AC92AD116EE6 /* RunimalCore in Frameworks */ = {isa = PBXBuildFile; productRef = DB1D160C34036A51CF28E910 /* RunimalCore */; };
+		852554C5EEE85AA025DC249C /* PhoneRecordDiffPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D861873D3B9F0CFC14067C7 /* PhoneRecordDiffPanel.swift */; };
 		8927F4FDE2E36B3C6BFD88F0 /* GameSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2B8EE9F33FD02687ADA9AD /* GameSurface.swift */; };
 		8CF42C38A3F8DA01536A35DC /* WatchRunPulseCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9022BE50135CB623C706CD5 /* WatchRunPulseCard.swift */; };
 		91DB87EB4DD59DC1A6282104 /* PhoneDiagnosticsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A401E55FD8B55C113229F30 /* PhoneDiagnosticsPanel.swift */; };
 		92FA3182F2B624539C41A17A /* MacAssetPackPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1599B42154DFCF8CFBE03E23 /* MacAssetPackPanel.swift */; };
 		965335A73E7B2F99C257965A /* PhoneRaidResolutionPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EFD7D49EF2A8C4B3BABBB7E /* PhoneRaidResolutionPanel.swift */; };
 		9EC134276D9B0B82C9699B0D /* PhoneSelectiveMergePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94DE3D4BBCFA33AFD86E9941 /* PhoneSelectiveMergePanel.swift */; };
+		A2F373E931E313EAD438F3F8 /* PhoneSeasonalUnlockPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D801EA74A4B0CDD65D1AF4E /* PhoneSeasonalUnlockPanel.swift */; };
 		A3A5D6C02FCD96C54119505C /* feedback-profiles.json in Resources */ = {isa = PBXBuildFile; fileRef = A9F7187532AD05E3E0A28B52 /* feedback-profiles.json */; };
 		AAEACADD1C4BEA881B02FF44 /* PixelPetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52C1B6533C1584594BAF166 /* PixelPetView.swift */; };
 		ACD3B44B257E089410F39529 /* PhoneContentCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7990F4F456F8ED0D942F95B8 /* PhoneContentCatalog.swift */; };
@@ -98,6 +100,7 @@
 		16F668EE7DB792C0CD6D7458 /* MacContentCatalogPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacContentCatalogPanel.swift; sourceTree = "<group>"; };
 		17E28684D946FF4AF2DA4B62 /* PhoneBuildTreePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneBuildTreePanel.swift; sourceTree = "<group>"; };
 		18C263EDBDA7A0547340C543 /* PhoneContentRotationPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneContentRotationPanel.swift; sourceTree = "<group>"; };
+		1D861873D3B9F0CFC14067C7 /* PhoneRecordDiffPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneRecordDiffPanel.swift; sourceTree = "<group>"; };
 		1E0D41AA3032A2C590F91404 /* PhoneStarterLoopPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneStarterLoopPanel.swift; sourceTree = "<group>"; };
 		1EFD7D49EF2A8C4B3BABBB7E /* PhoneRaidResolutionPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneRaidResolutionPanel.swift; sourceTree = "<group>"; };
 		1F2B8EE9F33FD02687ADA9AD /* GameSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSurface.swift; sourceTree = "<group>"; };
@@ -111,6 +114,7 @@
 		385B139873A7AFD4A86EC385 /* RunimalProgressBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunimalProgressBar.swift; sourceTree = "<group>"; };
 		39076D48B89EB45273A5F0A8 /* PhoneSeasonEconomyPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSeasonEconomyPanel.swift; sourceTree = "<group>"; };
 		3A401E55FD8B55C113229F30 /* PhoneDiagnosticsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneDiagnosticsPanel.swift; sourceTree = "<group>"; };
+		3D801EA74A4B0CDD65D1AF4E /* PhoneSeasonalUnlockPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSeasonalUnlockPanel.swift; sourceTree = "<group>"; };
 		3E2914D59941AF484DDE25BC /* RunimalMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RunimalMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		40B7409DEE69B8C69D4B9F0F /* PhoneCloudVerificationPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneCloudVerificationPanel.swift; sourceTree = "<group>"; };
 		42ADA97AE2793AC137474BA0 /* PhoneChallengeBoardPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneChallengeBoardPanel.swift; sourceTree = "<group>"; };
@@ -259,7 +263,9 @@
 				C3BF20B6F686F96E832BB931 /* PhoneRaidBranchPanel.swift */,
 				862939D4F8E60116617FF8EE /* PhoneRaidCombatPanel.swift */,
 				1EFD7D49EF2A8C4B3BABBB7E /* PhoneRaidResolutionPanel.swift */,
+				1D861873D3B9F0CFC14067C7 /* PhoneRecordDiffPanel.swift */,
 				6D52108AD744AAE198D6A811 /* PhoneRewardStagePanel.swift */,
+				3D801EA74A4B0CDD65D1AF4E /* PhoneSeasonalUnlockPanel.swift */,
 				39076D48B89EB45273A5F0A8 /* PhoneSeasonEconomyPanel.swift */,
 				94DE3D4BBCFA33AFD86E9941 /* PhoneSelectiveMergePanel.swift */,
 				7D42432B6574E8EDE38C3B5C /* PhoneSignedCloudPanel.swift */,
@@ -492,8 +498,10 @@
 				0E405D852C112C65E52EF19E /* PhoneRaidBranchPanel.swift in Sources */,
 				09069823BA738AF7E9F30C20 /* PhoneRaidCombatPanel.swift in Sources */,
 				965335A73E7B2F99C257965A /* PhoneRaidResolutionPanel.swift in Sources */,
+				852554C5EEE85AA025DC249C /* PhoneRecordDiffPanel.swift in Sources */,
 				F347F32092383E2AC1C5BF8D /* PhoneRewardStagePanel.swift in Sources */,
 				6EA2A0C8EC1BA21A995159C4 /* PhoneSeasonEconomyPanel.swift in Sources */,
+				A2F373E931E313EAD438F3F8 /* PhoneSeasonalUnlockPanel.swift in Sources */,
 				9EC134276D9B0B82C9699B0D /* PhoneSelectiveMergePanel.swift in Sources */,
 				5FCC1D84D2274BC74D168ED6 /* PhoneSignedCloudPanel.swift in Sources */,
 				42EE959C9795A6188C914022 /* PhoneStarterLoopPanel.swift in Sources */,

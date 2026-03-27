@@ -34,7 +34,12 @@ public enum RunimalSnapshotMergeEngine {
         _ cloud: [RunJournalEntry],
         priority: SnapshotDuplicatePriority
     ) -> [RunJournalEntry] {
-        Array(Dictionary(uniqueKeysWithValues: prioritized(local, cloud, priority: priority).map { ($0.id, $0) }).values)
+        Array(
+            Dictionary(
+                prioritized(local, cloud, priority: priority).map { ($0.id, $0) },
+                uniquingKeysWith: { _, latest in latest }
+            ).values
+        )
             .sorted(by: { $0.createdAt > $1.createdAt })
     }
 
@@ -43,18 +48,23 @@ public enum RunimalSnapshotMergeEngine {
         _ cloud: [CompletedRunRecord],
         priority: SnapshotDuplicatePriority
     ) -> [CompletedRunRecord] {
-        Array(Dictionary(uniqueKeysWithValues: prioritized(local, cloud, priority: priority).map { ($0.id, $0) }).values)
+        Array(
+            Dictionary(
+                prioritized(local, cloud, priority: priority).map { ($0.id, $0) },
+                uniquingKeysWith: { _, latest in latest }
+            ).values
+        )
             .sorted(by: { $0.endedAt > $1.endedAt })
     }
 
     private static func prioritized<T>(_ local: [T], _ cloud: [T], priority: SnapshotDuplicatePriority) -> [T] {
         switch priority {
         case .localWins:
-            return cloud + local
-        case .newestWins:
             return local + cloud
+        case .newestWins:
+            return cloud + local
         case .cloudWins:
-            return local + cloud + cloud
+            return cloud + local
         }
     }
 

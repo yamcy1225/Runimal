@@ -403,6 +403,27 @@ final class PhoneProgressStore {
         }
     }
 
+    func resolveRecordDiff(id: String, type: String, useCloud: Bool, local: RunimalProgressSnapshot?, cloud: RunimalProgressSnapshot?) {
+        guard let local, let cloud else { return }
+
+        switch type {
+        case "run":
+            guard let localRecord = local.completedRuns.first(where: { $0.id == id }),
+                  let cloudRecord = cloud.completedRuns.first(where: { $0.id == id }) else { return }
+            completedRuns.removeAll(where: { $0.id == id })
+            completedRuns.insert(useCloud ? cloudRecord : localRecord, at: 0)
+        case "journal":
+            guard let localEntry = local.journal.first(where: { $0.id == id }),
+                  let cloudEntry = cloud.journal.first(where: { $0.id == id }) else { return }
+            journal.removeAll(where: { $0.id == id })
+            journal.insert(useCloud ? cloudEntry : localEntry, at: 0)
+        default:
+            break
+        }
+
+        save()
+    }
+
     func snapshot(savedAt: Date = Date()) -> RunimalProgressSnapshot {
         RunimalProgressSnapshot(
             savedAt: savedAt,
