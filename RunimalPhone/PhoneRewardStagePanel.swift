@@ -61,7 +61,7 @@ struct PhoneRewardStagePanel: View {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .center, spacing: 16) {
                     ZStack {
-                        HatchBurstView(accent: stageAccent, scale: burstScale)
+                        HatchBurstView(accent: stageAccent, pet: pet, scale: burstScale)
 
                         Circle()
                             .fill(stageAccent.opacity(energized ? 0.28 : 0.18))
@@ -133,11 +133,11 @@ struct PhoneRewardStagePanel: View {
         }
         .onChange(of: claimableReward?.id) { _, _ in
             animateBurst()
-            RunimalCuePlayer.playHatchCue()
+            RunimalCuePlayer.playHatchCue(for: pet)
         }
         .onChange(of: progress.stageLabel) { _, _ in
             animateBurst()
-            RunimalCuePlayer.playEvolutionCue()
+            RunimalCuePlayer.playEvolutionCue(for: pet)
         }
         .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: energized)
     }

@@ -5,6 +5,7 @@ struct PixelPetView: View {
     let pet: GeneratedPet
     var pixelSize: CGFloat = 10
     @State private var hovering = false
+    @State private var tiltDegrees = 0.0
 
     var body: some View {
         let bodyPixels = sprite(for: pet.species)
@@ -20,6 +21,7 @@ struct PixelPetView: View {
         .frame(width: 10 * pixelSize, height: 10 * pixelSize)
         .offset(y: hovering ? -pixelSize * 0.24 : 0)
         .scaleEffect(hovering ? 1.03 : 0.98)
+        .rotationEffect(.degrees(hovering ? tiltDegrees : -tiltDegrees * 0.45))
         .shadow(color: pet.accentColor.opacity(0.35), radius: 12, y: 10)
         .overlay(alignment: .bottom) {
             RoundedRectangle(cornerRadius: pixelSize)
@@ -30,8 +32,10 @@ struct PixelPetView: View {
         }
         .onAppear {
             hovering = true
+            tiltDegrees = restTilt(for: pet)
         }
         .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: hovering)
+        .animation(.easeInOut(duration: 1.9).repeatForever(autoreverses: true), value: tiltDegrees)
     }
 
     private func pixelLayer(_ pixels: [(Int, Int)], color: Color, inset: CGFloat = 0) -> some View {
@@ -77,6 +81,17 @@ struct PixelPetView: View {
             return [(1, 5), (2, 6), (7, 6), (8, 5), (2, 7), (7, 7)]
         case nil:
             return []
+        }
+    }
+
+    private func restTilt(for pet: GeneratedPet) -> Double {
+        switch pet.species {
+        case .windrunner: return -2
+        case .stoneback: return 1.2
+        case .sparkfang: return -3
+        case .mosshop: return 1.5
+        case .shadebit: return -1.5
+        case .seedle: return 0.8
         }
     }
 }

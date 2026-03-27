@@ -175,7 +175,7 @@ struct WatchDashboardView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(spacing: 10) {
                                 ZStack {
-                                    HatchBurstView(accent: reward.pet.accentColor, scale: hatchBurstScale)
+                                    HatchBurstView(accent: reward.pet.accentColor, pet: reward.pet, scale: hatchBurstScale)
                                     PixelPetView(pet: reward.pet, pixelSize: 6)
                                 }
 
@@ -257,7 +257,7 @@ struct WatchDashboardView: View {
         .onChange(of: runSessionManager.lastReward) { _, reward in
             guard reward != nil else { return }
             animateHatchBurst()
-            RunimalCuePlayer.playHatchCue()
+            RunimalCuePlayer.playHatchCue(for: reward?.pet)
         }
         .animation(.spring(response: 0.7, dampingFraction: 0.84), value: runSessionManager.lastReward != nil)
         .animation(.easeInOut(duration: 0.9), value: liveFeedback.label)
