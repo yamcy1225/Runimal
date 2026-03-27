@@ -25,6 +25,10 @@ final class MacContentAuthoringStore {
     var draft = ""
     var status = "Editor idle"
     var validationStatus = "Schema unchecked"
+    var formTitle = ""
+    var formDetail = ""
+    var formReward = ""
+    var formThreshold = ""
 
     init() {
         load()
@@ -35,6 +39,7 @@ final class MacContentAuthoringStore {
             draft = try String(contentsOf: selectedTarget.url, encoding: .utf8)
             status = "Loaded \(selectedTarget.title)"
             validationStatus = "Schema unchecked"
+            populateForm()
         } catch {
             draft = ""
             status = "Load failed"
@@ -58,6 +63,44 @@ final class MacContentAuthoringStore {
         } catch {
             validationStatus = "Schema invalid"
         }
+    }
+
+    func populateForm() {
+        guard let object = try? JSONSerialization.jsonObject(with: Data(draft.utf8)) as? [[String: Any]],
+              let first = object.first else {
+            formTitle = ""
+            formDetail = ""
+            formReward = ""
+            formThreshold = ""
+            return
+        }
+
+        formTitle = first["title"] as? String ?? ""
+        formDetail = first["detail"] as? String ?? ""
+        formReward = (first["reward"] ?? first["recommendedReward"]) as? String ?? ""
+        formThreshold = first["claimThreshold"].map { String(describing: $0) } ?? ""
+    }
+
+    func applyForm() {
+        guard var object = (try? JSONSerialization.jsonObject(with: Data(draft.utf8)) as? [[String: Any]]),
+              !object.isEmpty else { return }
+
+        object[0]["title"] = formTitle
+        object[0]["detail"] = formDetail
+        if selectedTarget == .rotation {
+            object[0]["reward"] = formReward
+        } else {
+            object[0]["recommendedReward"] = formReward
+            object[0]["claimThreshold"] = Int(formThreshold) ?? 140
+        }
+
+        guard let data = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted]),
+              let pretty = String(data: data, encoding: .utf8) else {
+            return
+        }
+
+        draft = pretty
+        validationStatus = "Schema unchecked"
     }
 
     func insertPreset() {
@@ -119,6 +162,19 @@ struct MacContentAuthoringPanel: View {
                     .padding(8)
                     .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
 
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Schema Form")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.72))
+                    TextField("Title", text: $store.formTitle)
+                    TextField("Detail", text: $store.formDetail)
+                    TextField(store.selectedTarget == .rotation ? "Reward" : "Recommended Reward", text: $store.formReward)
+                    if store.selectedTarget == .raids {
+                        TextField("Claim Threshold", text: $store.formThreshold)
+                    }
+                }
+                .textFieldStyle(.roundedBorder)
+
                 HStack {
                     Button("Reload") {
                         store.load()
@@ -138,6 +194,11 @@ struct MacContentAuthoringPanel: View {
 
                     Button("Insert Preset") {
                         store.insertPreset()
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button("Apply Form") {
+                        store.applyForm()
                     }
                     .buttonStyle(.bordered)
                 }

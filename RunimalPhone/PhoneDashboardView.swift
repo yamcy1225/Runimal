@@ -280,6 +280,22 @@ final class PhoneDashboardStore {
         return RunimalRaidBossPatternEngine.turnResults(for: raidCombatReport)
     }
 
+    var verificationRecords: [DeviceVerificationRecord] {
+        progress.verificationRecords
+    }
+
+    var selectiveMergeCandidates: [MergeCandidate] {
+        RunimalSelectiveMergeEngine.candidates(
+            local: vault.loadSnapshot(),
+            cloud: cloudMirror.restoreIfAvailable()
+        )
+    }
+
+    var seasonalRaidBranchReward: RaidBranchReward? {
+        guard let primaryRaidEncounter else { return nil }
+        return RunimalSeasonalRaidBranchEngine.reward(for: primaryRaidEncounter, season: weeklyBoard.season)
+    }
+
     func activateConnectivity() {
         connectivity.activate()
         syncCompanionEffects()
@@ -427,6 +443,20 @@ final class PhoneDashboardStore {
         progress.restore(from: resolved)
         persistVault()
         telemetry.log("apply_conflict_policy", detail: progress.conflictPolicy.rawValue)
+    }
+
+    func recordVerification(_ title: String, passed: Bool) {
+        progress.recordVerification(title, passed: passed)
+        persistVault()
+        telemetry.log("verification_recorded", detail: "\(title):\(passed)")
+    }
+
+    func importSelectiveCandidate(_ id: String, type: String) {
+        let localSnapshot = vault.loadSnapshot()
+        let cloudSnapshot = cloudMirror.restoreIfAvailable()
+        progress.importSelectiveCandidate(id: id, type: type, local: localSnapshot, cloud: cloudSnapshot)
+        persistVault()
+        telemetry.log("selective_import", detail: "\(type):\(id)")
     }
 
     func syncCompanionEffects() {

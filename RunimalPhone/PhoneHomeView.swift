@@ -33,6 +33,10 @@ struct PhoneHomeView: View {
                 PhoneCloudValidationPanel(headline: store.cloudMirror.validationHeadline)
                 PhoneSignedCloudPanel(items: store.cloudValidationStates)
                 PhoneCloudRehearsalPanel(steps: store.cloudRehearsalSteps)
+                PhoneCloudVerificationPanel(
+                    records: store.verificationRecords,
+                    onRecord: store.recordVerification(_:passed:)
+                )
                 PhoneConflictResolutionPanel(
                     report: store.conflictReport,
                     selectedPolicy: store.selectedConflictPolicy,
@@ -40,6 +44,10 @@ struct PhoneHomeView: View {
                     onApply: store.applyConflictPolicy
                 )
                 PhoneConflictDiffPanel(entries: store.conflictDiffEntries)
+                PhoneSelectiveMergePanel(
+                    candidates: store.selectiveMergeCandidates,
+                    onImport: store.importSelectiveCandidate(_:type:)
+                )
                 PhoneTelemetryPanel(
                     lastEventLabel: store.telemetry.lastEventLabel,
                     eventCount: store.telemetry.eventCount,
@@ -65,6 +73,9 @@ struct PhoneHomeView: View {
                         patterns: store.raidBossPatterns,
                         turns: store.raidTurnResults
                     )
+                }
+                if let seasonalRaidBranchReward = store.seasonalRaidBranchReward {
+                    PhoneRaidBranchPanel(reward: seasonalRaidBranchReward)
                 }
                 PhoneRaidResolutionPanel(resolution: store.lastRaidResolution)
                 PhoneStarterLoopPanel(steps: store.starterLoop)

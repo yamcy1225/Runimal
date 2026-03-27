@@ -22,6 +22,7 @@ final class PhoneProgressStore {
         static let deviceID = "runimal.phone.deviceID"
         static let lastRaidResolution = "runimal.phone.lastRaidResolution"
         static let conflictPolicy = "runimal.phone.conflictPolicy"
+        static let verificationRecords = "runimal.phone.verificationRecords"
     }
 
     private let defaults: UserDefaults
@@ -41,6 +42,7 @@ final class PhoneProgressStore {
     var deviceID = UUID().uuidString
     var lastRaidResolution: RaidResolution?
     var conflictPolicy: SnapshotConflictPolicy = .merged
+    var verificationRecords: [DeviceVerificationRecord] = []
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -109,6 +111,11 @@ final class PhoneProgressStore {
             conflictPolicy = decoded
         } else {
             conflictPolicy = .merged
+        }
+        if let data = defaults.data(forKey: Keys.verificationRecords) {
+            verificationRecords = (try? JSONDecoder().decode([DeviceVerificationRecord].self, from: data)) ?? []
+        } else {
+            verificationRecords = []
         }
     }
 
@@ -277,6 +284,48 @@ final class PhoneProgressStore {
     func setConflictPolicy(_ policy: SnapshotConflictPolicy) {
         conflictPolicy = policy
         save()
+    }
+
+    func recordVerification(_ title: String, passed: Bool) {
+        verificationRecords.insert(
+            DeviceVerificationRecord(
+                id: UUID().uuidString,
+                title: title,
+                passed: passed,
+                recordedAt: Date()
+            ),
+            at: 0
+        )
+        verificationRecords = Array(verificationRecords.prefix(8))
+        save()
+    }
+
+    func importSelectiveCandidate(
+        id: String,
+        type: String,
+        local: RunimalProgressSnapshot?,
+        cloud: RunimalProgressSnapshot?
+    ) {
+        guard let cloud else { return }
+
+        switch type {
+        case "run":
+            if let record = cloud.completedRuns.first(where: { $0.id == id }),
+               !completedRuns.contains(where: { $0.id == id }) {
+                completedRuns.insert(record, at: 0)
+            }
+        case "journal":
+            if let entry = cloud.journal.first(where: { $0.id == id }),
+               !journal.contains(where: { $0.id == id }) {
+                journal.insert(entry, at: 0)
+            }
+        default:
+            break
+        }
+
+        if local != nil {
+            save()
+        }
     }
 
     @discardableResult
@@ -452,6 +501,11 @@ final class PhoneProgressStore {
         defaults.set(raidShardBalance, forKey: Keys.raidShardBalance)
         defaults.set(deviceID, forKey: Keys.deviceID)
         defaults.set(conflictPolicy.rawValue, forKey: Keys.conflictPolicy)
+        if let data = try? JSONEncoder().encode(verificationRecords) {
+            defaults.set(data, forKey: Keys.verificationRecords)
+        } else {
+            defaults.removeObject(forKey: Keys.verificationRecords)
+        }
 
         if let lastRaidResolution,
            let data = try? JSONEncoder().encode(lastRaidResolution) {

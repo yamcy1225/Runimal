@@ -124,13 +124,38 @@ struct MacAssetPipelinePanel: View {
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.white.opacity(0.72))
                         ForEach(store.previewCards.prefix(4), id: \.self) { card in
-                            Text(card)
-                                .font(.caption.monospaced())
-                                .foregroundStyle(.white.opacity(0.72))
+                            HStack(spacing: 10) {
+                                DotPreviewTile(label: card)
+                                Text(card)
+                                    .font(.caption.monospaced())
+                                    .foregroundStyle(.white.opacity(0.72))
+                            }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+private struct DotPreviewTile: View {
+    let label: String
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(.white.opacity(0.08))
+                .frame(width: 44, height: 44)
+
+            VStack(spacing: 2) {
+                Rectangle()
+                    .fill(.white.opacity(0.9))
+                    .frame(width: 14, height: 14)
+                Rectangle()
+                    .fill(.purple.opacity(0.7))
+                    .frame(width: 20, height: 6)
+            }
+            .rotationEffect(.degrees(label.contains("tilt -") ? -8 : 8))
         }
     }
 }
