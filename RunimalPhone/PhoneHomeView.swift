@@ -32,12 +32,14 @@ struct PhoneHomeView: View {
                 )
                 PhoneCloudValidationPanel(headline: store.cloudMirror.validationHeadline)
                 PhoneSignedCloudPanel(items: store.cloudValidationStates)
+                PhoneCloudRehearsalPanel(steps: store.cloudRehearsalSteps)
                 PhoneConflictResolutionPanel(
                     report: store.conflictReport,
                     selectedPolicy: store.selectedConflictPolicy,
                     onSelect: store.selectConflictPolicy(_:),
                     onApply: store.applyConflictPolicy
                 )
+                PhoneConflictDiffPanel(entries: store.conflictDiffEntries)
                 PhoneTelemetryPanel(
                     lastEventLabel: store.telemetry.lastEventLabel,
                     eventCount: store.telemetry.eventCount,
@@ -57,6 +59,12 @@ struct PhoneHomeView: View {
                 )
                 if let raidCombatReport = store.raidCombatReport {
                     PhoneRaidCombatPanel(report: raidCombatReport, accent: store.pet.accentColor)
+                }
+                if !store.raidBossPatterns.isEmpty {
+                    PhoneRaidBossPatternPanel(
+                        patterns: store.raidBossPatterns,
+                        turns: store.raidTurnResults
+                    )
                 }
                 PhoneRaidResolutionPanel(resolution: store.lastRaidResolution)
                 PhoneStarterLoopPanel(steps: store.starterLoop)

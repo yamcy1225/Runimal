@@ -255,6 +255,31 @@ final class PhoneDashboardStore {
         )
     }
 
+    var cloudRehearsalSteps: [CloudRehearsalStep] {
+        RunimalCloudRehearsalEngine.steps(
+            hasIdentity: cloudMirror.hasIdentity,
+            mirrorStatus: cloudMirror.statusLabel,
+            hasConflict: conflictReport.hasConflict
+        )
+    }
+
+    var conflictDiffEntries: [SnapshotConflictDiffEntry] {
+        RunimalSnapshotConflictDiffEngine.entries(
+            local: vault.loadSnapshot(),
+            cloud: cloudMirror.restoreIfAvailable()
+        )
+    }
+
+    var raidBossPatterns: [RaidBossPattern] {
+        guard let primaryRaidEncounter else { return [] }
+        return RunimalRaidBossPatternEngine.patterns(for: primaryRaidEncounter, season: weeklyBoard.season)
+    }
+
+    var raidTurnResults: [RaidTurnResult] {
+        guard let raidCombatReport else { return [] }
+        return RunimalRaidBossPatternEngine.turnResults(for: raidCombatReport)
+    }
+
     func activateConnectivity() {
         connectivity.activate()
         syncCompanionEffects()

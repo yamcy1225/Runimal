@@ -23,6 +23,7 @@ final class MacAssetPipelineStore {
 
     var draft = ""
     var status = "Asset pipeline idle"
+    var previewCards: [String] = []
 
     init() {
         load()
@@ -32,9 +33,11 @@ final class MacAssetPipelineStore {
         do {
             draft = try String(contentsOf: RunimalPaths.feedbackProfiles, encoding: .utf8)
             status = "Loaded asset pack"
+            rebuildPreview()
         } catch {
             draft = ""
             status = "Load failed"
+            previewCards = []
         }
     }
 
@@ -43,6 +46,7 @@ final class MacAssetPipelineStore {
             _ = try JSONSerialization.jsonObject(with: Data(draft.utf8))
             try draft.write(to: RunimalPaths.feedbackProfiles, atomically: true, encoding: .utf8)
             status = "Saved asset pack"
+            rebuildPreview()
         } catch {
             status = "Save failed"
         }
@@ -62,6 +66,17 @@ final class MacAssetPipelineStore {
             status = "Exported manifest"
         } catch {
             status = "Manifest export failed"
+        }
+    }
+
+    private func rebuildPreview() {
+        guard let catalog = try? JSONDecoder().decode(Catalog.self, from: Data(draft.utf8)) else {
+            previewCards = []
+            return
+        }
+
+        previewCards = catalog.species.sorted(by: { $0.key < $1.key }).map { key, value in
+            "\(key) · hatch \(value.hatchSound) · evo \(value.evolutionSound) · tilt \(String(format: "%.1f", value.tilt))"
         }
     }
 }
@@ -101,6 +116,19 @@ struct MacAssetPipelinePanel: View {
                         store.exportManifest()
                     }
                     .buttonStyle(.bordered)
+                }
+
+                if !store.previewCards.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Preview Render")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.72))
+                        ForEach(store.previewCards.prefix(4), id: \.self) { card in
+                            Text(card)
+                                .font(.caption.monospaced())
+                                .foregroundStyle(.white.opacity(0.72))
+                        }
+                    }
                 }
             }
         }

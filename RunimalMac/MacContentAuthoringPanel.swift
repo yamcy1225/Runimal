@@ -24,6 +24,7 @@ final class MacContentAuthoringStore {
     var selectedTarget: Target = .rotation
     var draft = ""
     var status = "Editor idle"
+    var validationStatus = "Schema unchecked"
 
     init() {
         load()
@@ -33,6 +34,7 @@ final class MacContentAuthoringStore {
         do {
             draft = try String(contentsOf: selectedTarget.url, encoding: .utf8)
             status = "Loaded \(selectedTarget.title)"
+            validationStatus = "Schema unchecked"
         } catch {
             draft = ""
             status = "Load failed"
@@ -47,6 +49,45 @@ final class MacContentAuthoringStore {
         } catch {
             status = "Save failed"
         }
+    }
+
+    func validate() {
+        do {
+            _ = try JSONSerialization.jsonObject(with: Data(draft.utf8))
+            validationStatus = "Schema ok"
+        } catch {
+            validationStatus = "Schema invalid"
+        }
+    }
+
+    func insertPreset() {
+        switch selectedTarget {
+        case .rotation:
+            draft = """
+            [
+              {
+                "id": "season-hunt",
+                "title": "Season Hunt",
+                "detail": "이번 시즌 포커스 종족과 희귀 변이를 추적합니다.",
+                "reward": "Season cache progress"
+              }
+            ]
+            """
+        case .raids:
+            draft = """
+            [
+              {
+                "id": "trial-warden",
+                "title": "Trial Warden",
+                "detail": "시즌 기믹을 확인하는 편집용 프리셋 보스입니다.",
+                "recommendedReward": "Edit shard",
+                "claimThreshold": 148
+              }
+            ]
+            """
+        }
+        status = "Inserted \(selectedTarget.title) preset"
+        validationStatus = "Schema unchecked"
     }
 }
 
@@ -68,6 +109,7 @@ struct MacContentAuthoringPanel: View {
 
                     Spacer()
                     TraitChip(label: store.status, accent: .mint.opacity(0.72))
+                    TraitChip(label: store.validationStatus, accent: .white.opacity(0.18))
                 }
 
                 TextEditor(text: $store.draft)
@@ -88,6 +130,16 @@ struct MacContentAuthoringPanel: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.mint.opacity(0.82))
+
+                    Button("Validate") {
+                        store.validate()
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button("Insert Preset") {
+                        store.insertPreset()
+                    }
+                    .buttonStyle(.bordered)
                 }
             }
         }
