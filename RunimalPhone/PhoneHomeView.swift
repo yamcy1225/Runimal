@@ -28,7 +28,8 @@ struct PhoneHomeView: View {
                 PhoneDiagnosticsPanel(
                     events: store.connectivity.recentEvents,
                     reachabilityLabel: store.connectivity.reachabilityLabel,
-                    activationStateLabel: store.connectivity.activationStateLabel
+                    activationStateLabel: store.connectivity.activationStateLabel,
+                    queuedTransferCount: store.connectivity.queuedTransferCount
                 )
                 if !store.hatchInsights.isEmpty {
                     PhoneHatchInsightPanel(

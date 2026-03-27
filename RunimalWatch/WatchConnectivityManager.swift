@@ -10,6 +10,7 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
     var lastSyncedWorkoutTitle = "No plan yet"
     var claimedRewardIDs: Set<String> = []
     var activeEffects: [WeeklyRewardEffect] = []
+    var queuedTransferCount = 0
     var recentEvents: [SyncDiagnosticEvent] = []
 
     func activate() {
@@ -22,6 +23,7 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
         let session = WCSession.default
         session.delegate = self
         session.activate()
+        queuedTransferCount = session.outstandingUserInfoTransfers.count
         logEvent("activation", "WCSession activate requested")
     }
 
@@ -30,8 +32,15 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
 
         do {
             let data = try JSONEncoder().encode(snapshot)
-            try WCSession.default.updateApplicationContext(["liveRunSnapshot": data])
-            logEvent("push snapshot", "\(Int(snapshot.distanceMeters))m")
+            let session = WCSession.default
+            if session.isReachable {
+                try session.updateApplicationContext(["liveRunSnapshot": data])
+                logEvent("push snapshot", "\(Int(snapshot.distanceMeters))m")
+            } else {
+                session.transferUserInfo(["liveRunSnapshot": data])
+                queuedTransferCount = session.outstandingUserInfoTransfers.count
+                logEvent("queue snapshot", "\(Int(snapshot.distanceMeters))m")
+            }
         } catch {
             lastSyncedWorkoutTitle = "Snapshot sync failed"
             logEvent("push snapshot failed", error.localizedDescription)
@@ -43,8 +52,15 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
 
         do {
             let data = try JSONEncoder().encode(reward)
-            try WCSession.default.updateApplicationContext(["runRewardSummary": data])
-            logEvent("push reward", reward.coreLabel)
+            let session = WCSession.default
+            if session.isReachable {
+                try session.updateApplicationContext(["runRewardSummary": data])
+                logEvent("push reward", reward.coreLabel)
+            } else {
+                session.transferUserInfo(["runRewardSummary": data])
+                queuedTransferCount = session.outstandingUserInfoTransfers.count
+                logEvent("queue reward", reward.coreLabel)
+            }
         } catch {
             lastSyncedWorkoutTitle = "Reward sync failed"
             logEvent("push reward failed", error.localizedDescription)
@@ -56,8 +72,15 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
 
         do {
             let data = try JSONEncoder().encode(completedRun)
-            try WCSession.default.updateApplicationContext(["completedRunRecord": data])
-            logEvent("push completed run", completedRun.id)
+            let session = WCSession.default
+            if session.isReachable {
+                try session.updateApplicationContext(["completedRunRecord": data])
+                logEvent("push completed run", completedRun.id)
+            } else {
+                session.transferUserInfo(["completedRunRecord": data])
+                queuedTransferCount = session.outstandingUserInfoTransfers.count
+                logEvent("queue completed run", completedRun.id)
+            }
         } catch {
             lastSyncedWorkoutTitle = "Run sync failed"
             logEvent("push completed run failed", error.localizedDescription)
@@ -71,6 +94,7 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
     ) {
         Task { @MainActor in
             self.activationStateLabel = activationState.description
+            self.queuedTransferCount = session.outstandingUserInfoTransfers.count
             if let error {
                 self.lastSyncedWorkoutTitle = error.localizedDescription
                 self.logEvent("activation failed", error.localizedDescription)
@@ -80,20 +104,37 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
         }
     }
 
-    nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
+    nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
         Task { @MainActor in
-            if let data = applicationContext["workoutSuggestion"] as? Data,
+            self.queuedTransferCount = session.outstandingUserInfoTransfers.count
+            self.logEvent("reachability", session.isReachable ? "reachable" : "paired")
+        }
+    }
+
+    nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
+        processPayload(applicationContext)
+    }
+
+    nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
+        processPayload(userInfo)
+    }
+
+    private nonisolated func processPayload(_ payload: [String: Any]) {
+        Task { @MainActor in
+            if let data = payload["workoutSuggestion"] as? Data,
                let suggestion = try? JSONDecoder().decode(WorkoutPlanSuggestion.self, from: data) {
                 self.lastSyncedWorkoutTitle = suggestion.title
                 self.logEvent("plan received", suggestion.title)
             }
 
-            if let data = applicationContext["companionEffectContext"] as? Data,
+            if let data = payload["companionEffectContext"] as? Data,
                let context = try? JSONDecoder().decode(CompanionEffectContext.self, from: data) {
                 self.claimedRewardIDs = Set(context.claimedRewardIDs)
                 self.activeEffects = context.activeEffects
                 self.logEvent("effects received", "\(context.activeEffects.count) active")
             }
+
+            self.queuedTransferCount = WCSession.default.outstandingUserInfoTransfers.count
         }
     }
 

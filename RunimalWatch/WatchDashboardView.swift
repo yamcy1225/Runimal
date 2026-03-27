@@ -153,7 +153,7 @@ struct WatchDashboardView: View {
 
                 GameSurface(title: "Diagnostics") {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Link \(connectivityManager.activationStateLabel) · Save \(runSessionManager.lastSavedWorkoutLabel)")
+                        Text("Link \(connectivityManager.activationStateLabel) · Queue \(connectivityManager.queuedTransferCount) · Save \(runSessionManager.lastSavedWorkoutLabel)")
                             .font(.caption2)
                             .foregroundStyle(.white.opacity(0.72))
 
