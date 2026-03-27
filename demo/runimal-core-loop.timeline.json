@@ -1,0 +1,96 @@
+{
+  "meta": {
+    "title": "Runimal Core Loop Demo",
+    "preset": "Landscape-1080p",
+    "fps": 30,
+    "totalDurationSec": 24,
+    "theme": {
+      "aesthetic": "arcade growth chamber",
+      "font": {
+        "display": "Chakra Petch",
+        "body": "Outfit"
+      },
+      "color": {
+        "accent": "#FF7A18",
+        "bg": "#07111F"
+      },
+      "gradient": {
+        "hero": "radial-gradient(circle at 20% 20%, rgba(255,122,24,0.28) 0%, rgba(10,22,43,0.92) 48%, #040812 100%)"
+      }
+    }
+  },
+  "elements": [
+    {
+      "type": "title",
+      "startSec": 0,
+      "durationSec": 3.5,
+      "props": {
+        "title": "Runimal Core Loop",
+        "subtitle": "run on watch, feed the pet, unlock evolution"
+      },
+      "transition": {
+        "type": "fade"
+      }
+    },
+    {
+      "type": "video",
+      "startSec": 3.5,
+      "durationSec": 7,
+      "props": {
+        "src": "runimal-watch-demo-session.mp4",
+        "title": "1. Watch Run In Motion",
+        "caption": "actual watch simulator run: live pace, coaching, hatch result",
+        "fit": "contain",
+        "loop": false
+      },
+      "transition": {
+        "type": "slide",
+        "direction": "from-right"
+      }
+    },
+    {
+      "type": "image",
+      "startSec": 10.5,
+      "durationSec": 4.5,
+      "props": {
+        "src": "runimal-phone-home-after-run.png",
+        "title": "2. Post-Run Reward Lands On Phone",
+        "caption": "the run syncs back as a hatch reward and growth-ready result",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "fade"
+      }
+    },
+    {
+      "type": "image",
+      "startSec": 15,
+      "durationSec": 4.5,
+      "props": {
+        "src": "runimal-phone-growth-slots.png",
+        "title": "3. Feed Growth Cores",
+        "caption": "choose the active companion and feed synced run records into growth slots",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "slide",
+        "direction": "from-right"
+      }
+    },
+    {
+      "type": "image",
+      "startSec": 19.5,
+      "durationSec": 4.5,
+      "props": {
+        "src": "runimal-phone-season-build.png",
+        "title": "4. Evolution And Build Direction",
+        "caption": "season bonuses, build trees, and evolution progress become visible after feeding",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "fade"
+      }
+    }
+  ],
+  "audio": []
+}

@@ -22,5 +22,15 @@ public enum RunimalDeviceQAEngine {
             title: "Season reward persistence",
             detail: "시즌 캐시 수령 후 앱 재실행과 금고 복구 뒤에도 재화가 유지되는지 확인"
         ),
+        DeviceQACheckItem(
+            id: "haptic-goal-shift",
+            title: "Watch haptic goal shift",
+            detail: "Rare Window, Surge, Recover 전환 시 워치 햅틱 패턴이 즉시 달라지는지 확인"
+        ),
+        DeviceQACheckItem(
+            id: "feed-cinematic",
+            title: "Feed cinematic integrity",
+            detail: "Growth Core를 먹였을 때 XP fill, stage cut-in, 진화 라벨이 순서대로 재생되는지 확인"
+        ),
     ]
 }

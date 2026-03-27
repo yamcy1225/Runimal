@@ -1,0 +1,167 @@
+{
+  "meta": {
+    "title": "Runimal Egg Hatch Evolve",
+    "preset": "Landscape-1080p",
+    "fps": 30,
+    "totalDurationSec": 30,
+    "theme": {
+      "aesthetic": "egg chamber arcade",
+      "font": {
+        "display": "Chakra Petch",
+        "body": "Outfit"
+      },
+      "color": {
+        "accent": "#FFC14A",
+        "bg": "#040912"
+      },
+      "gradient": {
+        "hero": "radial-gradient(circle at 20% 20%, rgba(255,193,74,0.34) 0%, rgba(9,18,34,0.95) 46%, #03070f 100%)"
+      }
+    }
+  },
+  "elements": [
+    {
+      "type": "title",
+      "durationSec": 3,
+      "props": {
+        "title": "Trace Egg Online",
+        "subtitle": "runimal loop: egg, hatch, exp feed, evolve"
+      },
+      "transition": {
+        "type": "fade"
+      },
+      "animation": {
+        "enter": "scale-in"
+      }
+    },
+    {
+      "type": "video",
+      "durationSec": 6,
+      "props": {
+        "src": "runimal-watch-demo-session.mp4",
+        "title": "1. Run Charges The Egg",
+        "caption": "the watch session builds the energy that triggers a hatch",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "slide",
+        "direction": "from-right"
+      },
+      "animation": {
+        "enter": "fade-in"
+      }
+    },
+    {
+      "type": "title",
+      "durationSec": 2.5,
+      "props": {
+        "title": "Hatch Burst",
+        "subtitle": "the run returns as a reward-stage egg opening"
+      },
+      "transition": {
+        "type": "fade"
+      },
+      "animation": {
+        "enter": "scale-in"
+      }
+    },
+    {
+      "type": "image",
+      "durationSec": 4,
+      "props": {
+        "src": "runimal-phone-reward-stage.png",
+        "title": "2. Egg Opens On Reward Stage",
+        "caption": "the post-run stage turns the workout into a hatch-ready companion moment",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "slide",
+        "direction": "from-right"
+      },
+      "animation": {
+        "enter": "scale-in"
+      }
+    },
+    {
+      "type": "stat",
+      "durationSec": 3,
+      "props": {
+        "title": "EXP Feed",
+        "stats": [
+          {
+            "value": 128,
+            "prefix": "+",
+            "label": "exp absorbed",
+            "trend": "up"
+          },
+          {
+            "value": 1,
+            "prefix": "+",
+            "label": "growth core spent",
+            "trend": "up"
+          },
+          {
+            "value": 1,
+            "prefix": "+",
+            "label": "active pet fed",
+            "trend": "up"
+          }
+        ]
+      },
+      "transition": {
+        "type": "fade"
+      },
+      "animation": {
+        "enter": "slide-up"
+      }
+    },
+    {
+      "type": "image",
+      "durationSec": 4.5,
+      "props": {
+        "src": "runimal-phone-growth-slots.png",
+        "title": "3. Feed The Hatchling",
+        "caption": "run records become Growth Cores and are consumed as direct progression fuel",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "slide",
+        "direction": "from-right"
+      },
+      "animation": {
+        "enter": "slide-up"
+      }
+    },
+    {
+      "type": "title",
+      "durationSec": 2.5,
+      "props": {
+        "title": "Evolution Pulse",
+        "subtitle": "feeding unlocks the next form and the next reason to run"
+      },
+      "transition": {
+        "type": "fade"
+      },
+      "animation": {
+        "enter": "scale-in"
+      }
+    },
+    {
+      "type": "image",
+      "durationSec": 4.5,
+      "props": {
+        "src": "runimal-phone-collection-detail.png",
+        "title": "4. Evolution Track Revealed",
+        "caption": "the companion now shows its growth stage, next form, and build direction",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "fade"
+      },
+      "animation": {
+        "enter": "scale-in"
+      }
+    }
+  ],
+  "audio": []
+}

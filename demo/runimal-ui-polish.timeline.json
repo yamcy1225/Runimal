@@ -1,0 +1,110 @@
+{
+  "meta": {
+    "title": "Runimal UI Polish Showcase",
+    "description": "Updated iPhone, Apple Watch, and macOS UI presentation for Runimal before device deployment.",
+    "preset": "Landscape-1080p",
+    "fps": 30,
+    "totalDurationSec": 18,
+    "theme": {
+      "aesthetic": "field arcade command deck",
+      "font": {
+        "display": "Chakra Petch",
+        "body": "Outfit",
+        "code": "JetBrains Mono"
+      },
+      "color": {
+        "bg": "#05070d",
+        "surface": "#111827",
+        "accent": "#ff7a2f",
+        "text": "#f8fafc",
+        "textMuted": "#cbd5e1"
+      },
+      "gradient": {
+        "hero": "radial-gradient(circle at 18% 24%, rgba(255,122,47,0.28) 0%, transparent 50%), linear-gradient(135deg, #05070d 0%, #0b1220 100%)",
+        "slide": "linear-gradient(160deg, #04060d 0%, #0a1020 58%, #121826 100%)",
+        "glow": "radial-gradient(circle at center, rgba(255,122,47,0.34), transparent 68%)"
+      }
+    }
+  },
+  "elements": [
+    {
+      "id": "title",
+      "type": "title",
+      "durationSec": 3,
+      "props": {
+        "title": "Runimal",
+        "subtitle": "UI polish pass before real-device deployment"
+      },
+      "transition": {
+        "type": "fade",
+        "durationSec": 0.4
+      }
+    },
+    {
+      "id": "overview",
+      "type": "content",
+      "durationSec": 3.5,
+      "props": {
+        "header": "What changed in this pass",
+        "bulletPoints": [
+          "Home screen became a command deck",
+          "Reward stage now feels seasonal and premium",
+          "Pet sprites gained aura and layered cosmetics",
+          "Progress bars and surfaces read like game UI"
+        ]
+      },
+      "transition": {
+        "type": "slide",
+        "direction": "from-right",
+        "durationSec": 0.5
+      }
+    },
+    {
+      "id": "phone",
+      "type": "image",
+      "durationSec": 4,
+      "props": {
+        "src": "runimal-phone-ui-polish.png",
+        "title": "iPhone // Post-run command deck",
+        "caption": "The home surface now leads with reward mood, stronger hierarchy, and a more game-like stage frame.",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "fade",
+        "durationSec": 0.4
+      }
+    },
+    {
+      "id": "watch",
+      "type": "image",
+      "durationSec": 3.5,
+      "props": {
+        "src": "runimal-watch-ui-polish.png",
+        "title": "Watch // Live companion tone",
+        "caption": "The shared sprite and meter polish carry across to the glanceable watch surface.",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "slide",
+        "direction": "from-left",
+        "durationSec": 0.5
+      }
+    },
+    {
+      "id": "mac",
+      "type": "image",
+      "durationSec": 4,
+      "props": {
+        "src": "runimal-mac-ui-polish.png",
+        "title": "macOS // Operator and authoring view",
+        "caption": "The same visual system now gives the tools side more identity and cohesion.",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "fade",
+        "durationSec": 0.4
+      }
+    }
+  ],
+  "audio": []
+}

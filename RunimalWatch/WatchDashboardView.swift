@@ -47,6 +47,10 @@ struct WatchDashboardView: View {
         )
     }
 
+    private var primaryGoal: LiveGoalTarget? {
+        liveGoals.max(by: { $0.progress < $1.progress })
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
@@ -82,7 +86,13 @@ struct WatchDashboardView: View {
                                 .stroke(.white.opacity(0.16), style: StrokeStyle(lineWidth: 1, dash: [3, 4]))
                                 .frame(width: 92, height: 92)
 
-                            PixelPetView(pet: livePet, pixelSize: 8)
+                            if runSessionManager.sessionStateLabel == "running" {
+                                PixelPetView(pet: livePet, pixelSize: 8)
+                                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+                            } else {
+                                TraceEggView(accent: stageAccent, pixelSize: 8)
+                                    .transition(.scale(scale: 1.04).combined(with: .opacity))
+                            }
                         }
 
                         VStack(spacing: 4) {
@@ -100,6 +110,18 @@ struct WatchDashboardView: View {
                             .font(.caption2)
                             .foregroundStyle(.white.opacity(0.72))
                             .multilineTextAlignment(.center)
+
+                        if let primaryGoal, runSessionManager.sessionStateLabel == "running" {
+                            VStack(spacing: 4) {
+                                Text(primaryGoal.title)
+                                    .font(.caption2.weight(.bold))
+                                    .foregroundStyle(stageAccent.opacity(0.94))
+                                Text(primaryGoal.detail)
+                                    .font(.caption2)
+                                    .foregroundStyle(.white.opacity(0.64))
+                                    .multilineTextAlignment(.center)
+                            }
+                        }
 
                         if stageBadges.isEmpty == false {
                             HStack(spacing: 6) {
@@ -249,6 +271,9 @@ struct WatchDashboardView: View {
         .onChange(of: runSessionManager.lastReward) { _, reward in
             guard let reward else { return }
             connectivityManager.send(reward: reward)
+        }
+        .onChange(of: liveFeedback.label) { _, _ in
+            RunimalCuePlayer.playLiveCue(label: liveFeedback.label, intensity: liveFeedback.intensity)
         }
         .onChange(of: runSessionManager.lastCompletedRun) { _, record in
             guard let record else { return }

@@ -1,0 +1,172 @@
+{
+  "meta": {
+    "title": "Runimal Evolution Cinematic",
+    "preset": "Landscape-1080p",
+    "fps": 30,
+    "totalDurationSec": 28,
+    "theme": {
+      "aesthetic": "arcade evolution chamber",
+      "font": {
+        "display": "Chakra Petch",
+        "body": "Outfit"
+      },
+      "color": {
+        "accent": "#FF8A1C",
+        "bg": "#040A14"
+      },
+      "gradient": {
+        "hero": "radial-gradient(circle at 18% 20%, rgba(255,138,28,0.34) 0%, rgba(8,18,36,0.94) 48%, #03070f 100%)"
+      }
+    }
+  },
+  "elements": [
+    {
+      "type": "title",
+      "durationSec": 3,
+      "props": {
+        "title": "Run. Feed. Evolve.",
+        "subtitle": "a more cinematic pass of the Runimal core loop"
+      },
+      "transition": {
+        "type": "fade"
+      },
+      "animation": {
+        "enter": "scale-in"
+      }
+    },
+    {
+      "type": "video",
+      "durationSec": 6.5,
+      "props": {
+        "src": "runimal-watch-demo-session.mp4",
+        "title": "Watch Session In Motion",
+        "caption": "live pace, coaching, hatch trigger",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "slide",
+        "direction": "from-right"
+      },
+      "animation": {
+        "enter": "fade-in"
+      }
+    },
+    {
+      "type": "stat",
+      "durationSec": 3.5,
+      "props": {
+        "title": "Run Sync Burst",
+        "stats": [
+          {
+            "value": 1,
+            "prefix": "+",
+            "label": "run synced",
+            "trend": "up"
+          },
+          {
+            "value": 1,
+            "prefix": "+",
+            "label": "hatch reward armed",
+            "trend": "up"
+          },
+          {
+            "value": 24,
+            "suffix": "s",
+            "label": "demo loop",
+            "trend": "neutral"
+          }
+        ]
+      },
+      "transition": {
+        "type": "fade"
+      },
+      "animation": {
+        "enter": "slide-up"
+      }
+    },
+    {
+      "type": "image",
+      "durationSec": 4,
+      "props": {
+        "src": "runimal-phone-reward-stage.png",
+        "title": "Reward Stage Lights Up",
+        "caption": "the post-run phone stage turns the workout into a growth-ready reward",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "slide",
+        "direction": "from-right"
+      },
+      "animation": {
+        "enter": "scale-in"
+      }
+    },
+    {
+      "type": "image",
+      "durationSec": 4.5,
+      "props": {
+        "src": "runimal-phone-growth-slots.png",
+        "title": "Feed The Active Companion",
+        "caption": "Growth Core slots are where the run is consumed and converted into XP",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "fade"
+      },
+      "animation": {
+        "enter": "slide-up"
+      }
+    },
+    {
+      "type": "stat",
+      "durationSec": 3.5,
+      "props": {
+        "title": "XP And Evolution Pulse",
+        "stats": [
+          {
+            "value": 128,
+            "prefix": "+",
+            "label": "growth xp",
+            "trend": "up"
+          },
+          {
+            "value": 1,
+            "prefix": "+",
+            "label": "feed consumed",
+            "trend": "up"
+          },
+          {
+            "value": 1,
+            "prefix": "+",
+            "label": "evolution path opened",
+            "trend": "up"
+          }
+        ]
+      },
+      "transition": {
+        "type": "slide",
+        "direction": "from-right"
+      },
+      "animation": {
+        "enter": "scale-in"
+      }
+    },
+    {
+      "type": "image",
+      "durationSec": 4,
+      "props": {
+        "src": "runimal-phone-collection-detail.png",
+        "title": "Evolution Detail Revealed",
+        "caption": "after feeding, build direction and evolution track become the new motivation to run again",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "fade"
+      },
+      "animation": {
+        "enter": "scale-in"
+      }
+    }
+  ],
+  "audio": []
+}

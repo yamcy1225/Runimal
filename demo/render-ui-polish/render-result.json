@@ -1,0 +1,15 @@
+{
+  "status": "succeeded",
+  "outputPath": "/Users/heobella/jaw-bot-2/apps/runimal-apple/demo/render-ui-polish/TimelineVideo.mp4",
+  "compositionId": "TimelineVideo",
+  "preset": "Landscape-1080p",
+  "valid": true,
+  "duration": 18.048,
+  "codec": "h264",
+  "width": 1920,
+  "height": 1080,
+  "fileSize": 3826757,
+  "errors": [],
+  "renderMs": 313152,
+  "updatedAt": 1774587361633
+}

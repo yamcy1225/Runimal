@@ -1,0 +1,15 @@
+{
+  "status": "succeeded",
+  "outputPath": "/Users/heobella/jaw-bot-2/apps/runimal-apple/demo/render-evolution-cinematic/TimelineVideo.mp4",
+  "compositionId": "TimelineVideo",
+  "preset": "Landscape-1080p",
+  "valid": true,
+  "duration": 28.053333,
+  "codec": "h264",
+  "width": 1920,
+  "height": 1080,
+  "fileSize": 4738903,
+  "errors": [],
+  "renderMs": 468993,
+  "updatedAt": 1774588656711
+}

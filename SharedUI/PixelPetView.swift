@@ -7,6 +7,8 @@ struct PixelPetView: View {
     var seasonalLayers: [SeasonalVisualLayer] = []
     @State private var hovering = false
     @State private var tiltDegrees = 0.0
+    @State private var blink = false
+    @State private var auraShift = false
 
     var body: some View {
         let bodyPixels = sprite(for: pet.species)
@@ -17,7 +19,7 @@ struct PixelPetView: View {
             Circle()
                 .fill(
                     RadialGradient(
-                        colors: [pet.accentColor.opacity(0.32), .clear],
+                        colors: [pet.accentColor.opacity(auraShift ? 0.42 : 0.26), .clear],
                         center: .center,
                         startRadius: pixelSize,
                         endRadius: pixelSize * 5
@@ -26,13 +28,19 @@ struct PixelPetView: View {
                 .frame(width: 9 * pixelSize, height: 9 * pixelSize)
                 .offset(x: pixelSize * 0.5, y: pixelSize * 0.8)
 
+            Circle()
+                .stroke(pet.accentColor.opacity(auraShift ? 0.34 : 0.16), style: StrokeStyle(lineWidth: max(1, pixelSize * 0.16), dash: [3, 5]))
+                .frame(width: 8.9 * pixelSize, height: 8.9 * pixelSize)
+                .rotationEffect(.degrees(auraShift ? 14 : -12))
+
             pixelLayer(bodyPixels, color: pet.accentColor)
-            pixelLayer(eyePixels, color: .white)
-            pixelLayer([(3, 3), (6, 3)], color: .black, inset: pixelSize * 0.22)
+            pixelLayer(eyePixels, color: blink ? .white.opacity(0.12) : .white)
+            pixelLayer([(3, 3), (6, 3)], color: .black, inset: blink ? pixelSize * 0.58 : pixelSize * 0.22)
             pixelLayer(accentPixels, color: .white.opacity(0.95))
             pixelLayer(seasonShellPixels, color: pet.accentColor.opacity(0.32))
             pixelLayer(raidStripePixels, color: .yellow.opacity(0.92), inset: pixelSize * 0.18)
             pixelLayer(crestPixels, color: .white.opacity(0.92), inset: pixelSize * 0.12)
+            pixelLayer(sparkPixels, color: .white.opacity(auraShift ? 0.92 : 0.4), inset: pixelSize * 0.46)
         }
         .frame(width: 10 * pixelSize, height: 10 * pixelSize)
         .offset(y: hovering ? -pixelSize * 0.24 : 0)
@@ -57,9 +65,12 @@ struct PixelPetView: View {
         .onAppear {
             hovering = true
             tiltDegrees = restTilt(for: pet)
+            auraShift = true
+            scheduleBlink()
         }
         .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: hovering)
         .animation(.easeInOut(duration: 1.9).repeatForever(autoreverses: true), value: tiltDegrees)
+        .animation(.easeInOut(duration: 1.3).repeatForever(autoreverses: true), value: auraShift)
     }
 
     private func pixelLayer(_ pixels: [(Int, Int)], color: Color, inset: CGFloat = 0) -> some View {
@@ -140,5 +151,24 @@ struct PixelPetView: View {
 
         guard pet.rareVariant != nil else { return [] }
         return [(4, 1), (5, 1)]
+    }
+
+    private var sparkPixels: [(Int, Int)] {
+        [(1, 2), (8, 2), (2, 7), (7, 7)]
+    }
+
+    private func scheduleBlink() {
+        Task {
+            while true {
+                try? await Task.sleep(for: .seconds(2.6))
+                await MainActor.run {
+                    blink = true
+                }
+                try? await Task.sleep(for: .seconds(0.14))
+                await MainActor.run {
+                    blink = false
+                }
+            }
+        }
     }
 }

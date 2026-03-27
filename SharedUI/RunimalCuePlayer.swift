@@ -24,6 +24,40 @@ enum RunimalCuePlayer {
         #endif
     }
 
+    static func playLiveCue(label: String, intensity: Double) {
+        #if os(iOS)
+        let soundID: SystemSoundID
+
+        switch label {
+        case "Rare Window":
+            soundID = 1117
+        case "Surge":
+            soundID = 1104
+        case "Recover":
+            soundID = 1153
+        default:
+            soundID = intensity >= 0.7 ? 1108 : 1519
+        }
+
+        AudioServicesPlaySystemSound(soundID)
+        #elseif os(watchOS)
+        let cue: WKHapticType
+
+        switch label {
+        case "Rare Window":
+            cue = .success
+        case "Surge":
+            cue = .directionUp
+        case "Recover":
+            cue = .retry
+        default:
+            cue = intensity >= 0.7 ? .click : .start
+        }
+
+        WKInterfaceDevice.current().play(cue)
+        #endif
+    }
+
     #if os(iOS)
     private static func hatchSoundID(for pet: GeneratedPet?) -> SystemSoundID {
         guard let pet,

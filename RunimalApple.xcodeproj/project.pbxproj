@@ -25,12 +25,15 @@
 		338AC15FAD498178D66598B7 /* PhoneEssenceForgePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E1D232A467F7235E20D20A4 /* PhoneEssenceForgePanel.swift */; };
 		345F7D630F87517F5CB41228 /* RunimalCore in Frameworks */ = {isa = PBXBuildFile; productRef = BD4FCB625E6957A01DAECE5B /* RunimalCore */; };
 		348112833B9390E5F1FCDBE8 /* PhoneSurplusLabPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63B8A677CC7E7FF91B275ADA /* PhoneSurplusLabPanel.swift */; };
+		3C013131CFE7D1AFEA973E4C /* TraceEggView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCD4226FA288DCD5E44ADDD /* TraceEggView.swift */; };
 		3C970851FD763E817B29A8FA /* GameSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2B8EE9F33FD02687ADA9AD /* GameSurface.swift */; };
 		40924A1640EB6A6E480A093B /* RunimalCuePlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F93E1817D650665C529F2AB5 /* RunimalCuePlayer.swift */; };
 		42EE959C9795A6188C914022 /* PhoneStarterLoopPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E0D41AA3032A2C590F91404 /* PhoneStarterLoopPanel.swift */; };
+		43EF6C2C7E4A34B138CAC576 /* PhoneFeedCinematicPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE9124C7D8D5C626EE91D614 /* PhoneFeedCinematicPanel.swift */; };
 		443E62FDBACD6570270B42FE /* PhoneCloudValidationPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7FC40B982500CEB6102FD73 /* PhoneCloudValidationPanel.swift */; };
 		4F8C8E8BFB84DDBF62067774 /* MacContentCatalogPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16F668EE7DB792C0CD6D7458 /* MacContentCatalogPanel.swift */; };
 		517368F2AD7E3D4F4F68045F /* PhoneHatchInsightPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5AFA4A0D0FA515927F493FE /* PhoneHatchInsightPanel.swift */; };
+		58356AB6B9280AEE8A490CA7 /* TraceEggView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCD4226FA288DCD5E44ADDD /* TraceEggView.swift */; };
 		59391B8B7D4936528B8DC410 /* RunimalCuePlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F93E1817D650665C529F2AB5 /* RunimalCuePlayer.swift */; };
 		5BF455D18F0537AADA89CCE6 /* PhoneCloudMirrorPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FA42B69A30577005505320D /* PhoneCloudMirrorPanel.swift */; };
 		5CBD3DBA10183E72DFDCE041 /* WatchDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 568C61E1152F1E38E7B93D90 /* WatchDashboardView.swift */; };
@@ -90,6 +93,7 @@
 		EDD9705F22CE23A4801B2464 /* PhoneContentRotationPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C263EDBDA7A0547340C543 /* PhoneContentRotationPanel.swift */; };
 		EE08EF9D38F1792335BFC46F /* RunimalFeedbackProfileLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E149F2A81A44372E7912C0F9 /* RunimalFeedbackProfileLoader.swift */; };
 		F347F32092383E2AC1C5BF8D /* PhoneRewardStagePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D52108AD744AAE198D6A811 /* PhoneRewardStagePanel.swift */; };
+		F6A2CC69128FDAEADD41F8C2 /* TraceEggView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCD4226FA288DCD5E44ADDD /* TraceEggView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -136,6 +140,7 @@
 		862939D4F8E60116617FF8EE /* PhoneRaidCombatPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneRaidCombatPanel.swift; sourceTree = "<group>"; };
 		8960CBDB8120CE7543CDF1AD /* PhoneRaidBoardPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneRaidBoardPanel.swift; sourceTree = "<group>"; };
 		8B63700EC6EFC5E75D16ECB0 /* PhoneRaidBossPatternPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneRaidBossPatternPanel.swift; sourceTree = "<group>"; };
+		8DCD4226FA288DCD5E44ADDD /* TraceEggView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TraceEggView.swift; sourceTree = "<group>"; };
 		94DE3D4BBCFA33AFD86E9941 /* PhoneSelectiveMergePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSelectiveMergePanel.swift; sourceTree = "<group>"; };
 		9644ED15FC30AD4B82A2D748 /* MacDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacDashboardView.swift; sourceTree = "<group>"; };
 		974FB8F921D130D978735ED6 /* RunimalWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RunimalWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -149,6 +154,7 @@
 		AEA95D1D9A9F2C66C78412A2 /* PhoneHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneHomeView.swift; sourceTree = "<group>"; };
 		B1B704EA8A439E06F40FDC8D /* runimal-apple */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "runimal-apple"; path = .; sourceTree = SOURCE_ROOT; };
 		B6E46300A234E62D872875A0 /* PhoneCollectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneCollectionView.swift; sourceTree = "<group>"; };
+		BE9124C7D8D5C626EE91D614 /* PhoneFeedCinematicPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneFeedCinematicPanel.swift; sourceTree = "<group>"; };
 		C05253ED9374F103DD2D3A46 /* PhoneVaultPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneVaultPanel.swift; sourceTree = "<group>"; };
 		C3BF20B6F686F96E832BB931 /* PhoneRaidBranchPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneRaidBranchPanel.swift; sourceTree = "<group>"; };
 		C5AFA4A0D0FA515927F493FE /* PhoneHatchInsightPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneHatchInsightPanel.swift; sourceTree = "<group>"; };
@@ -252,6 +258,7 @@
 				F1E385404E47BEE9EBE310AC /* PhoneDashboardView.swift */,
 				3A401E55FD8B55C113229F30 /* PhoneDiagnosticsPanel.swift */,
 				9E1D232A467F7235E20D20A4 /* PhoneEssenceForgePanel.swift */,
+				BE9124C7D8D5C626EE91D614 /* PhoneFeedCinematicPanel.swift */,
 				E269AC391E4EEE0B67184701 /* PhoneGrowthDockPanel.swift */,
 				C5AFA4A0D0FA515927F493FE /* PhoneHatchInsightPanel.swift */,
 				AE5C185CFBC7BCD90C4E6838 /* PhoneHealthKitManager.swift */,
@@ -301,6 +308,7 @@
 				F93E1817D650665C529F2AB5 /* RunimalCuePlayer.swift */,
 				E149F2A81A44372E7912C0F9 /* RunimalFeedbackProfileLoader.swift */,
 				385B139873A7AFD4A86EC385 /* RunimalProgressBar.swift */,
+				8DCD4226FA288DCD5E44ADDD /* TraceEggView.swift */,
 				368AA0208429105238738109 /* AssetCatalog */,
 			);
 			path = SharedUI;
@@ -487,6 +495,7 @@
 				ACE2CE5F4EE7FCFAB684E01A /* PhoneDashboardView.swift in Sources */,
 				91DB87EB4DD59DC1A6282104 /* PhoneDiagnosticsPanel.swift in Sources */,
 				338AC15FAD498178D66598B7 /* PhoneEssenceForgePanel.swift in Sources */,
+				43EF6C2C7E4A34B138CAC576 /* PhoneFeedCinematicPanel.swift in Sources */,
 				6C85B98D545FA9E94754D077 /* PhoneGrowthDockPanel.swift in Sources */,
 				517368F2AD7E3D4F4F68045F /* PhoneHatchInsightPanel.swift in Sources */,
 				6A7224029895E527796C8ACC /* PhoneHealthKitManager.swift in Sources */,
@@ -517,6 +526,7 @@
 				EE08EF9D38F1792335BFC46F /* RunimalFeedbackProfileLoader.swift in Sources */,
 				634DB0E7570D3FB1D7968EC4 /* RunimalPhoneApp.swift in Sources */,
 				055D904E32E554E7B3354B17 /* RunimalProgressBar.swift in Sources */,
+				F6A2CC69128FDAEADD41F8C2 /* TraceEggView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -539,6 +549,7 @@
 				D8B408663CE2E92F670E24E2 /* RunimalMacApp.swift in Sources */,
 				77A6E50FF14BE7C8A83E2E5E /* RunimalPaths.swift in Sources */,
 				DCFF4ACBAD91D49CC3359A6E /* RunimalProgressBar.swift in Sources */,
+				58356AB6B9280AEE8A490CA7 /* TraceEggView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -553,6 +564,7 @@
 				D33FE458E33B7D2A12ECC7ED /* RunimalFeedbackProfileLoader.swift in Sources */,
 				712848BC98C636829FEC9977 /* RunimalProgressBar.swift in Sources */,
 				174E2B99B537739F137A619E /* RunimalWatchApp.swift in Sources */,
+				3C013131CFE7D1AFEA973E4C /* TraceEggView.swift in Sources */,
 				5F169DE5191FDFAC59DE3E4A /* WatchConnectivityManager.swift in Sources */,
 				5CBD3DBA10183E72DFDCE041 /* WatchDashboardView.swift in Sources */,
 				6276F09AB75F654F6C71BF20 /* WatchGoalTrackCard.swift in Sources */,

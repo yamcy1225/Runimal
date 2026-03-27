@@ -15,6 +15,9 @@ final class MacDeviceQAStore {
             "2. iPhone에서 vault mirror를 만든 뒤 앱을 재실행합니다.",
             "3. Watch에서 러닝 종료 후 reward sync가 iPhone에 반영되는지 확인합니다.",
             "4. conflict panel에서 local/cloud 우선순위와 record diff 편집을 검수합니다.",
+            "5. Watch에서 Rare Window / Surge / Recover 전환 시 햅틱이 달라지는지 기록합니다.",
+            "6. iPhone Collection에서 Feed Active 실행 후 XP fill과 stage cut-in이 재생되는지 기록합니다.",
+            "7. 각 항목을 PASS / FAIL / NOTE 형식으로 별도 메모합니다.",
         ].joined(separator: "\n")
         let lines = runbook + "\n\n" + checklist.map { "\($0.title)\n\($0.detail)" }.joined(separator: "\n\n")
 

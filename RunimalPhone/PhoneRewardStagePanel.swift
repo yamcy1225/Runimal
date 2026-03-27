@@ -11,9 +11,11 @@ struct PhoneRewardStagePanel: View {
 
     @State private var energized = false
     @State private var burstScale: CGFloat = 0.92
+    @State private var revealPet = false
+    @State private var crackEgg = false
 
     private var stageTitle: String {
-        if let claimableReward {
+        if claimableReward != nil {
             return "Reward Reveal: \(season.rewardTitle)"
         }
 
@@ -42,6 +44,10 @@ struct PhoneRewardStagePanel: View {
         }
 
         return "주간 보상과 성장 효과가 이 공간에서 다음 루프로 이어집니다."
+    }
+
+    private var variantLabel: String {
+        pet.rareVariant.map { RareVariantMeta.labels[$0] ?? $0.rawValue } ?? "Standard Trace"
     }
 
     private var stageAccent: Color {
@@ -73,7 +79,13 @@ struct PhoneRewardStagePanel: View {
                             .frame(width: 96, height: 96)
                             .rotationEffect(.degrees(energized ? 12 : -8))
 
-                        PixelPetView(pet: pet, pixelSize: 10)
+                        if revealPet {
+                            PixelPetView(pet: pet, pixelSize: 10)
+                                .transition(.scale(scale: 0.86).combined(with: .opacity))
+                        } else {
+                            TraceEggView(accent: stageAccent, pixelSize: 10, cracked: crackEgg)
+                                .transition(.scale(scale: 1.04).combined(with: .opacity))
+                        }
                     }
                     .frame(width: 124, height: 124)
                     .background(
@@ -90,6 +102,10 @@ struct PhoneRewardStagePanel: View {
                             .font(.title3.weight(.black))
                             .foregroundStyle(.white)
 
+                        Text(variantLabel)
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(stageAccent.opacity(0.94))
+
                         Text(stageDetail)
                             .font(.footnote)
                             .foregroundStyle(.white.opacity(0.74))
@@ -102,6 +118,9 @@ struct PhoneRewardStagePanel: View {
                             }
                             if claimableReward != nil {
                                 TraitChip(label: "READY", accent: .green)
+                            }
+                            if pet.rareVariant != nil {
+                                TraitChip(label: "RARE PATH", accent: .orange.opacity(0.82))
                             }
                         }
                     }
@@ -153,9 +172,11 @@ struct PhoneRewardStagePanel: View {
         .onAppear {
             energized = true
             animateBurst()
+            startRevealSequence()
         }
         .onChange(of: claimableReward?.id) { _, _ in
             animateBurst()
+            startRevealSequence()
             RunimalCuePlayer.playHatchCue(for: pet)
         }
         .onChange(of: progress.stageLabel) { _, _ in
@@ -169,6 +190,26 @@ struct PhoneRewardStagePanel: View {
         burstScale = 0.84
         withAnimation(.spring(response: 0.62, dampingFraction: 0.68)) {
             burstScale = 1.08
+        }
+    }
+
+    private func startRevealSequence() {
+        revealPet = false
+        crackEgg = false
+
+        Task {
+            try? await Task.sleep(for: .milliseconds(220))
+            await MainActor.run {
+                withAnimation(.easeInOut(duration: 0.24)) {
+                    crackEgg = true
+                }
+            }
+            try? await Task.sleep(for: .milliseconds(420))
+            await MainActor.run {
+                withAnimation(.spring(response: 0.62, dampingFraction: 0.72)) {
+                    revealPet = true
+                }
+            }
         }
     }
 }

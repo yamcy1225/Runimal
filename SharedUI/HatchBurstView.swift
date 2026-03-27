@@ -5,31 +5,40 @@ struct HatchBurstView: View {
     let accent: Color
     let pet: GeneratedPet?
     var scale: CGFloat
+    @State private var ringRotation = -14.0
+    @State private var flare = false
 
     var body: some View {
         ZStack {
             Circle()
-                .stroke(accent.opacity(0.38), lineWidth: 2)
+                .stroke(accent.opacity(flare ? 0.66 : 0.38), lineWidth: 2)
                 .frame(width: 86 * scale, height: 86 * scale)
 
             Circle()
                 .stroke(accent.opacity(0.24), style: StrokeStyle(lineWidth: 5, dash: [4, 6]))
                 .frame(width: 112 * scale, height: 112 * scale)
+                .rotationEffect(.degrees(ringRotation))
 
             Circle()
-                .fill(accent.opacity(0.12))
+                .fill(accent.opacity(flare ? 0.24 : 0.12))
                 .frame(width: 64 * scale, height: 64 * scale)
                 .blur(radius: 10)
 
             if let pet {
                 ForEach(signatureOffsets(for: pet), id: \.x) { point in
                     Circle()
-                        .fill(accent.opacity(0.9))
-                        .frame(width: 6, height: 6)
+                        .fill(accent.opacity(flare ? 1 : 0.82))
+                        .frame(width: flare ? 7 : 5, height: flare ? 7 : 5)
                         .offset(x: point.x * scale, y: point.y * scale)
                 }
             }
         }
+        .onAppear {
+            ringRotation = 14
+            flare = true
+        }
+        .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: ringRotation)
+        .animation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true), value: flare)
     }
 
     private func signatureOffsets(for pet: GeneratedPet) -> [CGPoint] {

@@ -13,6 +13,7 @@ final class PhoneDashboardStore {
     let cloudMirror = PhoneCloudMirrorManager()
     let contentCatalog = PhoneContentCatalog()
     let telemetry = PhoneTelemetryLogger()
+    var latestFeedOutcome: CompanionFeedOutcome?
 
     let summary = RunSummary(
         distanceKm: 10.02,
@@ -392,9 +393,18 @@ final class PhoneDashboardStore {
 
     func feedActiveCompanion(with runID: String) {
         guard let run = completedRuns.first(where: { $0.id == runID }) else { return }
-        _ = progress.feed(run: run, to: featuredCompanion, activeEffects: activeWeeklyEffects, season: weeklyBoard.season)
+        latestFeedOutcome = progress.feed(
+            run: run,
+            to: featuredCompanion,
+            activeEffects: activeWeeklyEffects,
+            season: weeklyBoard.season
+        )
         persistVault()
         telemetry.log("feed_companion", detail: run.id)
+    }
+
+    func clearFeedOutcome() {
+        latestFeedOutcome = nil
     }
 
     func retireCompanion(_ companionID: String) {

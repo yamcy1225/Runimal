@@ -30,6 +30,13 @@ struct PhoneCollectionView: View {
             VStack(alignment: .leading, spacing: 18) {
                 stableCard
                 evolutionCard
+                if let outcome = store.latestFeedOutcome {
+                    PhoneFeedCinematicPanel(
+                        pet: store.featuredCompanion.pet,
+                        outcome: outcome,
+                        onDismiss: store.clearFeedOutcome
+                    )
+                }
                 collectionEffectStage
                 PhonePetDetailPanel(
                     companion: store.featuredCompanion,

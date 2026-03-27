@@ -1,0 +1,15 @@
+{
+  "status": "succeeded",
+  "outputPath": "/Users/heobella/jaw-bot-2/apps/runimal-apple/demo/render-egg-hatch-evolve/TimelineVideo.mp4",
+  "compositionId": "TimelineVideo",
+  "preset": "Landscape-1080p",
+  "valid": true,
+  "duration": 30.058667,
+  "codec": "h264",
+  "width": 1920,
+  "height": 1080,
+  "fileSize": 5050359,
+  "errors": [],
+  "renderMs": 434699,
+  "updatedAt": 1774590606472
+}

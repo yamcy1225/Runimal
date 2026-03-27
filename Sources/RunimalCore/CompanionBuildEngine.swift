@@ -39,11 +39,20 @@ public enum RunimalCompanionBuildEngine {
         if unlocked.contains("surge-link"), (run.cadence ?? 0) >= 172 {
             bonus += 12
         }
+        if unlocked.contains("pace-weave"), (run.averagePaceSeconds ?? 999) <= 330 {
+            bonus += 10
+        }
         if unlocked.contains("guard-shell"), run.elevationGainM >= 30 {
             bonus += 12
         }
+        if unlocked.contains("bastion-heart"), run.distanceMeters >= 8000 {
+            bonus += 14
+        }
         if unlocked.contains("oracle-window"), companion.pet.rareVariant != nil {
             bonus += 14
+        }
+        if unlocked.contains("lunar-index"), run.averageHeartRate.map({ $0 >= 150 }) == true {
+            bonus += 10
         }
         if unlocked.contains("echo-lens"), run.reward.completedQuestCount >= 2 {
             bonus += 10
@@ -58,16 +67,19 @@ public enum RunimalCompanionBuildEngine {
             return [
                 ("guard-shell", "Guard Shell", "언덕/누적 고도 러닝을 먹일 때 추가 XP를 줍니다.", 24),
                 ("impact-core", "Impact Core", "장거리 러닝을 안정적으로 소화하는 탱크 계열 보정을 준비합니다.", 34),
+                ("bastion-heart", "Bastion Heart", "8km 이상 장거리 코어를 먹일 때 큰 성장 보너스를 얻습니다.", 42),
             ]
         case .relay:
             return [
                 ("surge-link", "Surge Link", "고케이던스 러닝을 먹일 때 추가 XP를 줍니다.", 24),
                 ("draft-lane", "Draft Lane", "페이스 안정성이 좋은 러닝의 성장 변환율을 높입니다.", 34),
+                ("pace-weave", "Pace Weave", "5:30/km 이내 페이스를 유지한 코어를 먹일 때 추가 보너스를 얻습니다.", 42),
             ]
         case .oracle:
             return [
                 ("oracle-window", "Oracle Window", "희귀 변이 개체가 러닝 코어를 더 잘 흡수합니다.", 24),
                 ("echo-lens", "Echo Lens", "퀘스트를 많이 끝낸 러닝일수록 성장 보너스를 얻습니다.", 34),
+                ("lunar-index", "Lunar Index", "심박이 충분히 오른 러닝 코어를 읽어 추가 성장치를 해석합니다.", 42),
             ]
         }
     }

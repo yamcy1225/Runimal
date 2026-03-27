@@ -35,6 +35,22 @@ public enum RunimalRaidBoardEngine {
                 recommendedReward: "Relay crest",
                 claimThreshold: 145
             ),
+            RaidEncounter(
+                id: "lumen-veil",
+                title: "Lumen Veil",
+                detail: "집중력과 희귀 변이 시너지가 좋은 펫이 강한 레이드입니다.",
+                readinessScore: corePower + companion.pet.stats.focus * 4 + roleScalar / 2,
+                recommendedReward: "Oracle sigil",
+                claimThreshold: 152
+            ),
+            RaidEncounter(
+                id: "root-bastion",
+                title: "Root Bastion",
+                detail: "체력과 방어가 높은 장거리 개체에게 유리한 시즌 보스입니다.",
+                readinessScore: corePower + companion.pet.stats.defense * 4 + companion.pet.stats.vitality * 2,
+                recommendedReward: "Season bulwark",
+                claimThreshold: 158
+            ),
         ]
     }
 }

@@ -16,5 +16,17 @@
     "title": "Forge Window",
     "detail": "Essence를 촉매로 바꿔 시즌 정렬 펫에게 몰아주는 권장 회차입니다.",
     "reward": "Extra forge value"
+  },
+  {
+    "id": "boss-scout",
+    "title": "Boss Scout",
+    "detail": "이번 시즌 레이드 보스 약점을 추적해 다음 레이드 보상 분기를 노립니다.",
+    "reward": "Raid branch hint"
+  },
+  {
+    "id": "mythic-lap",
+    "title": "Mythic Lap",
+    "detail": "희귀 변이와 장거리 기록을 함께 노려 최종 진화 해금 속도를 끌어올립니다.",
+    "reward": "Ascension pace bonus"
   }
 ]

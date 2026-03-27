@@ -198,16 +198,16 @@ final class PhoneProgressStore {
         to companion: PetCollectionEntry,
         activeEffects: [WeeklyRewardEffect],
         season: WeeklySeason
-    ) -> Bool {
+    ) -> CompanionFeedOutcome? {
         if growthRecords.flatMap(\.assignedRunIDs).contains(run.id) {
-            return false
+            return nil
         }
 
         let currentRecord = growthRecord(for: companion.id)
-        let currentProgress = RunimalCompanionGrowthEngine.evolutionProgress(for: currentRecord)
+        let beforeProgress = RunimalCompanionGrowthEngine.evolutionProgress(for: currentRecord)
         let resonance = RunimalEffectResonanceEngine.effectResonance(
             for: companion,
-            progress: currentProgress,
+            progress: beforeProgress,
             activeEffects: activeEffects
         )
         let bonusExperience = RunimalCompanionGrowthEngine.feedBonusExperience(
@@ -224,14 +224,16 @@ final class PhoneProgressStore {
             run: run,
             companion: companion
         )
+        let gainedExperience = run.reward.experience + bonusExperience + forgeBonus.bonus + buildBonus
 
         let updated = CompanionGrowthRecord(
             companionID: companion.id,
-            totalExperience: (currentRecord?.totalExperience ?? 0) + run.reward.experience + bonusExperience + forgeBonus.bonus + buildBonus,
+            totalExperience: (currentRecord?.totalExperience ?? 0) + gainedExperience,
             feedCount: (currentRecord?.feedCount ?? 0) + 1,
             assignedRunIDs: (currentRecord?.assignedRunIDs ?? []) + [run.id],
             lastFedAt: run.endedAt
         )
+        let afterProgress = RunimalCompanionGrowthEngine.evolutionProgress(for: updated)
 
         growthRecords.removeAll(where: { $0.companionID == companion.id })
         growthRecords.append(updated)
@@ -243,7 +245,14 @@ final class PhoneProgressStore {
             seasonSigils = max(seasonSigils - 1, 0)
         }
         save()
-        return true
+        return CompanionFeedOutcome(
+            runID: run.id,
+            coreLabel: run.reward.coreLabel,
+            gainedExperience: gainedExperience,
+            beforeProgress: beforeProgress,
+            afterProgress: afterProgress,
+            stageAdvanced: beforeProgress.stageLabel != afterProgress.stageLabel
+        )
     }
 
     @discardableResult

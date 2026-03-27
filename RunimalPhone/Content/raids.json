@@ -12,5 +12,19 @@
     "detail": "속도와 연계가 강한 개체가 우세한 레이드입니다.",
     "recommendedReward": "Relay crest",
     "claimThreshold": 145
+  },
+  {
+    "id": "lumen-veil",
+    "title": "Lumen Veil",
+    "detail": "집중과 변이 시너지를 읽는 오라형 보스입니다.",
+    "recommendedReward": "Oracle sigil",
+    "claimThreshold": 152
+  },
+  {
+    "id": "root-bastion",
+    "title": "Root Bastion",
+    "detail": "장거리/방어 축이 강한 시즌 수문장 보스입니다.",
+    "recommendedReward": "Season bulwark",
+    "claimThreshold": 158
   }
 ]
