@@ -36,6 +36,11 @@ struct PhoneCollectionView: View {
                     progress: store.evolutionProgress,
                     activeEffects: store.activeWeeklyEffects
                 )
+                PhoneGrowthDockPanel(
+                    activeCompanion: store.featuredCompanion,
+                    availableRuns: store.availableRunCores,
+                    onFeed: store.feedActiveCompanion(with:)
+                )
                 resonanceCompareBoard
                 collectionGrid
                 growthTimeline
@@ -62,6 +67,7 @@ struct PhoneCollectionView: View {
                         HStack {
                             TraitChip(label: "Lv.\(store.featuredCompanion.level)", accent: store.featuredCompanion.pet.accentColor)
                             TraitChip(label: "Bond \(store.featuredCompanion.bond)", accent: .white.opacity(0.28))
+                            TraitChip(label: "ACTIVE", accent: .green.opacity(0.72))
                         }
                     }
                 }
@@ -171,8 +177,10 @@ struct PhoneCollectionView: View {
                             HStack {
                                 TraitChip(label: "Lv.\(entry.level)", accent: entry.pet.accentColor)
                                 TraitChip(label: "\(entry.totalDistanceKm.formatted(.number.precision(.fractionLength(1))))km", accent: .white.opacity(0.24))
-                                if store.activeWeeklyEffects.isEmpty == false && entry.id == store.featuredCompanion.id {
-                                    TraitChip(label: "BUFFED", accent: .green.opacity(0.7))
+                                if entry.id == store.featuredCompanion.id {
+                                    TraitChip(label: "ACTIVE", accent: .green.opacity(0.7))
+                                } else if store.activeWeeklyEffects.isEmpty == false {
+                                    TraitChip(label: "READY", accent: .white.opacity(0.18))
                                 }
                             }
 
@@ -180,6 +188,13 @@ struct PhoneCollectionView: View {
                                 .font(.caption2)
                                 .foregroundStyle(.white.opacity(0.68))
                                 .lineLimit(2)
+
+                            Button(entry.id == store.featuredCompanion.id ? "Selected" : "Set Active") {
+                                store.activateCompanion(entry.id)
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(entry.pet.accentColor)
+                            .disabled(entry.id == store.featuredCompanion.id)
                         }
                     }
                 }

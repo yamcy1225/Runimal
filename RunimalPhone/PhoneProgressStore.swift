@@ -9,12 +9,16 @@ final class PhoneProgressStore {
         static let journal = "runimal.phone.journal"
         static let completedRuns = "runimal.phone.completedRuns"
         static let claimedWeeklyRewards = "runimal.phone.claimedWeeklyRewards"
+        static let activeCompanionID = "runimal.phone.activeCompanionID"
+        static let growthRecords = "runimal.phone.growthRecords"
     }
 
     private let defaults: UserDefaults
     var journal: [RunJournalEntry] = []
     var completedRuns: [CompletedRunRecord] = []
     var claimedWeeklyRewards: [String] = []
+    var activeCompanionID: String?
+    var growthRecords: [CompanionGrowthRecord] = []
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -42,6 +46,17 @@ final class PhoneProgressStore {
         }
 
         claimedWeeklyRewards = defaults.stringArray(forKey: Keys.claimedWeeklyRewards) ?? []
+        activeCompanionID = defaults.string(forKey: Keys.activeCompanionID)
+
+        if let data = defaults.data(forKey: Keys.growthRecords) {
+            do {
+                growthRecords = try JSONDecoder().decode([CompanionGrowthRecord].self, from: data)
+            } catch {
+                growthRecords = []
+            }
+        } else {
+            growthRecords = []
+        }
     }
 
     func seedIfNeeded(from summaries: [RunSummary]) {
@@ -89,6 +104,57 @@ final class PhoneProgressStore {
         }
 
         save()
+    }
+
+    func activateCompanion(id: String) {
+        activeCompanionID = id
+        save()
+    }
+
+    func growthRecord(for companionID: String) -> CompanionGrowthRecord? {
+        growthRecords.first(where: { $0.companionID == companionID })
+    }
+
+    func unassignedRuns(from runs: [CompletedRunRecord]) -> [CompletedRunRecord] {
+        let assigned = Set(growthRecords.flatMap(\.assignedRunIDs))
+        return runs.filter { !assigned.contains($0.id) }
+    }
+
+    @discardableResult
+    func feed(
+        run: CompletedRunRecord,
+        to companion: PetCollectionEntry,
+        activeEffects: [WeeklyRewardEffect]
+    ) -> Bool {
+        if growthRecords.flatMap(\.assignedRunIDs).contains(run.id) {
+            return false
+        }
+
+        let currentRecord = growthRecord(for: companion.id)
+        let currentProgress = RunimalCompanionGrowthEngine.evolutionProgress(for: currentRecord)
+        let resonance = RunimalEffectResonanceEngine.effectResonance(
+            for: companion,
+            progress: currentProgress,
+            activeEffects: activeEffects
+        )
+        let bonusExperience = RunimalCompanionGrowthEngine.feedBonusExperience(
+            baseExperience: run.reward.experience,
+            resonance: resonance
+        )
+
+        let updated = CompanionGrowthRecord(
+            companionID: companion.id,
+            totalExperience: (currentRecord?.totalExperience ?? 0) + run.reward.experience + bonusExperience,
+            feedCount: (currentRecord?.feedCount ?? 0) + 1,
+            assignedRunIDs: (currentRecord?.assignedRunIDs ?? []) + [run.id],
+            lastFedAt: run.endedAt
+        )
+
+        growthRecords.removeAll(where: { $0.companionID == companion.id })
+        growthRecords.append(updated)
+        activeCompanionID = companion.id
+        save()
+        return true
     }
 
     func append(reward: RunRewardSummary, snapshot: LiveRunSnapshot?) {
@@ -139,5 +205,13 @@ final class PhoneProgressStore {
         }
 
         defaults.set(claimedWeeklyRewards, forKey: Keys.claimedWeeklyRewards)
+        defaults.set(activeCompanionID, forKey: Keys.activeCompanionID)
+
+        do {
+            let growthRecordData = try JSONEncoder().encode(growthRecords)
+            defaults.set(growthRecordData, forKey: Keys.growthRecords)
+        } catch {
+            defaults.removeObject(forKey: Keys.growthRecords)
+        }
     }
 }

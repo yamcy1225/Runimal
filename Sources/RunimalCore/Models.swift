@@ -276,6 +276,32 @@ public struct EvolutionProgress: Codable, Equatable, Sendable {
     }
 }
 
+public struct CompanionGrowthRecord: Codable, Equatable, Identifiable, Sendable {
+    public let companionID: String
+    public let totalExperience: Int
+    public let feedCount: Int
+    public let assignedRunIDs: [String]
+    public let lastFedAt: Date?
+
+    public var id: String {
+        companionID
+    }
+
+    public init(
+        companionID: String,
+        totalExperience: Int,
+        feedCount: Int,
+        assignedRunIDs: [String],
+        lastFedAt: Date?
+    ) {
+        self.companionID = companionID
+        self.totalExperience = totalExperience
+        self.feedCount = feedCount
+        self.assignedRunIDs = assignedRunIDs
+        self.lastFedAt = lastFedAt
+    }
+}
+
 public struct RoutePoint: Codable, Equatable, Identifiable, Sendable {
     public let latitude: Double
     public let longitude: Double

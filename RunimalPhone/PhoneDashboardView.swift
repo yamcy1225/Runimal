@@ -35,8 +35,12 @@ final class PhoneDashboardStore {
         RunimalGameEngine.activeWeeklyEffects(from: claimedWeeklyRewardIDs)
     }
 
+    var baseCollection: [PetCollectionEntry] {
+        RunimalGameEngine.buildCollection(from: runArchive)
+    }
+
     var pet: GeneratedPet {
-        RunimalGameEngine.generatePet(from: summary, claimedRewardIDs: claimedWeeklyRewardIDs)
+        featuredCompanion.pet
     }
 
     var quests: [RunQuestStatus] {
@@ -48,13 +52,23 @@ final class PhoneDashboardStore {
     }
 
     var collection: [PetCollectionEntry] {
-        RunimalGameEngine.buildCollection(from: runArchive)
+        baseCollection.map { companion in
+            RunimalCompanionGrowthEngine.effectiveCompanion(
+                from: companion,
+                growthRecord: progress.growthRecord(for: companion.id)
+            )
+        }
     }
 
     var featuredCompanion: PetCollectionEntry {
-        collection.first ?? PetCollectionEntry(
+        if let activeCompanionID = progress.activeCompanionID,
+           let activeCompanion = collection.first(where: { $0.id == activeCompanionID }) {
+            return activeCompanion
+        }
+
+        return collection.first ?? PetCollectionEntry(
             id: "fallback",
-            pet: pet,
+            pet: RunimalGameEngine.generatePet(from: summary, claimedRewardIDs: claimedWeeklyRewardIDs),
             level: 1,
             bond: 20,
             totalDistanceKm: summary.distanceKm,
@@ -63,11 +77,13 @@ final class PhoneDashboardStore {
     }
 
     var variantCodex: [VariantCodexEntry] {
-        RunimalGameEngine.buildVariantCodex(from: collection)
+        RunimalGameEngine.buildVariantCodex(from: baseCollection)
     }
 
     var evolutionProgress: EvolutionProgress {
-        RunimalGameEngine.evolutionProgress(for: progress.journal)
+        RunimalCompanionGrowthEngine.evolutionProgress(
+            for: progress.growthRecord(for: featuredCompanion.id)
+        )
     }
 
     var recentJournal: [RunJournalEntry] {
@@ -104,6 +120,10 @@ final class PhoneDashboardStore {
 
     var evolutionTarget: EvolutionTarget {
         RunimalGameEngine.evolutionTarget(for: evolutionProgress, recentRun: latestCompletedRun)
+    }
+
+    var availableRunCores: [CompletedRunRecord] {
+        progress.unassignedRuns(from: completedRuns)
     }
 
     func activateConnectivity() {
@@ -147,6 +167,15 @@ final class PhoneDashboardStore {
         guard let reward = claimableWeeklyReward else { return }
         progress.claimWeeklyReward(id: reward.id)
         syncCompanionEffects()
+    }
+
+    func activateCompanion(_ companionID: String) {
+        progress.activateCompanion(id: companionID)
+    }
+
+    func feedActiveCompanion(with runID: String) {
+        guard let run = completedRuns.first(where: { $0.id == runID }) else { return }
+        _ = progress.feed(run: run, to: featuredCompanion, activeEffects: activeWeeklyEffects)
     }
 
     func syncCompanionEffects() {
