@@ -8,6 +8,7 @@ struct PhoneHomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 heroCard
+                PhoneWeeklyBoardPanel(board: store.weeklyBoard, accent: store.pet.accentColor)
                 questCard
                 workoutCard
                 syncCard

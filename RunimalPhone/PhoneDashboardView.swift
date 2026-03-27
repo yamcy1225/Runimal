@@ -74,6 +74,14 @@ final class PhoneDashboardStore {
         progress.completedRuns.first
     }
 
+    var weeklyBoard: WeeklyBoard {
+        RunimalGameEngine.weeklyBoard(
+            from: progress.completedRuns,
+            journal: progress.journal,
+            codex: variantCodex
+        )
+    }
+
     var hatchInsights: [HatchInsight] {
         guard let latestCompletedRun else { return [] }
         return RunimalGameEngine.hatchInsights(for: latestCompletedRun)
