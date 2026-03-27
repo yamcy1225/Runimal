@@ -8,6 +8,7 @@ public extension RunimalGameEngine {
         referenceDate: Date = Date()
     ) -> WeeklyBoard {
         let calendar = Calendar.current
+        let season = seasonalTheme(for: referenceDate)
         let weekInterval = calendar.dateInterval(of: .weekOfYear, for: referenceDate)
         let weekStart = weekInterval?.start ?? referenceDate
         let weekEnd = weekInterval?.end ?? referenceDate
@@ -88,6 +89,7 @@ public extension RunimalGameEngine {
         }
 
         return WeeklyBoard(
+            season: season,
             weekLabel: weeklyLabel(start: weekStart, end: weekEnd),
             headline: headline,
             totalDistanceKm: totalDistanceKm,
@@ -98,6 +100,37 @@ public extension RunimalGameEngine {
             missions: missions,
             rewards: rewards
         )
+    }
+
+    private static func seasonalTheme(for date: Date) -> WeeklySeason {
+        let month = Calendar.current.component(.month, from: date)
+
+        switch month {
+        case 3...5:
+            return WeeklySeason(
+                title: "Verdant Loop",
+                subtitle: "안정 루프와 장거리 리듬을 밀어주는 봄 시즌",
+                bonus: "Leaf / Zen Bloom 트랙의 연구 가치가 상승합니다."
+            )
+        case 6...8:
+            return WeeklySeason(
+                title: "Ember Circuit",
+                subtitle: "고케이던스와 빠른 템포를 밀어주는 여름 시즌",
+                bonus: "Flame / Tempo Surge 트랙의 목표 효율이 높아집니다."
+            )
+        case 9...11:
+            return WeeklySeason(
+                title: "Crag Harvest",
+                subtitle: "언덕과 누적 거리 루프를 밀어주는 가을 시즌",
+                bonus: "Earth / Summit Heart 계열의 성장 보상이 커집니다."
+            )
+        default:
+            return WeeklySeason(
+                title: "Lunar Drift",
+                subtitle: "야간 러닝과 희귀 변이 연구를 밀어주는 겨울 시즌",
+                bonus: "Lunar / Eclipse Mark 계열의 희귀 창이 자주 열립니다."
+            )
+        }
     }
 
     private static func makeMission(

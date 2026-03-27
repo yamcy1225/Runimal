@@ -378,3 +378,22 @@ public struct RetirableCompanionOffer: Codable, Equatable, Identifiable, Sendabl
         self.reason = reason
     }
 }
+
+public struct SyncDiagnosticEvent: Codable, Equatable, Identifiable, Sendable {
+    public let id: String
+    public let timestamp: Date
+    public let title: String
+    public let detail: String
+
+    public init(
+        id: String = UUID().uuidString,
+        timestamp: Date = Date(),
+        title: String,
+        detail: String
+    ) {
+        self.id = id
+        self.timestamp = timestamp
+        self.title = title
+        self.detail = detail
+    }
+}

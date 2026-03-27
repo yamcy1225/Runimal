@@ -10,16 +10,19 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
     var lastSyncedWorkoutTitle = "No plan yet"
     var claimedRewardIDs: Set<String> = []
     var activeEffects: [WeeklyRewardEffect] = []
+    var recentEvents: [SyncDiagnosticEvent] = []
 
     func activate() {
         guard WCSession.isSupported() else {
             activationStateLabel = "unsupported"
+            logEvent("activation", "WCSession unsupported")
             return
         }
 
         let session = WCSession.default
         session.delegate = self
         session.activate()
+        logEvent("activation", "WCSession activate requested")
     }
 
     func send(snapshot: LiveRunSnapshot) {
@@ -28,8 +31,10 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
         do {
             let data = try JSONEncoder().encode(snapshot)
             try WCSession.default.updateApplicationContext(["liveRunSnapshot": data])
+            logEvent("push snapshot", "\(Int(snapshot.distanceMeters))m")
         } catch {
             lastSyncedWorkoutTitle = "Snapshot sync failed"
+            logEvent("push snapshot failed", error.localizedDescription)
         }
     }
 
@@ -39,8 +44,10 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
         do {
             let data = try JSONEncoder().encode(reward)
             try WCSession.default.updateApplicationContext(["runRewardSummary": data])
+            logEvent("push reward", reward.coreLabel)
         } catch {
             lastSyncedWorkoutTitle = "Reward sync failed"
+            logEvent("push reward failed", error.localizedDescription)
         }
     }
 
@@ -50,8 +57,10 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
         do {
             let data = try JSONEncoder().encode(completedRun)
             try WCSession.default.updateApplicationContext(["completedRunRecord": data])
+            logEvent("push completed run", completedRun.id)
         } catch {
             lastSyncedWorkoutTitle = "Run sync failed"
+            logEvent("push completed run failed", error.localizedDescription)
         }
     }
 
@@ -64,6 +73,9 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
             self.activationStateLabel = activationState.description
             if let error {
                 self.lastSyncedWorkoutTitle = error.localizedDescription
+                self.logEvent("activation failed", error.localizedDescription)
+            } else {
+                self.logEvent("activation ready", activationState.description)
             }
         }
     }
@@ -73,14 +85,21 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
             if let data = applicationContext["workoutSuggestion"] as? Data,
                let suggestion = try? JSONDecoder().decode(WorkoutPlanSuggestion.self, from: data) {
                 self.lastSyncedWorkoutTitle = suggestion.title
+                self.logEvent("plan received", suggestion.title)
             }
 
             if let data = applicationContext["companionEffectContext"] as? Data,
                let context = try? JSONDecoder().decode(CompanionEffectContext.self, from: data) {
                 self.claimedRewardIDs = Set(context.claimedRewardIDs)
                 self.activeEffects = context.activeEffects
+                self.logEvent("effects received", "\(context.activeEffects.count) active")
             }
         }
+    }
+
+    private func logEvent(_ title: String, _ detail: String) {
+        recentEvents.insert(SyncDiagnosticEvent(title: title, detail: detail), at: 0)
+        recentEvents = Array(recentEvents.prefix(6))
     }
 }
 

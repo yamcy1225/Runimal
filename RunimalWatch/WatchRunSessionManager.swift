@@ -34,6 +34,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     var lastSavedWorkoutLabel = "No workout saved yet"
     var claimedWeeklyRewardIDs: Set<String> = []
     var activeWeeklyEffects: [WeeklyRewardEffect] = []
+    var recentSessionEvents: [SyncDiagnosticEvent] = []
     var isDemoMode: Bool {
         ProcessInfo.processInfo.environment["RUNIMAL_AUTOPLAY_DEMO"] == "1"
     }
@@ -49,6 +50,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     func requestAuthorization() async {
         guard HKHealthStore.isHealthDataAvailable() else {
             authorizationStatus = "HealthKit unavailable"
+            logSessionEvent("healthkit", "unavailable")
             return
         }
 
@@ -69,8 +71,10 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             try await healthStore.requestAuthorization(toShare: shareTypes, read: readTypes)
             authorizationStatus = "authorized"
             requestLocationAuthorizationIfNeeded()
+            logSessionEvent("healthkit", "authorized")
         } catch {
             authorizationStatus = "failed: \(error.localizedDescription)"
+            logSessionEvent("healthkit failed", error.localizedDescription)
         }
     }
 
@@ -103,12 +107,14 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             routeLocations = []
             routePreview = []
             averageHeartRateAccumulator = []
+            logSessionEvent("run start", "HealthKit session started")
 
             startLocationCaptureIfAuthorized()
             session.startActivity(with: startDate)
             try await builder.beginCollection(at: startDate)
         } catch {
             sessionStateLabel = "start failed"
+            logSessionEvent("run start failed", "session creation failed")
         }
     }
 
@@ -135,8 +141,10 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
                 try await insertRouteData(routeLocations, into: routeBuilder)
                 try await finishRoute(using: routeBuilder, workout: workout)
                 lastSavedWorkoutLabel = "Saved workout + route to HealthKit"
+                logSessionEvent("save success", "workout + route saved")
             } else {
                 lastSavedWorkoutLabel = "Saved workout to HealthKit"
+                logSessionEvent("save success", "workout saved")
             }
 
             let record = RunimalGameEngine.makeCompletedRunRecord(
@@ -154,6 +162,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         } catch {
             sessionStateLabel = "finish failed"
             lastSavedWorkoutLabel = "Save failed"
+            logSessionEvent("save failed", "HealthKit save pipeline failed")
         }
 
         self.workoutSession = nil
@@ -182,6 +191,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         lastReward = nil
         lastCompletedRun = nil
         lastSavedWorkoutLabel = "Demo session recording"
+        logSessionEvent("demo", "demo run started")
         latestSnapshot = LiveRunSnapshot(
             elapsedSeconds: 0,
             distanceMeters: 0,
@@ -232,6 +242,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         lastReward = reward
         lastCompletedRun = record
         lastSavedWorkoutLabel = "Demo workout prepared"
+        logSessionEvent("demo", "demo run finished")
     }
 
     nonisolated func workoutSession(
@@ -257,7 +268,13 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     nonisolated func workoutSession(_ workoutSession: HKWorkoutSession, didFailWithError error: Error) {
         Task { @MainActor in
             self.sessionStateLabel = "error: \(error.localizedDescription)"
+            self.logSessionEvent("session error", error.localizedDescription)
         }
+    }
+
+    private func logSessionEvent(_ title: String, _ detail: String) {
+        recentSessionEvents.insert(SyncDiagnosticEvent(title: title, detail: detail), at: 0)
+        recentSessionEvents = Array(recentSessionEvents.prefix(6))
     }
 
     nonisolated func workoutBuilderDidCollectEvent(_ workoutBuilder: HKLiveWorkoutBuilder) {}

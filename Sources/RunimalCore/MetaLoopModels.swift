@@ -26,6 +26,7 @@ public struct WeeklyMission: Codable, Equatable, Identifiable, Sendable {
 }
 
 public struct WeeklyBoard: Codable, Equatable, Sendable {
+    public let season: WeeklySeason
     public let weekLabel: String
     public let headline: String
     public let totalDistanceKm: Double
@@ -37,6 +38,7 @@ public struct WeeklyBoard: Codable, Equatable, Sendable {
     public let rewards: [WeeklyReward]
 
     public init(
+        season: WeeklySeason,
         weekLabel: String,
         headline: String,
         totalDistanceKm: Double,
@@ -47,6 +49,7 @@ public struct WeeklyBoard: Codable, Equatable, Sendable {
         missions: [WeeklyMission],
         rewards: [WeeklyReward]
     ) {
+        self.season = season
         self.weekLabel = weekLabel
         self.headline = headline
         self.totalDistanceKm = totalDistanceKm
@@ -56,6 +59,18 @@ public struct WeeklyBoard: Codable, Equatable, Sendable {
         self.completedMissionCount = completedMissionCount
         self.missions = missions
         self.rewards = rewards
+    }
+}
+
+public struct WeeklySeason: Codable, Equatable, Sendable {
+    public let title: String
+    public let subtitle: String
+    public let bonus: String
+
+    public init(title: String, subtitle: String, bonus: String) {
+        self.title = title
+        self.subtitle = subtitle
+        self.bonus = bonus
     }
 }
 

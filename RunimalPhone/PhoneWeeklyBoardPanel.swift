@@ -12,6 +12,12 @@ struct PhoneWeeklyBoardPanel: View {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 6) {
+                        Text(board.season.title)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(accent)
+                        Text(board.season.subtitle)
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.68))
                         Text(board.weekLabel)
                             .font(.caption)
                             .foregroundStyle(.white.opacity(0.68))
@@ -23,6 +29,10 @@ struct PhoneWeeklyBoardPanel: View {
 
                     TraitChip(label: "\(board.discoveredVariants) variants", accent: accent)
                 }
+
+                Text(board.season.bonus)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.72))
 
                 HStack {
                     summaryStat("Runs", value: "\(board.runCount)")

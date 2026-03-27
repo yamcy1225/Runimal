@@ -24,6 +24,11 @@ struct PhoneHomeView: View {
                 questCard
                 workoutCard
                 syncCard
+                PhoneDiagnosticsPanel(
+                    events: store.connectivity.recentEvents,
+                    reachabilityLabel: store.connectivity.reachabilityLabel,
+                    activationStateLabel: store.connectivity.activationStateLabel
+                )
                 if !store.hatchInsights.isEmpty {
                     PhoneHatchInsightPanel(
                         insights: store.hatchInsights,

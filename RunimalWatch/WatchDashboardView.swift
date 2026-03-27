@@ -151,6 +151,24 @@ struct WatchDashboardView: View {
                     }
                 }
 
+                GameSurface(title: "Diagnostics") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Link \(connectivityManager.activationStateLabel) · Save \(runSessionManager.lastSavedWorkoutLabel)")
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.72))
+
+                        ForEach(Array((runSessionManager.recentSessionEvents + connectivityManager.recentEvents).prefix(4))) { event in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(event.title)
+                                    .foregroundStyle(.white)
+                                Text(event.detail)
+                                    .font(.caption2)
+                                    .foregroundStyle(.white.opacity(0.62))
+                            }
+                        }
+                    }
+                }
+
                 if let reward = runSessionManager.lastReward {
                     GameSurface(title: "Hatch Result") {
                         VStack(alignment: .leading, spacing: 8) {

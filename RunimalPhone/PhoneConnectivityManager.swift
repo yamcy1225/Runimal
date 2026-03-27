@@ -12,10 +12,12 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
     var lastReward: RunRewardSummary?
     var lastCompletedRun: CompletedRunRecord?
     var lastMessage = "No watch sync yet"
+    var recentEvents: [SyncDiagnosticEvent] = []
 
     func activate() {
         guard WCSession.isSupported() else {
             activationStateLabel = "unsupported"
+            logEvent("activation", "WCSession unsupported on this device")
             return
         }
 
@@ -23,6 +25,7 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
         session.delegate = self
         session.activate()
         reachabilityLabel = session.isReachable ? "reachable" : "waiting"
+        logEvent("activation", "WCSession activate requested")
     }
 
     func pushSuggestedWorkout(_ suggestion: WorkoutPlanSuggestion) {
@@ -34,8 +37,10 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
             let data = try JSONEncoder().encode(suggestion)
             try session.updateApplicationContext(["workoutSuggestion": data])
             lastMessage = "Sent plan: \(suggestion.title)"
+            logEvent("push workout", suggestion.title)
         } catch {
             lastMessage = "Sync failed: \(error.localizedDescription)"
+            logEvent("push workout failed", error.localizedDescription)
         }
     }
 
@@ -48,8 +53,10 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
             let data = try JSONEncoder().encode(context)
             try session.updateApplicationContext(["companionEffectContext": data])
             lastMessage = "Synced weekly effects"
+            logEvent("push effects", "weekly effects synced")
         } catch {
             lastMessage = "Effect sync failed: \(error.localizedDescription)"
+            logEvent("push effects failed", error.localizedDescription)
         }
     }
 
@@ -63,6 +70,9 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
             self.reachabilityLabel = session.isReachable ? "reachable" : "paired"
             if let error {
                 self.lastMessage = "Activation error: \(error.localizedDescription)"
+                self.logEvent("activation failed", error.localizedDescription)
+            } else {
+                self.logEvent("activation ready", self.reachabilityLabel)
             }
         }
     }
@@ -79,20 +89,28 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
                let snapshot = try? JSONDecoder().decode(LiveRunSnapshot.self, from: data) {
                 self.lastSnapshot = snapshot
                 self.lastMessage = "Watch snapshot received"
+                self.logEvent("snapshot", "\(Int(snapshot.distanceMeters))m received")
             }
 
             if let data = applicationContext["runRewardSummary"] as? Data,
                let reward = try? JSONDecoder().decode(RunRewardSummary.self, from: data) {
                 self.lastReward = reward
                 self.lastMessage = "Run reward synced"
+                self.logEvent("reward", reward.coreLabel)
             }
 
             if let data = applicationContext["completedRunRecord"] as? Data,
                let record = try? JSONDecoder().decode(CompletedRunRecord.self, from: data) {
                 self.lastCompletedRun = record
                 self.lastMessage = "Completed run synced"
+                self.logEvent("completed run", record.id)
             }
         }
+    }
+
+    private func logEvent(_ title: String, _ detail: String) {
+        recentEvents.insert(SyncDiagnosticEvent(title: title, detail: detail), at: 0)
+        recentEvents = Array(recentEvents.prefix(6))
     }
 }
 
