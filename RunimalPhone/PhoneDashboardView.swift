@@ -185,6 +185,14 @@ final class PhoneDashboardStore {
         )
     }
 
+    var starterLoop: [StarterLoopStep] {
+        RunimalOnboardingEngine.starterLoop(
+            completedRuns: completedRuns,
+            collection: collection,
+            activeEffects: activeWeeklyEffects
+        )
+    }
+
     func activateConnectivity() {
         connectivity.activate()
         syncCompanionEffects()

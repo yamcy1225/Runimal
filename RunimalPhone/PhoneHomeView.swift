@@ -31,6 +31,7 @@ struct PhoneHomeView: View {
                     onClaim: store.claimSeasonReward
                 )
                 PhoneChallengeBoardPanel(trials: store.challengeTrials)
+                PhoneStarterLoopPanel(steps: store.starterLoop)
                 questCard
                 workoutCard
                 syncCard
