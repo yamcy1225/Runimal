@@ -9,6 +9,7 @@ final class PhoneDashboardStore {
     let connectivity = PhoneConnectivityManager()
     let planner = PhoneWorkoutPlanner()
     let progress = PhoneProgressStore()
+    let vault = PhoneVaultSyncManager()
 
     let summary = RunSummary(
         distanceKm: 10.02,
@@ -175,7 +176,11 @@ final class PhoneDashboardStore {
 
     func bootstrap() {
         progress.load()
+        if let snapshot = vault.loadSnapshot() {
+            progress.restore(from: snapshot)
+        }
         progress.seedIfNeeded(from: runArchive)
+        persistVault()
     }
 
     func requestHealthAuthorization() async {
@@ -198,45 +203,54 @@ final class PhoneDashboardStore {
         }
 
         progress.append(reward: adjustedReward, snapshot: connectivity.lastSnapshot)
+        persistVault()
     }
 
     func ingestCompletedRun() {
         guard let record = connectivity.lastCompletedRun else { return }
         progress.append(completedRun: record)
+        persistVault()
     }
 
     func claimWeeklyReward() {
         guard let reward = claimableWeeklyReward else { return }
         progress.claimWeeklyReward(id: reward.id)
         syncCompanionEffects()
+        persistVault()
     }
 
     func activateCompanion(_ companionID: String) {
         progress.activateCompanion(id: companionID)
+        persistVault()
     }
 
     func feedActiveCompanion(with runID: String) {
         guard let run = completedRuns.first(where: { $0.id == runID }) else { return }
         _ = progress.feed(run: run, to: featuredCompanion, activeEffects: activeWeeklyEffects, season: weeklyBoard.season)
+        persistVault()
     }
 
     func retireCompanion(_ companionID: String) {
         guard let offer = retirableOffers.first(where: { $0.companion.id == companionID }) else { return }
         _ = progress.retireCompanion(companionID, essenceReward: offer.essenceReward)
+        persistVault()
     }
 
     func forgeOption(_ optionID: String) {
         guard let option = forgeOptions.first(where: { $0.id == optionID }) else { return }
         _ = progress.purchaseForgeOption(option)
+        persistVault()
     }
 
     func selectRole(_ role: CompanionRole) {
         progress.selectRole(role, for: featuredCompanion.id)
+        persistVault()
     }
 
     func unlockBuildNode(_ nodeID: String) {
         guard let node = buildNodes.first(where: { $0.id == nodeID }) else { return }
         _ = progress.unlockSkillNode(nodeID, for: featuredCompanion.id, cost: node.cost)
+        persistVault()
     }
 
     func syncCompanionEffects() {
@@ -245,6 +259,10 @@ final class PhoneDashboardStore {
             activeEffects: activeWeeklyEffects
         )
         connectivity.pushCompanionEffects(context)
+    }
+
+    private func persistVault() {
+        vault.save(snapshot: progress.snapshot())
     }
 }
 

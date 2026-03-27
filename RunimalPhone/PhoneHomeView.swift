@@ -22,6 +22,10 @@ struct PhoneHomeView: View {
                     claimedRewardIDs: store.claimedWeeklyRewardIDs,
                     activeEffects: store.activeWeeklyEffects
                 )
+                PhoneVaultPanel(
+                    statusLabel: store.vault.statusLabel,
+                    lastSyncedAt: store.vault.lastSyncedAt
+                )
                 questCard
                 workoutCard
                 syncCard

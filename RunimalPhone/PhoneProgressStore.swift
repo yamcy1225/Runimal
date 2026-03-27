@@ -246,6 +246,36 @@ final class PhoneProgressStore {
         save()
     }
 
+    func snapshot(savedAt: Date = Date()) -> RunimalProgressSnapshot {
+        RunimalProgressSnapshot(
+            savedAt: savedAt,
+            journal: journal,
+            completedRuns: completedRuns,
+            claimedWeeklyRewards: claimedWeeklyRewards,
+            activeCompanionID: activeCompanionID,
+            growthRecords: growthRecords,
+            retiredCompanionIDs: retiredCompanionIDs,
+            essenceBalance: essenceBalance,
+            overdriveCharges: overdriveCharges,
+            seasonSigils: seasonSigils,
+            buildStates: buildStates
+        )
+    }
+
+    func restore(from snapshot: RunimalProgressSnapshot) {
+        journal = snapshot.journal
+        completedRuns = snapshot.completedRuns
+        claimedWeeklyRewards = snapshot.claimedWeeklyRewards
+        activeCompanionID = snapshot.activeCompanionID
+        growthRecords = snapshot.growthRecords
+        retiredCompanionIDs = snapshot.retiredCompanionIDs
+        essenceBalance = snapshot.essenceBalance
+        overdriveCharges = snapshot.overdriveCharges
+        seasonSigils = snapshot.seasonSigils
+        buildStates = snapshot.buildStates
+        save()
+    }
+
     var forgeInventory: ForgeInventory {
         ForgeInventory(overdriveCharges: overdriveCharges, seasonSigils: seasonSigils)
     }

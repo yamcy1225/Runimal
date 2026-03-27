@@ -366,6 +366,46 @@ public struct CompanionSkillNode: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
+public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
+    public let savedAt: Date
+    public let journal: [RunJournalEntry]
+    public let completedRuns: [CompletedRunRecord]
+    public let claimedWeeklyRewards: [String]
+    public let activeCompanionID: String?
+    public let growthRecords: [CompanionGrowthRecord]
+    public let retiredCompanionIDs: [String]
+    public let essenceBalance: Int
+    public let overdriveCharges: Int
+    public let seasonSigils: Int
+    public let buildStates: [CompanionBuildState]
+
+    public init(
+        savedAt: Date,
+        journal: [RunJournalEntry],
+        completedRuns: [CompletedRunRecord],
+        claimedWeeklyRewards: [String],
+        activeCompanionID: String?,
+        growthRecords: [CompanionGrowthRecord],
+        retiredCompanionIDs: [String],
+        essenceBalance: Int,
+        overdriveCharges: Int,
+        seasonSigils: Int,
+        buildStates: [CompanionBuildState]
+    ) {
+        self.savedAt = savedAt
+        self.journal = journal
+        self.completedRuns = completedRuns
+        self.claimedWeeklyRewards = claimedWeeklyRewards
+        self.activeCompanionID = activeCompanionID
+        self.growthRecords = growthRecords
+        self.retiredCompanionIDs = retiredCompanionIDs
+        self.essenceBalance = essenceBalance
+        self.overdriveCharges = overdriveCharges
+        self.seasonSigils = seasonSigils
+        self.buildStates = buildStates
+    }
+}
+
 public struct RoutePoint: Codable, Equatable, Identifiable, Sendable {
     public let latitude: Double
     public let longitude: Double
