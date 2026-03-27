@@ -72,3 +72,15 @@ public struct WeeklyReward: Codable, Equatable, Identifiable, Sendable {
         self.unlockRequirement = unlockRequirement
     }
 }
+
+public struct WeeklyRewardEffect: Codable, Equatable, Identifiable, Sendable {
+    public let id: String
+    public let title: String
+    public let detail: String
+
+    public init(id: String, title: String, detail: String) {
+        self.id = id
+        self.title = title
+        self.detail = detail
+    }
+}

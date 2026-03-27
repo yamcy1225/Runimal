@@ -27,12 +27,20 @@ final class PhoneDashboardStore {
         RunSummary(distanceKm: 8.1, averagePaceSeconds: 332, cadence: 171, elevationGainM: 42, variability: 0.08, aura: .dusk, shape: .loop),
     ]
 
+    var claimedWeeklyRewardIDs: Set<String> {
+        Set(progress.claimedWeeklyRewards)
+    }
+
+    var activeWeeklyEffects: [WeeklyRewardEffect] {
+        RunimalGameEngine.activeWeeklyEffects(from: claimedWeeklyRewardIDs)
+    }
+
     var pet: GeneratedPet {
-        RunimalGameEngine.generatePet(from: summary)
+        RunimalGameEngine.generatePet(from: summary, claimedRewardIDs: claimedWeeklyRewardIDs)
     }
 
     var quests: [RunQuestStatus] {
-        RunimalGameEngine.evaluateRunQuests(for: summary)
+        RunimalGameEngine.evaluateRunQuests(for: summary, claimedRewardIDs: claimedWeeklyRewardIDs)
     }
 
     var suggestedWorkout: WorkoutPlanSuggestion {
@@ -82,10 +90,6 @@ final class PhoneDashboardStore {
         )
     }
 
-    var claimedWeeklyRewardIDs: Set<String> {
-        Set(progress.claimedWeeklyRewards)
-    }
-
     var claimableWeeklyReward: WeeklyReward? {
         weeklyBoard.rewards.first {
             weeklyBoard.completedMissionCount >= $0.unlockRequirement &&
@@ -122,7 +126,15 @@ final class PhoneDashboardStore {
 
     func ingestLatestReward() {
         guard let reward = connectivity.lastReward else { return }
-        progress.append(reward: reward, snapshot: connectivity.lastSnapshot)
+        let adjustedReward: RunRewardSummary
+
+        if let snapshot = connectivity.lastSnapshot {
+            adjustedReward = RunimalGameEngine.evaluateReward(for: snapshot, claimedRewardIDs: claimedWeeklyRewardIDs)
+        } else {
+            adjustedReward = RunimalGameEngine.applyWeeklyRewardModifiers(to: reward, claimedRewardIDs: claimedWeeklyRewardIDs)
+        }
+
+        progress.append(reward: adjustedReward, snapshot: connectivity.lastSnapshot)
     }
 
     func ingestCompletedRun() {

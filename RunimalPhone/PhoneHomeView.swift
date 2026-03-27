@@ -12,6 +12,7 @@ struct PhoneHomeView: View {
                     board: store.weeklyBoard,
                     accent: store.pet.accentColor,
                     claimedRewardIDs: store.claimedWeeklyRewardIDs,
+                    activeEffects: store.activeWeeklyEffects,
                     onClaim: store.claimableWeeklyReward == nil ? nil : { store.claimWeeklyReward() }
                 )
                 questCard

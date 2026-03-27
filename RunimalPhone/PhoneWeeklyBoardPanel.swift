@@ -5,6 +5,7 @@ struct PhoneWeeklyBoardPanel: View {
     let board: WeeklyBoard
     let accent: Color
     let claimedRewardIDs: Set<String>
+    let activeEffects: [WeeklyRewardEffect]
     let onClaim: (() -> Void)?
 
     var body: some View {
@@ -91,6 +92,24 @@ struct PhoneWeeklyBoardPanel: View {
                                 }
 
                                 Text(reward.detail)
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.68))
+                            }
+                        }
+                    }
+                }
+
+                if activeEffects.isEmpty == false {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Active Effects")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.74))
+
+                        ForEach(activeEffects) { effect in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(effect.title)
+                                    .foregroundStyle(.white)
+                                Text(effect.detail)
                                     .font(.caption)
                                     .foregroundStyle(.white.opacity(0.68))
                             }

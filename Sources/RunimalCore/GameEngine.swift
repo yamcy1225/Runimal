@@ -1,10 +1,10 @@
 import Foundation
 
 public enum RunimalGameEngine {
-    public static func generatePet(from summary: RunSummary) -> GeneratedPet {
+    public static func generatePet(from summary: RunSummary, claimedRewardIDs: Set<String> = []) -> GeneratedPet {
         let species = determineSpecies(from: summary)
         let element = determineElement(from: summary)
-        let rareVariant = determineRareVariant(from: summary)
+        let rareVariant = determineRareVariant(from: summary, claimedRewardIDs: claimedRewardIDs)
         let stats = determineStats(from: summary)
         let palette = determinePalette(element: element, rareVariant: rareVariant)
 
@@ -18,6 +18,10 @@ public enum RunimalGameEngine {
             explanation.append(describe(rareVariant: rareVariant))
         }
 
+        if claimedRewardIDs.contains("weekly-core-cache") && rareVariant != nil {
+            explanation.append("주간 Rare Core Cache가 변이 판정을 보조했습니다.")
+        }
+
         return GeneratedPet(
             species: species,
             element: element,
@@ -28,8 +32,8 @@ public enum RunimalGameEngine {
         )
     }
 
-    public static func evaluateRunQuests(for summary: RunSummary) -> [RunQuestStatus] {
-        let pet = generatePet(from: summary)
+    public static func evaluateRunQuests(for summary: RunSummary, claimedRewardIDs: Set<String> = []) -> [RunQuestStatus] {
+        let pet = generatePet(from: summary, claimedRewardIDs: claimedRewardIDs)
 
         return [
             RunQuestStatus(label: "Steady 5K", reward: "focus shard", completed: summary.distanceKm >= 5 && summary.variability <= 0.12, detail: "5km 이상 + 안정적인 페이스"),
@@ -39,8 +43,8 @@ public enum RunimalGameEngine {
         ]
     }
 
-    public static func generatePet(from snapshot: LiveRunSnapshot) -> GeneratedPet {
-        generatePet(from: summarize(snapshot: snapshot))
+    public static func generatePet(from snapshot: LiveRunSnapshot, claimedRewardIDs: Set<String> = []) -> GeneratedPet {
+        generatePet(from: summarize(snapshot: snapshot), claimedRewardIDs: claimedRewardIDs)
     }
 
     public static func summarize(snapshot: LiveRunSnapshot) -> RunSummary {
@@ -127,22 +131,74 @@ public enum RunimalGameEngine {
         }
     }
 
-    public static func evaluateReward(for summary: RunSummary) -> RunRewardSummary {
-        let pet = generatePet(from: summary)
-        let completedQuestCount = evaluateRunQuests(for: summary).filter(\.completed).count
-        let experience = max(40, Int(summary.distanceKm * 14) + completedQuestCount * 18)
+    public static func evaluateReward(for summary: RunSummary, claimedRewardIDs: Set<String> = []) -> RunRewardSummary {
+        let pet = generatePet(from: summary, claimedRewardIDs: claimedRewardIDs)
+        let completedQuestCount = evaluateRunQuests(for: summary, claimedRewardIDs: claimedRewardIDs).filter(\.completed).count
+        let baseExperience = max(40, Int(summary.distanceKm * 14) + completedQuestCount * 18)
+        let experience = modifiedExperience(baseExperience: baseExperience, claimedRewardIDs: claimedRewardIDs)
 
         return RunRewardSummary(
             pet: pet,
             coreLabel: rewardCoreLabel(for: pet),
             experience: experience,
             completedQuestCount: completedQuestCount,
-            flavorText: rewardFlavorText(for: pet, completedQuestCount: completedQuestCount)
+            flavorText: rewardFlavorText(for: pet, completedQuestCount: completedQuestCount, claimedRewardIDs: claimedRewardIDs)
         )
     }
 
-    public static func evaluateReward(for snapshot: LiveRunSnapshot) -> RunRewardSummary {
-        evaluateReward(for: summarize(snapshot: snapshot))
+    public static func evaluateReward(for snapshot: LiveRunSnapshot, claimedRewardIDs: Set<String> = []) -> RunRewardSummary {
+        evaluateReward(for: summarize(snapshot: snapshot), claimedRewardIDs: claimedRewardIDs)
+    }
+
+    public static func applyWeeklyRewardModifiers(
+        to reward: RunRewardSummary,
+        claimedRewardIDs: Set<String>
+    ) -> RunRewardSummary {
+        guard claimedRewardIDs.isEmpty == false else { return reward }
+
+        return RunRewardSummary(
+            pet: reward.pet,
+            coreLabel: reward.coreLabel,
+            experience: modifiedExperience(baseExperience: reward.experience, claimedRewardIDs: claimedRewardIDs),
+            completedQuestCount: reward.completedQuestCount,
+            flavorText: reward.flavorText
+        )
+    }
+
+    public static func activeWeeklyEffects(from claimedRewardIDs: Set<String>) -> [WeeklyRewardEffect] {
+        var effects: [WeeklyRewardEffect] = []
+
+        if claimedRewardIDs.contains("weekly-badge") {
+            effects.append(
+                WeeklyRewardEffect(
+                    id: "weekly-badge",
+                    title: "Badge Momentum",
+                    detail: "이후 러닝 보상 XP가 15% 증가합니다."
+                )
+            )
+        }
+
+        if claimedRewardIDs.contains("weekly-core-cache") {
+            effects.append(
+                WeeklyRewardEffect(
+                    id: "weekly-core-cache",
+                    title: "Core Bias",
+                    detail: "희귀 변이 판정이 완화되어 근접한 러닝도 변이로 연결될 수 있습니다."
+                )
+            )
+        }
+
+        if claimedRewardIDs.contains("weekly-evo-boost") {
+            effects.append(
+                WeeklyRewardEffect(
+                    id: "weekly-evo-boost",
+                    title: "Evolution Fuel",
+                    detail: "이후 러닝마다 추가 28 XP가 더해져 진화 속도가 빨라집니다."
+                )
+            )
+        }
+
+        return effects
     }
 
     public static func makeJournalEntry(
@@ -265,7 +321,7 @@ public enum RunimalGameEngine {
         }
     }
 
-    private static func determineRareVariant(from summary: RunSummary) -> RareVariant? {
+    private static func determineRareVariant(from summary: RunSummary, claimedRewardIDs: Set<String>) -> RareVariant? {
         if summary.elevationGainM >= 120 {
             return .summitHeart
         }
@@ -283,6 +339,26 @@ public enum RunimalGameEngine {
         }
 
         if summary.shape == .loop && summary.variability <= 0.12 {
+            return .loopSigil
+        }
+
+        guard claimedRewardIDs.contains("weekly-core-cache") else {
+            return nil
+        }
+
+        if summary.elevationGainM >= 100 {
+            return .summitHeart
+        }
+
+        if summary.distanceKm >= 8.5 && summary.variability <= 0.10 {
+            return .zenBloom
+        }
+
+        if summary.averagePaceSeconds <= 325 && summary.cadence >= 170 {
+            return .tempoSurge
+        }
+
+        if summary.shape == .loop && summary.variability <= 0.15 {
             return .loopSigil
         }
 
@@ -356,14 +432,39 @@ public enum RunimalGameEngine {
         return "\(pet.element.rawValue.capitalized) Core"
     }
 
-    private static func rewardFlavorText(for pet: GeneratedPet, completedQuestCount: Int) -> String {
+    private static func rewardFlavorText(for pet: GeneratedPet, completedQuestCount: Int, claimedRewardIDs: Set<String>) -> String {
         let speciesLabel = pet.species.rawValue.replacingOccurrences(of: "-", with: " ").capitalized
+        let baseText: String
 
         if completedQuestCount >= 3 {
-            return "\(speciesLabel)이 강하게 깨어났습니다. 이번 러닝은 진화에 가까운 흔적을 남겼습니다."
+            baseText = "\(speciesLabel)이 강하게 깨어났습니다. 이번 러닝은 진화에 가까운 흔적을 남겼습니다."
+        } else {
+            baseText = "\(speciesLabel)이 러닝 흔적을 흡수해 안정적으로 성장했습니다."
         }
 
-        return "\(speciesLabel)이 러닝 흔적을 흡수해 안정적으로 성장했습니다."
+        if claimedRewardIDs.contains("weekly-evo-boost") {
+            return "\(baseText) Evolution Boost가 추가 경험치를 밀어 넣었습니다."
+        }
+
+        if claimedRewardIDs.contains("weekly-badge") {
+            return "\(baseText) 주간 배지 보정으로 경험치가 증폭되었습니다."
+        }
+
+        return baseText
+    }
+
+    private static func modifiedExperience(baseExperience: Int, claimedRewardIDs: Set<String>) -> Int {
+        var result = Double(baseExperience)
+
+        if claimedRewardIDs.contains("weekly-badge") {
+            result *= 1.15
+        }
+
+        if claimedRewardIDs.contains("weekly-evo-boost") {
+            result += 28
+        }
+
+        return Int(result.rounded())
     }
 
     private static func inferredPaceSeconds(from snapshot: LiveRunSnapshot) -> Int {
