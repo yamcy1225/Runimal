@@ -550,6 +550,83 @@ public struct RaidResolution: Codable, Equatable, Sendable {
     }
 }
 
+public struct CloudValidationState: Codable, Equatable, Sendable {
+    public let title: String
+    public let detail: String
+    public let success: Bool
+
+    public init(title: String, detail: String, success: Bool) {
+        self.title = title
+        self.detail = detail
+        self.success = success
+    }
+}
+
+public enum SnapshotConflictPolicy: String, Codable, CaseIterable, Sendable {
+    case merged
+    case localPreferred = "local-preferred"
+    case cloudPreferred = "cloud-preferred"
+}
+
+public struct SnapshotConflictReport: Codable, Equatable, Sendable {
+    public let title: String
+    public let detail: String
+    public let localRunCount: Int
+    public let cloudRunCount: Int
+    public let localJournalCount: Int
+    public let cloudJournalCount: Int
+    public let recommendedPolicy: SnapshotConflictPolicy
+    public let hasConflict: Bool
+
+    public init(
+        title: String,
+        detail: String,
+        localRunCount: Int,
+        cloudRunCount: Int,
+        localJournalCount: Int,
+        cloudJournalCount: Int,
+        recommendedPolicy: SnapshotConflictPolicy,
+        hasConflict: Bool
+    ) {
+        self.title = title
+        self.detail = detail
+        self.localRunCount = localRunCount
+        self.cloudRunCount = cloudRunCount
+        self.localJournalCount = localJournalCount
+        self.cloudJournalCount = cloudJournalCount
+        self.recommendedPolicy = recommendedPolicy
+        self.hasConflict = hasConflict
+    }
+}
+
+public struct RaidCombatStep: Codable, Equatable, Identifiable, Sendable {
+    public let id: String
+    public let label: String
+    public let detail: String
+    public let intensity: Double
+
+    public init(id: String, label: String, detail: String, intensity: Double) {
+        self.id = id
+        self.label = label
+        self.detail = detail
+        self.intensity = intensity
+    }
+}
+
+public struct RaidCombatReport: Codable, Equatable, Sendable {
+    public let title: String
+    public let verdict: String
+    public let headline: String
+    public let steps: [RaidCombatStep]
+
+    public init(title: String, verdict: String, headline: String, steps: [RaidCombatStep]) {
+        self.title = title
+        self.verdict = verdict
+        self.headline = headline
+        self.steps = steps
+    }
+}
+
 public struct DeviceQACheckItem: Codable, Equatable, Identifiable, Sendable {
     public let id: String
     public let title: String

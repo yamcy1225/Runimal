@@ -21,6 +21,7 @@ final class PhoneProgressStore {
         static let raidShardBalance = "runimal.phone.raidShardBalance"
         static let deviceID = "runimal.phone.deviceID"
         static let lastRaidResolution = "runimal.phone.lastRaidResolution"
+        static let conflictPolicy = "runimal.phone.conflictPolicy"
     }
 
     private let defaults: UserDefaults
@@ -39,6 +40,7 @@ final class PhoneProgressStore {
     var raidShardBalance = 0
     var deviceID = UUID().uuidString
     var lastRaidResolution: RaidResolution?
+    var conflictPolicy: SnapshotConflictPolicy = .merged
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -101,6 +103,12 @@ final class PhoneProgressStore {
             lastRaidResolution = try? JSONDecoder().decode(RaidResolution.self, from: data)
         } else {
             lastRaidResolution = nil
+        }
+        if let raw = defaults.string(forKey: Keys.conflictPolicy),
+           let decoded = SnapshotConflictPolicy(rawValue: raw) {
+            conflictPolicy = decoded
+        } else {
+            conflictPolicy = .merged
         }
     }
 
@@ -263,6 +271,11 @@ final class PhoneProgressStore {
     func claimWeeklyReward(id: String) {
         guard !claimedWeeklyRewards.contains(id) else { return }
         claimedWeeklyRewards.append(id)
+        save()
+    }
+
+    func setConflictPolicy(_ policy: SnapshotConflictPolicy) {
+        conflictPolicy = policy
         save()
     }
 
@@ -438,6 +451,7 @@ final class PhoneProgressStore {
         defaults.set(claimedRaidRewardIDs, forKey: Keys.claimedRaidRewardIDs)
         defaults.set(raidShardBalance, forKey: Keys.raidShardBalance)
         defaults.set(deviceID, forKey: Keys.deviceID)
+        defaults.set(conflictPolicy.rawValue, forKey: Keys.conflictPolicy)
 
         if let lastRaidResolution,
            let data = try? JSONEncoder().encode(lastRaidResolution) {

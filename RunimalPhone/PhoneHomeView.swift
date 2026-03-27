@@ -31,6 +31,13 @@ struct PhoneHomeView: View {
                     lastMirroredAt: store.cloudMirror.lastMirroredAt
                 )
                 PhoneCloudValidationPanel(headline: store.cloudMirror.validationHeadline)
+                PhoneSignedCloudPanel(items: store.cloudValidationStates)
+                PhoneConflictResolutionPanel(
+                    report: store.conflictReport,
+                    selectedPolicy: store.selectedConflictPolicy,
+                    onSelect: store.selectConflictPolicy(_:),
+                    onApply: store.applyConflictPolicy
+                )
                 PhoneTelemetryPanel(
                     lastEventLabel: store.telemetry.lastEventLabel,
                     eventCount: store.telemetry.eventCount,
@@ -48,6 +55,9 @@ struct PhoneHomeView: View {
                     raidShardBalance: store.raidShardBalance,
                     onClaim: store.claimRaidReward(_:)
                 )
+                if let raidCombatReport = store.raidCombatReport {
+                    PhoneRaidCombatPanel(report: raidCombatReport, accent: store.pet.accentColor)
+                }
                 PhoneRaidResolutionPanel(resolution: store.lastRaidResolution)
                 PhoneStarterLoopPanel(steps: store.starterLoop)
                 questCard

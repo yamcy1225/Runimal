@@ -222,6 +222,39 @@ final class PhoneDashboardStore {
         progress.lastRaidResolution
     }
 
+    var cloudValidationStates: [CloudValidationState] {
+        RunimalCloudValidationEngine.checklist(
+            hasIdentity: cloudMirror.hasIdentity,
+            mirrorStatus: cloudMirror.statusLabel,
+            lastMirroredAt: cloudMirror.lastMirroredAt
+        )
+    }
+
+    var conflictReport: SnapshotConflictReport {
+        RunimalSnapshotConflictEngine.report(
+            local: vault.loadSnapshot(),
+            cloud: cloudMirror.restoreIfAvailable()
+        )
+    }
+
+    var selectedConflictPolicy: SnapshotConflictPolicy {
+        progress.conflictPolicy
+    }
+
+    var primaryRaidEncounter: RaidEncounter? {
+        raidEncounters.first
+    }
+
+    var raidCombatReport: RaidCombatReport? {
+        guard let primaryRaidEncounter else { return nil }
+        return RunimalRaidCombatEngine.report(
+            encounter: primaryRaidEncounter,
+            companion: featuredCompanion,
+            progress: evolutionProgress,
+            selectedRole: selectedRole
+        )
+    }
+
     func activateConnectivity() {
         connectivity.activate()
         syncCompanionEffects()
@@ -339,6 +372,36 @@ final class PhoneDashboardStore {
         )
         persistVault()
         telemetry.log("claim_raid_reward", detail: encounter.id)
+    }
+
+    func selectConflictPolicy(_ policy: SnapshotConflictPolicy) {
+        progress.setConflictPolicy(policy)
+        telemetry.log("select_conflict_policy", detail: policy.rawValue)
+    }
+
+    func applyConflictPolicy() {
+        let localSnapshot = vault.loadSnapshot()
+        let cloudSnapshot = cloudMirror.restoreIfAvailable()
+
+        let resolved: RunimalProgressSnapshot?
+
+        switch progress.conflictPolicy {
+        case .merged:
+            if let localSnapshot, let cloudSnapshot {
+                resolved = RunimalSnapshotMergeEngine.merge(localSnapshot, cloudSnapshot)
+            } else {
+                resolved = localSnapshot ?? cloudSnapshot
+            }
+        case .localPreferred:
+            resolved = localSnapshot ?? cloudSnapshot
+        case .cloudPreferred:
+            resolved = cloudSnapshot ?? localSnapshot
+        }
+
+        guard let resolved else { return }
+        progress.restore(from: resolved)
+        persistVault()
+        telemetry.log("apply_conflict_policy", detail: progress.conflictPolicy.rawValue)
     }
 
     func syncCompanionEffects() {
