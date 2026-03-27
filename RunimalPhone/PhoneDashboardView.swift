@@ -58,6 +58,7 @@ final class PhoneDashboardStore {
                 growthRecord: progress.growthRecord(for: companion.id)
             )
         }
+        .filter { !progress.retiredCompanionIDs.contains($0.id) }
     }
 
     var featuredCompanion: PetCollectionEntry {
@@ -126,6 +127,17 @@ final class PhoneDashboardStore {
         progress.unassignedRuns(from: completedRuns)
     }
 
+    var retirableOffers: [RetirableCompanionOffer] {
+        RunimalCollectionEconomyEngine.retirableOffers(
+            from: collection,
+            activeCompanionID: featuredCompanion.id
+        )
+    }
+
+    var essenceBalance: Int {
+        progress.essenceBalance
+    }
+
     func activateConnectivity() {
         connectivity.activate()
         syncCompanionEffects()
@@ -176,6 +188,11 @@ final class PhoneDashboardStore {
     func feedActiveCompanion(with runID: String) {
         guard let run = completedRuns.first(where: { $0.id == runID }) else { return }
         _ = progress.feed(run: run, to: featuredCompanion, activeEffects: activeWeeklyEffects)
+    }
+
+    func retireCompanion(_ companionID: String) {
+        guard let offer = retirableOffers.first(where: { $0.companion.id == companionID }) else { return }
+        _ = progress.retireCompanion(companionID, essenceReward: offer.essenceReward)
     }
 
     func syncCompanionEffects() {

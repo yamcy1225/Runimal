@@ -362,3 +362,19 @@ public struct CompletedRunRecord: Codable, Equatable, Identifiable, Sendable {
         self.source = source
     }
 }
+
+public struct RetirableCompanionOffer: Codable, Equatable, Identifiable, Sendable {
+    public let companion: PetCollectionEntry
+    public let essenceReward: Int
+    public let reason: String
+
+    public var id: String {
+        companion.id
+    }
+
+    public init(companion: PetCollectionEntry, essenceReward: Int, reason: String) {
+        self.companion = companion
+        self.essenceReward = essenceReward
+        self.reason = reason
+    }
+}

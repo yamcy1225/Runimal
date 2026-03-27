@@ -11,6 +11,8 @@ final class PhoneProgressStore {
         static let claimedWeeklyRewards = "runimal.phone.claimedWeeklyRewards"
         static let activeCompanionID = "runimal.phone.activeCompanionID"
         static let growthRecords = "runimal.phone.growthRecords"
+        static let retiredCompanionIDs = "runimal.phone.retiredCompanionIDs"
+        static let essenceBalance = "runimal.phone.essenceBalance"
     }
 
     private let defaults: UserDefaults
@@ -19,6 +21,8 @@ final class PhoneProgressStore {
     var claimedWeeklyRewards: [String] = []
     var activeCompanionID: String?
     var growthRecords: [CompanionGrowthRecord] = []
+    var retiredCompanionIDs: [String] = []
+    var essenceBalance = 0
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -57,6 +61,9 @@ final class PhoneProgressStore {
         } else {
             growthRecords = []
         }
+
+        retiredCompanionIDs = defaults.stringArray(forKey: Keys.retiredCompanionIDs) ?? []
+        essenceBalance = defaults.integer(forKey: Keys.essenceBalance)
     }
 
     func seedIfNeeded(from summaries: [RunSummary]) {
@@ -157,6 +164,17 @@ final class PhoneProgressStore {
         return true
     }
 
+    @discardableResult
+    func retireCompanion(_ companionID: String, essenceReward: Int) -> Bool {
+        guard !retiredCompanionIDs.contains(companionID) else { return false }
+        guard companionID != activeCompanionID else { return false }
+
+        retiredCompanionIDs.append(companionID)
+        essenceBalance += essenceReward
+        save()
+        return true
+    }
+
     func append(reward: RunRewardSummary, snapshot: LiveRunSnapshot?) {
         let distanceKm = (snapshot?.distanceMeters ?? 0) / 1000
         let cadence = snapshot?.cadence ?? reward.pet.stats.dexterity * 10 + 130
@@ -213,5 +231,8 @@ final class PhoneProgressStore {
         } catch {
             defaults.removeObject(forKey: Keys.growthRecords)
         }
+
+        defaults.set(retiredCompanionIDs, forKey: Keys.retiredCompanionIDs)
+        defaults.set(essenceBalance, forKey: Keys.essenceBalance)
     }
 }

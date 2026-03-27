@@ -41,6 +41,11 @@ struct PhoneCollectionView: View {
                     availableRuns: store.availableRunCores,
                     onFeed: store.feedActiveCompanion(with:)
                 )
+                PhoneSurplusLabPanel(
+                    essenceBalance: store.essenceBalance,
+                    offers: store.retirableOffers,
+                    onRetire: store.retireCompanion(_:)
+                )
                 resonanceCompareBoard
                 collectionGrid
                 growthTimeline
