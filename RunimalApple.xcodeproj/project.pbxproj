@@ -44,6 +44,7 @@
 		72BD240A10F3CAB725790AAD /* HatchBurstView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCCD7FD29177A39ACD44643 /* HatchBurstView.swift */; };
 		783F8FCFD163D58382926D7F /* PhoneVaultSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 154264C7723E8BDEE608F409 /* PhoneVaultSyncManager.swift */; };
 		7D98848B789206995A583559 /* raids.json in Resources */ = {isa = PBXBuildFile; fileRef = A507B13D77009C0F9915ADDA /* raids.json */; };
+		7DDDFB696E40E8DBDAB25FBA /* PhoneTelemetryPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5776637ADDB3FFBE2D9E917A /* PhoneTelemetryPanel.swift */; };
 		819313421FA9F492950F84A0 /* HatchBurstView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCCD7FD29177A39ACD44643 /* HatchBurstView.swift */; };
 		81F92DF13F4F191AEE7B8946 /* PhoneBuildTreePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17E28684D946FF4AF2DA4B62 /* PhoneBuildTreePanel.swift */; };
 		82875FD3E02997675454BD44 /* PhoneHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEA95D1D9A9F2C66C78412A2 /* PhoneHomeView.swift */; };
@@ -55,6 +56,7 @@
 		ACD3B44B257E089410F39529 /* PhoneContentCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7990F4F456F8ED0D942F95B8 /* PhoneContentCatalog.swift */; };
 		ACE2CE5F4EE7FCFAB684E01A /* PhoneDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E385404E47BEE9EBE310AC /* PhoneDashboardView.swift */; };
 		B617C884E06D78A41DBC9F23 /* GameSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2B8EE9F33FD02687ADA9AD /* GameSurface.swift */; };
+		BE319FFCDE14A8F492D0A193 /* PhoneTelemetryLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E7081E582D73DB353FE156C /* PhoneTelemetryLogger.swift */; };
 		C59A2E40B311A604DE249E96 /* RunimalCore in Frameworks */ = {isa = PBXBuildFile; productRef = 4CDF8B170A2E14071FF0FF18 /* RunimalCore */; };
 		C90C3EE0D1FD7D50AB82092C /* PhoneVaultPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C05253ED9374F103DD2D3A46 /* PhoneVaultPanel.swift */; };
 		D08B8FB1CE64F3BECEC1D976 /* PhoneWeeklyBoardPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11E3E784C3CDB5962B028F5 /* PhoneWeeklyBoardPanel.swift */; };
@@ -86,11 +88,13 @@
 		42ADA97AE2793AC137474BA0 /* PhoneChallengeBoardPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneChallengeBoardPanel.swift; sourceTree = "<group>"; };
 		4FA42B69A30577005505320D /* PhoneCloudMirrorPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneCloudMirrorPanel.swift; sourceTree = "<group>"; };
 		568C61E1152F1E38E7B93D90 /* WatchDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDashboardView.swift; sourceTree = "<group>"; };
+		5776637ADDB3FFBE2D9E917A /* PhoneTelemetryPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneTelemetryPanel.swift; sourceTree = "<group>"; };
 		59A18AB5F32E6EB603FE418A /* MacDeviceQAPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacDeviceQAPanel.swift; sourceTree = "<group>"; };
 		5B0CC6E15E0E2D94D16EA309 /* rotation.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = rotation.json; sourceTree = "<group>"; };
 		63B8A677CC7E7FF91B275ADA /* PhoneSurplusLabPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSurplusLabPanel.swift; sourceTree = "<group>"; };
 		690BFF1786268BE9D5F3A29A /* PhoneProgressStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneProgressStore.swift; sourceTree = "<group>"; };
 		6D52108AD744AAE198D6A811 /* PhoneRewardStagePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneRewardStagePanel.swift; sourceTree = "<group>"; };
+		6E7081E582D73DB353FE156C /* PhoneTelemetryLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneTelemetryLogger.swift; sourceTree = "<group>"; };
 		743E21851D70F82DCAFCA0AD /* MacQAReplayPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacQAReplayPanel.swift; sourceTree = "<group>"; };
 		7990F4F456F8ED0D942F95B8 /* PhoneContentCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneContentCatalog.swift; sourceTree = "<group>"; };
 		7CA3F4B6AEEC0743273A3AB2 /* WatchGoalTrackCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchGoalTrackCard.swift; sourceTree = "<group>"; };
@@ -197,6 +201,8 @@
 				39076D48B89EB45273A5F0A8 /* PhoneSeasonEconomyPanel.swift */,
 				1E0D41AA3032A2C590F91404 /* PhoneStarterLoopPanel.swift */,
 				63B8A677CC7E7FF91B275ADA /* PhoneSurplusLabPanel.swift */,
+				6E7081E582D73DB353FE156C /* PhoneTelemetryLogger.swift */,
+				5776637ADDB3FFBE2D9E917A /* PhoneTelemetryPanel.swift */,
 				C05253ED9374F103DD2D3A46 /* PhoneVaultPanel.swift */,
 				154264C7723E8BDEE608F409 /* PhoneVaultSyncManager.swift */,
 				A11E3E784C3CDB5962B028F5 /* PhoneWeeklyBoardPanel.swift */,
@@ -396,6 +402,8 @@
 				6EA2A0C8EC1BA21A995159C4 /* PhoneSeasonEconomyPanel.swift in Sources */,
 				42EE959C9795A6188C914022 /* PhoneStarterLoopPanel.swift in Sources */,
 				348112833B9390E5F1FCDBE8 /* PhoneSurplusLabPanel.swift in Sources */,
+				BE319FFCDE14A8F492D0A193 /* PhoneTelemetryLogger.swift in Sources */,
+				7DDDFB696E40E8DBDAB25FBA /* PhoneTelemetryPanel.swift in Sources */,
 				C90C3EE0D1FD7D50AB82092C /* PhoneVaultPanel.swift in Sources */,
 				783F8FCFD163D58382926D7F /* PhoneVaultSyncManager.swift in Sources */,
 				D08B8FB1CE64F3BECEC1D976 /* PhoneWeeklyBoardPanel.swift in Sources */,

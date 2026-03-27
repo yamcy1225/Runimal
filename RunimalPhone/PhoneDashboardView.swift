@@ -12,6 +12,7 @@ final class PhoneDashboardStore {
     let vault = PhoneVaultSyncManager()
     let cloudMirror = PhoneCloudMirrorManager()
     let contentCatalog = PhoneContentCatalog()
+    let telemetry = PhoneTelemetryLogger()
 
     let summary = RunSummary(
         distanceKm: 10.02,
@@ -235,6 +236,7 @@ final class PhoneDashboardStore {
         }
         progress.seedIfNeeded(from: runArchive)
         persistVault()
+        telemetry.log("bootstrap", detail: "store initialized")
     }
 
     func requestHealthAuthorization() async {
@@ -244,6 +246,7 @@ final class PhoneDashboardStore {
     func syncWorkoutPlan() async {
         let suggestion = await planner.syncSuggestedWorkout(for: pet)
         connectivity.pushSuggestedWorkout(suggestion)
+        telemetry.log("sync_workout_plan", detail: suggestion.title)
     }
 
     func ingestLatestReward() {
@@ -258,12 +261,14 @@ final class PhoneDashboardStore {
 
         progress.append(reward: adjustedReward, snapshot: connectivity.lastSnapshot)
         persistVault()
+        telemetry.log("reward_ingested", detail: adjustedReward.coreLabel)
     }
 
     func ingestCompletedRun() {
         guard let record = connectivity.lastCompletedRun else { return }
         progress.append(completedRun: record)
         persistVault()
+        telemetry.log("completed_run_ingested", detail: record.id)
     }
 
     func claimWeeklyReward() {
@@ -271,45 +276,53 @@ final class PhoneDashboardStore {
         progress.claimWeeklyReward(id: reward.id)
         syncCompanionEffects()
         persistVault()
+        telemetry.log("weekly_reward_claimed", detail: reward.id)
     }
 
     func activateCompanion(_ companionID: String) {
         progress.activateCompanion(id: companionID)
         persistVault()
+        telemetry.log("activate_companion", detail: companionID)
     }
 
     func feedActiveCompanion(with runID: String) {
         guard let run = completedRuns.first(where: { $0.id == runID }) else { return }
         _ = progress.feed(run: run, to: featuredCompanion, activeEffects: activeWeeklyEffects, season: weeklyBoard.season)
         persistVault()
+        telemetry.log("feed_companion", detail: run.id)
     }
 
     func retireCompanion(_ companionID: String) {
         guard let offer = retirableOffers.first(where: { $0.companion.id == companionID }) else { return }
         _ = progress.retireCompanion(companionID, essenceReward: offer.essenceReward)
         persistVault()
+        telemetry.log("retire_companion", detail: companionID)
     }
 
     func forgeOption(_ optionID: String) {
         guard let option = forgeOptions.first(where: { $0.id == optionID }) else { return }
         _ = progress.purchaseForgeOption(option)
         persistVault()
+        telemetry.log("forge_option", detail: option.id)
     }
 
     func selectRole(_ role: CompanionRole) {
         progress.selectRole(role, for: featuredCompanion.id)
         persistVault()
+        telemetry.log("select_role", detail: role.rawValue)
     }
 
     func unlockBuildNode(_ nodeID: String) {
         guard let node = buildNodes.first(where: { $0.id == nodeID }) else { return }
         _ = progress.unlockSkillNode(nodeID, for: featuredCompanion.id, cost: node.cost)
         persistVault()
+        telemetry.log("unlock_build_node", detail: nodeID)
     }
 
     func claimSeasonReward() {
         _ = progress.claimSeasonReward(id: seasonEconomyBoard.seasonID)
         persistVault()
+        telemetry.log("claim_season_reward", detail: seasonEconomyBoard.seasonID)
     }
 
     func claimRaidReward(_ encounterID: String) {
@@ -320,6 +333,7 @@ final class PhoneDashboardStore {
             threshold: encounter.claimThreshold
         )
         persistVault()
+        telemetry.log("claim_raid_reward", detail: encounter.id)
     }
 
     func syncCompanionEffects() {

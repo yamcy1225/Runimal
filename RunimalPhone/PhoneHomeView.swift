@@ -30,6 +30,11 @@ struct PhoneHomeView: View {
                     statusLabel: store.cloudMirror.statusLabel,
                     lastMirroredAt: store.cloudMirror.lastMirroredAt
                 )
+                PhoneTelemetryPanel(
+                    lastEventLabel: store.telemetry.lastEventLabel,
+                    eventCount: store.telemetry.eventCount,
+                    logPath: store.telemetry.logPath()
+                )
                 PhoneSeasonEconomyPanel(
                     board: store.seasonEconomyBoard,
                     onClaim: store.claimSeasonReward
