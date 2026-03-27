@@ -26,24 +26,22 @@ enum RunimalCuePlayer {
 
     #if os(iOS)
     private static func hatchSoundID(for pet: GeneratedPet?) -> SystemSoundID {
-        switch pet?.species {
-        case .sparkfang: return 1113
-        case .stoneback: return 1123
-        case .shadebit: return 1117
-        default: return 1108
+        guard let pet,
+              let profile = RunimalFeedbackProfileLoader.speciesProfile(for: pet.species) else {
+            return 1108
         }
+        return profile.hatchSound
     }
 
     private static func evolutionSoundID(for pet: GeneratedPet?) -> SystemSoundID {
-        guard let rareVariant = pet?.rareVariant else { return 1104 }
-
-        switch rareVariant {
-        case .tempoSurge: return 1113
-        case .zenBloom: return 1117
-        case .summitHeart: return 1123
-        case .eclipseMark: return 1108
-        case .loopSigil: return 1110
+        if let variantSound = RunimalFeedbackProfileLoader.variantEvolutionSound(for: pet?.rareVariant) {
+            return variantSound
         }
+        guard let pet,
+              let profile = RunimalFeedbackProfileLoader.speciesProfile(for: pet.species) else {
+            return 1104
+        }
+        return profile.evolutionSound
     }
     #endif
 }

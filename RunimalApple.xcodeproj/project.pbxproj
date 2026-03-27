@@ -40,6 +40,7 @@
 		6C49554E39B807681B7B18A6 /* RunimalCuePlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F93E1817D650665C529F2AB5 /* RunimalCuePlayer.swift */; };
 		6C85B98D545FA9E94754D077 /* PhoneGrowthDockPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E269AC391E4EEE0B67184701 /* PhoneGrowthDockPanel.swift */; };
 		6EA2A0C8EC1BA21A995159C4 /* PhoneSeasonEconomyPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39076D48B89EB45273A5F0A8 /* PhoneSeasonEconomyPanel.swift */; };
+		709FE3BAFE90BB0B21A402B1 /* feedback-profiles.json in Resources */ = {isa = PBXBuildFile; fileRef = A9F7187532AD05E3E0A28B52 /* feedback-profiles.json */; };
 		712848BC98C636829FEC9977 /* RunimalProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 385B139873A7AFD4A86EC385 /* RunimalProgressBar.swift */; };
 		72BD240A10F3CAB725790AAD /* HatchBurstView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCCD7FD29177A39ACD44643 /* HatchBurstView.swift */; };
 		783F8FCFD163D58382926D7F /* PhoneVaultSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 154264C7723E8BDEE608F409 /* PhoneVaultSyncManager.swift */; };
@@ -52,6 +53,7 @@
 		8927F4FDE2E36B3C6BFD88F0 /* GameSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2B8EE9F33FD02687ADA9AD /* GameSurface.swift */; };
 		8CF42C38A3F8DA01536A35DC /* WatchRunPulseCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9022BE50135CB623C706CD5 /* WatchRunPulseCard.swift */; };
 		91DB87EB4DD59DC1A6282104 /* PhoneDiagnosticsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A401E55FD8B55C113229F30 /* PhoneDiagnosticsPanel.swift */; };
+		A3A5D6C02FCD96C54119505C /* feedback-profiles.json in Resources */ = {isa = PBXBuildFile; fileRef = A9F7187532AD05E3E0A28B52 /* feedback-profiles.json */; };
 		AAEACADD1C4BEA881B02FF44 /* PixelPetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52C1B6533C1584594BAF166 /* PixelPetView.swift */; };
 		ACD3B44B257E089410F39529 /* PhoneContentCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7990F4F456F8ED0D942F95B8 /* PhoneContentCatalog.swift */; };
 		ACE2CE5F4EE7FCFAB684E01A /* PhoneDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E385404E47BEE9EBE310AC /* PhoneDashboardView.swift */; };
@@ -60,11 +62,15 @@
 		C59A2E40B311A604DE249E96 /* RunimalCore in Frameworks */ = {isa = PBXBuildFile; productRef = 4CDF8B170A2E14071FF0FF18 /* RunimalCore */; };
 		C90C3EE0D1FD7D50AB82092C /* PhoneVaultPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C05253ED9374F103DD2D3A46 /* PhoneVaultPanel.swift */; };
 		D08B8FB1CE64F3BECEC1D976 /* PhoneWeeklyBoardPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11E3E784C3CDB5962B028F5 /* PhoneWeeklyBoardPanel.swift */; };
+		D33FE458E33B7D2A12ECC7ED /* RunimalFeedbackProfileLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E149F2A81A44372E7912C0F9 /* RunimalFeedbackProfileLoader.swift */; };
+		D5C7F5546856CD8B6EEAD197 /* RunimalFeedbackProfileLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E149F2A81A44372E7912C0F9 /* RunimalFeedbackProfileLoader.swift */; };
+		D6719CB1739C87D530BA3C4A /* feedback-profiles.json in Resources */ = {isa = PBXBuildFile; fileRef = A9F7187532AD05E3E0A28B52 /* feedback-profiles.json */; };
 		D851B603CCF8A47CD1AD6269 /* PhoneChallengeBoardPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42ADA97AE2793AC137474BA0 /* PhoneChallengeBoardPanel.swift */; };
 		D8B408663CE2E92F670E24E2 /* RunimalMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B169A42C7D63EF680146305 /* RunimalMacApp.swift */; };
 		DB18973C24F2B8843A24F577 /* PhonePetDetailPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F90BA0A8D36F4FB0F2403D0B /* PhonePetDetailPanel.swift */; };
 		DCFF4ACBAD91D49CC3359A6E /* RunimalProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 385B139873A7AFD4A86EC385 /* RunimalProgressBar.swift */; };
 		EDD9705F22CE23A4801B2464 /* PhoneContentRotationPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C263EDBDA7A0547340C543 /* PhoneContentRotationPanel.swift */; };
+		EE08EF9D38F1792335BFC46F /* RunimalFeedbackProfileLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E149F2A81A44372E7912C0F9 /* RunimalFeedbackProfileLoader.swift */; };
 		F347F32092383E2AC1C5BF8D /* PhoneRewardStagePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D52108AD744AAE198D6A811 /* PhoneRewardStagePanel.swift */; };
 /* End PBXBuildFile section */
 
@@ -106,6 +112,7 @@
 		A11E3E784C3CDB5962B028F5 /* PhoneWeeklyBoardPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneWeeklyBoardPanel.swift; sourceTree = "<group>"; };
 		A507B13D77009C0F9915ADDA /* raids.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = raids.json; sourceTree = "<group>"; };
 		A9022BE50135CB623C706CD5 /* WatchRunPulseCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRunPulseCard.swift; sourceTree = "<group>"; };
+		A9F7187532AD05E3E0A28B52 /* feedback-profiles.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "feedback-profiles.json"; sourceTree = "<group>"; };
 		ABCCD7FD29177A39ACD44643 /* HatchBurstView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HatchBurstView.swift; sourceTree = "<group>"; };
 		AE5C185CFBC7BCD90C4E6838 /* PhoneHealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneHealthKitManager.swift; sourceTree = "<group>"; };
 		AEA95D1D9A9F2C66C78412A2 /* PhoneHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneHomeView.swift; sourceTree = "<group>"; };
@@ -114,6 +121,7 @@
 		C05253ED9374F103DD2D3A46 /* PhoneVaultPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneVaultPanel.swift; sourceTree = "<group>"; };
 		C5AFA4A0D0FA515927F493FE /* PhoneHatchInsightPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneHatchInsightPanel.swift; sourceTree = "<group>"; };
 		CD0541A9CADE432091B248E2 /* RunimalWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunimalWatchApp.swift; sourceTree = "<group>"; };
+		E149F2A81A44372E7912C0F9 /* RunimalFeedbackProfileLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunimalFeedbackProfileLoader.swift; sourceTree = "<group>"; };
 		E269AC391E4EEE0B67184701 /* PhoneGrowthDockPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneGrowthDockPanel.swift; sourceTree = "<group>"; };
 		E52C1B6533C1584594BAF166 /* PixelPetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelPetView.swift; sourceTree = "<group>"; };
 		E57AE99F9E3047A8E9A9A5F6 /* PhoneCloudMirrorManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneCloudMirrorManager.swift; sourceTree = "<group>"; };
@@ -176,6 +184,14 @@
 			path = RunimalMac;
 			sourceTree = "<group>";
 		};
+		368AA0208429105238738109 /* AssetCatalog */ = {
+			isa = PBXGroup;
+			children = (
+				A9F7187532AD05E3E0A28B52 /* feedback-profiles.json */,
+			);
+			path = AssetCatalog;
+			sourceTree = "<group>";
+		};
 		49BB41E5CC0A9F56E00144E1 /* RunimalPhone */ = {
 			isa = PBXGroup;
 			children = (
@@ -229,7 +245,9 @@
 				ABCCD7FD29177A39ACD44643 /* HatchBurstView.swift */,
 				E52C1B6533C1584594BAF166 /* PixelPetView.swift */,
 				F93E1817D650665C529F2AB5 /* RunimalCuePlayer.swift */,
+				E149F2A81A44372E7912C0F9 /* RunimalFeedbackProfileLoader.swift */,
 				385B139873A7AFD4A86EC385 /* RunimalProgressBar.swift */,
+				368AA0208429105238738109 /* AssetCatalog */,
 			);
 			path = SharedUI;
 			sourceTree = "<group>";
@@ -293,6 +311,7 @@
 			buildConfigurationList = 7D161AA691685B8F62846A8C /* Build configuration list for PBXNativeTarget "RunimalMac" */;
 			buildPhases = (
 				23FC50E5C472D150A40A3565 /* Sources */,
+				5C9384343DEBC67E4F8C687C /* Resources */,
 				899E8B745F692D300C7301FD /* Frameworks */,
 			);
 			buildRules = (
@@ -312,6 +331,7 @@
 			buildConfigurationList = 8E8206862BF975197545D6D3 /* Build configuration list for PBXNativeTarget "RunimalWatch" */;
 			buildPhases = (
 				623FAA2AFB7664D52AA7DEE2 /* Sources */,
+				C7A06FC2415FCA9FC19EF4E3 /* Resources */,
 				5BA1FB685E539E3497A97D91 /* Frameworks */,
 			);
 			buildRules = (
@@ -362,12 +382,29 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		5C9384343DEBC67E4F8C687C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D6719CB1739C87D530BA3C4A /* feedback-profiles.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A513898BBF77744CCD4B1DF8 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A3A5D6C02FCD96C54119505C /* feedback-profiles.json in Resources */,
 				7D98848B789206995A583559 /* raids.json in Resources */,
 				5F64C5E26152DDDB0D94C2AF /* rotation.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C7A06FC2415FCA9FC19EF4E3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				709FE3BAFE90BB0B21A402B1 /* feedback-profiles.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -410,6 +447,7 @@
 				06082EB1FC3ACEFA2285DC8E /* PhoneWorkoutPlanner.swift in Sources */,
 				AAEACADD1C4BEA881B02FF44 /* PixelPetView.swift in Sources */,
 				59391B8B7D4936528B8DC410 /* RunimalCuePlayer.swift in Sources */,
+				EE08EF9D38F1792335BFC46F /* RunimalFeedbackProfileLoader.swift in Sources */,
 				634DB0E7570D3FB1D7968EC4 /* RunimalPhoneApp.swift in Sources */,
 				055D904E32E554E7B3354B17 /* RunimalProgressBar.swift in Sources */,
 			);
@@ -426,6 +464,7 @@
 				0558B22A5BE369E662D7BD8E /* MacQAReplayPanel.swift in Sources */,
 				2C74CE3C942228A0B005A2A5 /* PixelPetView.swift in Sources */,
 				6C49554E39B807681B7B18A6 /* RunimalCuePlayer.swift in Sources */,
+				D5C7F5546856CD8B6EEAD197 /* RunimalFeedbackProfileLoader.swift in Sources */,
 				D8B408663CE2E92F670E24E2 /* RunimalMacApp.swift in Sources */,
 				DCFF4ACBAD91D49CC3359A6E /* RunimalProgressBar.swift in Sources */,
 			);
@@ -439,6 +478,7 @@
 				819313421FA9F492950F84A0 /* HatchBurstView.swift in Sources */,
 				0CA9AD813D11C9396CB7A8F4 /* PixelPetView.swift in Sources */,
 				40924A1640EB6A6E480A093B /* RunimalCuePlayer.swift in Sources */,
+				D33FE458E33B7D2A12ECC7ED /* RunimalFeedbackProfileLoader.swift in Sources */,
 				712848BC98C636829FEC9977 /* RunimalProgressBar.swift in Sources */,
 				174E2B99B537739F137A619E /* RunimalWatchApp.swift in Sources */,
 				5F169DE5191FDFAC59DE3E4A /* WatchConnectivityManager.swift in Sources */,

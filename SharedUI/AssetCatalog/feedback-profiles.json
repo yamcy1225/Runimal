@@ -1,0 +1,17 @@
+{
+  "species": {
+    "windrunner": { "hatchSound": 1108, "evolutionSound": 1110, "tilt": -2.0 },
+    "stoneback": { "hatchSound": 1123, "evolutionSound": 1123, "tilt": 1.2 },
+    "sparkfang": { "hatchSound": 1113, "evolutionSound": 1113, "tilt": -3.0 },
+    "mosshop": { "hatchSound": 1117, "evolutionSound": 1117, "tilt": 1.5 },
+    "shadebit": { "hatchSound": 1117, "evolutionSound": 1108, "tilt": -1.5 },
+    "seedle": { "hatchSound": 1104, "evolutionSound": 1104, "tilt": 0.8 }
+  },
+  "variants": {
+    "tempo-surge": { "evolutionSound": 1113, "points": [[-44,-12],[38,-24],[18,36]] },
+    "zen-bloom": { "evolutionSound": 1117, "points": [[-36,-30],[0,-42],[34,-18]] },
+    "summit-heart": { "evolutionSound": 1123, "points": [[-40,20],[0,-38],[40,22]] },
+    "eclipse-mark": { "evolutionSound": 1108, "points": [[-30,-34],[26,-34],[0,38]] },
+    "loop-sigil": { "evolutionSound": 1110, "points": [[-42,0],[0,-42],[42,0]] }
+  }
+}

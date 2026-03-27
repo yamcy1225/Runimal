@@ -85,6 +85,10 @@ struct PixelPetView: View {
     }
 
     private func restTilt(for pet: GeneratedPet) -> Double {
+        if let profile = RunimalFeedbackProfileLoader.speciesProfile(for: pet.species) {
+            return profile.tilt
+        }
+
         switch pet.species {
         case .windrunner: return -2
         case .stoneback: return 1.2

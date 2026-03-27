@@ -33,6 +33,10 @@ struct HatchBurstView: View {
     }
 
     private func signatureOffsets(for pet: GeneratedPet) -> [CGPoint] {
+        if let loadedPoints = RunimalFeedbackProfileLoader.burstPoints(for: pet) {
+            return loadedPoints
+        }
+
         if let rareVariant = pet.rareVariant {
             switch rareVariant {
             case .tempoSurge:

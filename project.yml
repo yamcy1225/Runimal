@@ -14,6 +14,8 @@ targets:
     sources:
       - path: RunimalMac
       - path: SharedUI
+    resources:
+      - path: SharedUI/AssetCatalog
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
@@ -35,6 +37,7 @@ targets:
       - path: SharedUI
     resources:
       - path: RunimalPhone/Content
+      - path: SharedUI/AssetCatalog
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
@@ -62,6 +65,8 @@ targets:
     sources:
       - path: RunimalWatch
       - path: SharedUI
+    resources:
+      - path: SharedUI/AssetCatalog
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
