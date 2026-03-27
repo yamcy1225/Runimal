@@ -198,6 +198,14 @@ final class PhoneDashboardStore {
         RunimalContentRotationEngine.entries(for: weeklyBoard.season)
     }
 
+    var raidEncounters: [RaidEncounter] {
+        RunimalRaidBoardEngine.encounters(
+            for: featuredCompanion,
+            progress: evolutionProgress,
+            selectedRole: selectedRole
+        )
+    }
+
     func activateConnectivity() {
         connectivity.activate()
         syncCompanionEffects()

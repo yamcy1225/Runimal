@@ -36,6 +36,7 @@ struct PhoneHomeView: View {
                 )
                 PhoneChallengeBoardPanel(trials: store.challengeTrials)
                 PhoneContentRotationPanel(entries: store.contentRotation)
+                PhoneRaidBoardPanel(encounters: store.raidEncounters)
                 PhoneStarterLoopPanel(steps: store.starterLoop)
                 questCard
                 workoutCard

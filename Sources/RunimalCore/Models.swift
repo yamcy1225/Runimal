@@ -507,6 +507,22 @@ public struct ContentRotationEntry: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
+public struct RaidEncounter: Codable, Equatable, Identifiable, Sendable {
+    public let id: String
+    public let title: String
+    public let detail: String
+    public let readinessScore: Int
+    public let recommendedReward: String
+
+    public init(id: String, title: String, detail: String, readinessScore: Int, recommendedReward: String) {
+        self.id = id
+        self.title = title
+        self.detail = detail
+        self.readinessScore = readinessScore
+        self.recommendedReward = recommendedReward
+    }
+}
+
 public struct RoutePoint: Codable, Equatable, Identifiable, Sendable {
     public let latitude: Double
     public let longitude: Double
