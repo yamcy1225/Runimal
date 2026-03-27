@@ -26,6 +26,7 @@
 		40924A1640EB6A6E480A093B /* RunimalCuePlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F93E1817D650665C529F2AB5 /* RunimalCuePlayer.swift */; };
 		42EE959C9795A6188C914022 /* PhoneStarterLoopPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E0D41AA3032A2C590F91404 /* PhoneStarterLoopPanel.swift */; };
 		443E62FDBACD6570270B42FE /* PhoneCloudValidationPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7FC40B982500CEB6102FD73 /* PhoneCloudValidationPanel.swift */; };
+		4F8C8E8BFB84DDBF62067774 /* MacContentCatalogPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16F668EE7DB792C0CD6D7458 /* MacContentCatalogPanel.swift */; };
 		517368F2AD7E3D4F4F68045F /* PhoneHatchInsightPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5AFA4A0D0FA515927F493FE /* PhoneHatchInsightPanel.swift */; };
 		59391B8B7D4936528B8DC410 /* RunimalCuePlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F93E1817D650665C529F2AB5 /* RunimalCuePlayer.swift */; };
 		5BF455D18F0537AADA89CCE6 /* PhoneCloudMirrorPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FA42B69A30577005505320D /* PhoneCloudMirrorPanel.swift */; };
@@ -54,6 +55,7 @@
 		8927F4FDE2E36B3C6BFD88F0 /* GameSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2B8EE9F33FD02687ADA9AD /* GameSurface.swift */; };
 		8CF42C38A3F8DA01536A35DC /* WatchRunPulseCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9022BE50135CB623C706CD5 /* WatchRunPulseCard.swift */; };
 		91DB87EB4DD59DC1A6282104 /* PhoneDiagnosticsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A401E55FD8B55C113229F30 /* PhoneDiagnosticsPanel.swift */; };
+		92FA3182F2B624539C41A17A /* MacAssetPackPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1599B42154DFCF8CFBE03E23 /* MacAssetPackPanel.swift */; };
 		965335A73E7B2F99C257965A /* PhoneRaidResolutionPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EFD7D49EF2A8C4B3BABBB7E /* PhoneRaidResolutionPanel.swift */; };
 		A3A5D6C02FCD96C54119505C /* feedback-profiles.json in Resources */ = {isa = PBXBuildFile; fileRef = A9F7187532AD05E3E0A28B52 /* feedback-profiles.json */; };
 		AAEACADD1C4BEA881B02FF44 /* PixelPetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52C1B6533C1584594BAF166 /* PixelPetView.swift */; };
@@ -79,6 +81,8 @@
 /* Begin PBXFileReference section */
 		1265F122983A89D1E2844868 /* RunimalPhone.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunimalPhone.entitlements; sourceTree = "<group>"; };
 		154264C7723E8BDEE608F409 /* PhoneVaultSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneVaultSyncManager.swift; sourceTree = "<group>"; };
+		1599B42154DFCF8CFBE03E23 /* MacAssetPackPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacAssetPackPanel.swift; sourceTree = "<group>"; };
+		16F668EE7DB792C0CD6D7458 /* MacContentCatalogPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacContentCatalogPanel.swift; sourceTree = "<group>"; };
 		17E28684D946FF4AF2DA4B62 /* PhoneBuildTreePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneBuildTreePanel.swift; sourceTree = "<group>"; };
 		18C263EDBDA7A0547340C543 /* PhoneContentRotationPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneContentRotationPanel.swift; sourceTree = "<group>"; };
 		1E0D41AA3032A2C590F91404 /* PhoneStarterLoopPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneStarterLoopPanel.swift; sourceTree = "<group>"; };
@@ -180,6 +184,8 @@
 		2B49A9E09B154EF68D67D976 /* RunimalMac */ = {
 			isa = PBXGroup;
 			children = (
+				1599B42154DFCF8CFBE03E23 /* MacAssetPackPanel.swift */,
+				16F668EE7DB792C0CD6D7458 /* MacContentCatalogPanel.swift */,
 				9644ED15FC30AD4B82A2D748 /* MacDashboardView.swift */,
 				59A18AB5F32E6EB603FE418A /* MacDeviceQAPanel.swift */,
 				743E21851D70F82DCAFCA0AD /* MacQAReplayPanel.swift */,
@@ -467,6 +473,8 @@
 			files = (
 				B617C884E06D78A41DBC9F23 /* GameSurface.swift in Sources */,
 				07152D652AD1A1CBBB11A2FD /* HatchBurstView.swift in Sources */,
+				92FA3182F2B624539C41A17A /* MacAssetPackPanel.swift in Sources */,
+				4F8C8E8BFB84DDBF62067774 /* MacContentCatalogPanel.swift in Sources */,
 				624DF58C70B351184A9E9B55 /* MacDashboardView.swift in Sources */,
 				6148C682421934D18F5AAF9F /* MacDeviceQAPanel.swift in Sources */,
 				0558B22A5BE369E662D7BD8E /* MacQAReplayPanel.swift in Sources */,

@@ -186,6 +186,7 @@ struct MacDashboardView: View {
 
             MacQAReplayPanel(selectedScenarioID: $store.selectedScenarioID)
             MacDeviceQAPanel(checklist: RunimalDeviceQAEngine.checklist)
+            MacContentCatalogPanel()
         }
         .frame(width: 360)
     }
@@ -296,6 +297,8 @@ struct MacDashboardView: View {
                     }
                 }
             }
+
+            MacAssetPackPanel()
         }
         .frame(width: 380)
     }

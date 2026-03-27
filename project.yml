@@ -15,6 +15,7 @@ targets:
       - path: RunimalMac
       - path: SharedUI
     resources:
+      - path: RunimalPhone/Content
       - path: SharedUI/AssetCatalog
     settings:
       base:
