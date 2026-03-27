@@ -4,6 +4,8 @@ import SwiftUI
 struct PhoneWeeklyBoardPanel: View {
     let board: WeeklyBoard
     let accent: Color
+    let claimedRewardIDs: Set<String>
+    let onClaim: (() -> Void)?
 
     var body: some View {
         GameSurface(title: "Weekly Board") {
@@ -26,6 +28,13 @@ struct PhoneWeeklyBoardPanel: View {
                     summaryStat("Runs", value: "\(board.runCount)")
                     summaryStat("Distance", value: "\(board.totalDistanceKm.formatted(.number.precision(.fractionLength(1)))) km")
                     summaryStat("Streak", value: "\(board.streakDays) days")
+                }
+
+                HStack {
+                    TraitChip(label: "\(board.completedMissionCount)/\(board.missions.count) cleared", accent: accent)
+                    if claimedRewardIDs.isEmpty == false {
+                        TraitChip(label: "\(claimedRewardIDs.count) claimed", accent: .green)
+                    }
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
@@ -53,6 +62,48 @@ struct PhoneWeeklyBoardPanel: View {
                             )
                         }
                     }
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Weekly Rewards")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.74))
+
+                    ForEach(board.rewards) { reward in
+                        let unlocked = board.completedMissionCount >= reward.unlockRequirement
+                        let claimed = claimedRewardIDs.contains(reward.id)
+
+                        HStack(alignment: .top, spacing: 12) {
+                            Circle()
+                                .fill(claimed ? .green : (unlocked ? accent : .white.opacity(0.15)))
+                                .frame(width: 10, height: 10)
+                                .padding(.top, 5)
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Text(reward.title)
+                                        .foregroundStyle(.white)
+                                    Spacer()
+                                    TraitChip(
+                                        label: claimed ? "CLAIMED" : (unlocked ? "READY" : "LOCKED"),
+                                        accent: claimed ? .green : (unlocked ? accent : .white.opacity(0.18))
+                                    )
+                                }
+
+                                Text(reward.detail)
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.68))
+                            }
+                        }
+                    }
+                }
+
+                if let onClaim {
+                    Button("Claim Weekly Reward") {
+                        onClaim()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(accent)
                 }
             }
         }

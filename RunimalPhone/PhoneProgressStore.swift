@@ -8,11 +8,13 @@ final class PhoneProgressStore {
     private enum Keys {
         static let journal = "runimal.phone.journal"
         static let completedRuns = "runimal.phone.completedRuns"
+        static let claimedWeeklyRewards = "runimal.phone.claimedWeeklyRewards"
     }
 
     private let defaults: UserDefaults
     var journal: [RunJournalEntry] = []
     var completedRuns: [CompletedRunRecord] = []
+    var claimedWeeklyRewards: [String] = []
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -38,6 +40,8 @@ final class PhoneProgressStore {
         } else {
             completedRuns = []
         }
+
+        claimedWeeklyRewards = defaults.stringArray(forKey: Keys.claimedWeeklyRewards) ?? []
     }
 
     func seedIfNeeded(from summaries: [RunSummary]) {
@@ -113,6 +117,12 @@ final class PhoneProgressStore {
         save()
     }
 
+    func claimWeeklyReward(id: String) {
+        guard !claimedWeeklyRewards.contains(id) else { return }
+        claimedWeeklyRewards.append(id)
+        save()
+    }
+
     private func save() {
         do {
             let journalData = try JSONEncoder().encode(journal)
@@ -127,5 +137,7 @@ final class PhoneProgressStore {
         } catch {
             defaults.removeObject(forKey: Keys.completedRuns)
         }
+
+        defaults.set(claimedWeeklyRewards, forKey: Keys.claimedWeeklyRewards)
     }
 }

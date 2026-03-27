@@ -57,6 +57,26 @@ public extension RunimalGameEngine {
 
         let completedCount = missions.filter(\.completed).count
         let headline: String
+        let rewards = [
+            WeeklyReward(
+                id: "weekly-badge",
+                title: "Field Badge",
+                detail: "미션 1개 달성 시 주간 배지 확보",
+                unlockRequirement: 1
+            ),
+            WeeklyReward(
+                id: "weekly-core-cache",
+                title: "Rare Core Cache",
+                detail: "미션 2개 달성 시 희귀 코어 보급",
+                unlockRequirement: 2
+            ),
+            WeeklyReward(
+                id: "weekly-evo-boost",
+                title: "Evolution Boost",
+                detail: "미션 4개 달성 시 진화 부스트 해금",
+                unlockRequirement: 4
+            ),
+        ]
 
         switch completedCount {
         case 4:
@@ -74,7 +94,9 @@ public extension RunimalGameEngine {
             runCount: runCount,
             streakDays: streakDays,
             discoveredVariants: discoveredVariants,
-            missions: missions
+            completedMissionCount: completedCount,
+            missions: missions,
+            rewards: rewards
         )
     }
 

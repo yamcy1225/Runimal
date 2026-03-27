@@ -32,7 +32,9 @@ public struct WeeklyBoard: Codable, Equatable, Sendable {
     public let runCount: Int
     public let streakDays: Int
     public let discoveredVariants: Int
+    public let completedMissionCount: Int
     public let missions: [WeeklyMission]
+    public let rewards: [WeeklyReward]
 
     public init(
         weekLabel: String,
@@ -41,7 +43,9 @@ public struct WeeklyBoard: Codable, Equatable, Sendable {
         runCount: Int,
         streakDays: Int,
         discoveredVariants: Int,
-        missions: [WeeklyMission]
+        completedMissionCount: Int,
+        missions: [WeeklyMission],
+        rewards: [WeeklyReward]
     ) {
         self.weekLabel = weekLabel
         self.headline = headline
@@ -49,6 +53,22 @@ public struct WeeklyBoard: Codable, Equatable, Sendable {
         self.runCount = runCount
         self.streakDays = streakDays
         self.discoveredVariants = discoveredVariants
+        self.completedMissionCount = completedMissionCount
         self.missions = missions
+        self.rewards = rewards
+    }
+}
+
+public struct WeeklyReward: Codable, Equatable, Identifiable, Sendable {
+    public let id: String
+    public let title: String
+    public let detail: String
+    public let unlockRequirement: Int
+
+    public init(id: String, title: String, detail: String, unlockRequirement: Int) {
+        self.id = id
+        self.title = title
+        self.detail = detail
+        self.unlockRequirement = unlockRequirement
     }
 }

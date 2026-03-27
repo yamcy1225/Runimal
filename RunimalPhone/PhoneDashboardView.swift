@@ -82,6 +82,17 @@ final class PhoneDashboardStore {
         )
     }
 
+    var claimedWeeklyRewardIDs: Set<String> {
+        Set(progress.claimedWeeklyRewards)
+    }
+
+    var claimableWeeklyReward: WeeklyReward? {
+        weeklyBoard.rewards.first {
+            weeklyBoard.completedMissionCount >= $0.unlockRequirement &&
+            !claimedWeeklyRewardIDs.contains($0.id)
+        }
+    }
+
     var hatchInsights: [HatchInsight] {
         guard let latestCompletedRun else { return [] }
         return RunimalGameEngine.hatchInsights(for: latestCompletedRun)
@@ -117,6 +128,11 @@ final class PhoneDashboardStore {
     func ingestCompletedRun() {
         guard let record = connectivity.lastCompletedRun else { return }
         progress.append(completedRun: record)
+    }
+
+    func claimWeeklyReward() {
+        guard let reward = claimableWeeklyReward else { return }
+        progress.claimWeeklyReward(id: reward.id)
     }
 }
 
