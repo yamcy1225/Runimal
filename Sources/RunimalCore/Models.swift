@@ -493,6 +493,20 @@ public struct StarterLoopStep: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
+public struct ContentRotationEntry: Codable, Equatable, Identifiable, Sendable {
+    public let id: String
+    public let title: String
+    public let detail: String
+    public let reward: String
+
+    public init(id: String, title: String, detail: String, reward: String) {
+        self.id = id
+        self.title = title
+        self.detail = detail
+        self.reward = reward
+    }
+}
+
 public struct RoutePoint: Codable, Equatable, Identifiable, Sendable {
     public let latitude: Double
     public let longitude: Double

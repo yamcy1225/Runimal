@@ -194,6 +194,10 @@ final class PhoneDashboardStore {
         )
     }
 
+    var contentRotation: [ContentRotationEntry] {
+        RunimalContentRotationEngine.entries(for: weeklyBoard.season)
+    }
+
     func activateConnectivity() {
         connectivity.activate()
         syncCompanionEffects()

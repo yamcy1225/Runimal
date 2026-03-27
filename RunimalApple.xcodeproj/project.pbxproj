@@ -57,12 +57,14 @@
 		D8B408663CE2E92F670E24E2 /* RunimalMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B169A42C7D63EF680146305 /* RunimalMacApp.swift */; };
 		DB18973C24F2B8843A24F577 /* PhonePetDetailPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F90BA0A8D36F4FB0F2403D0B /* PhonePetDetailPanel.swift */; };
 		DCFF4ACBAD91D49CC3359A6E /* RunimalProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 385B139873A7AFD4A86EC385 /* RunimalProgressBar.swift */; };
+		EDD9705F22CE23A4801B2464 /* PhoneContentRotationPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C263EDBDA7A0547340C543 /* PhoneContentRotationPanel.swift */; };
 		F347F32092383E2AC1C5BF8D /* PhoneRewardStagePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D52108AD744AAE198D6A811 /* PhoneRewardStagePanel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		154264C7723E8BDEE608F409 /* PhoneVaultSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneVaultSyncManager.swift; sourceTree = "<group>"; };
 		17E28684D946FF4AF2DA4B62 /* PhoneBuildTreePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneBuildTreePanel.swift; sourceTree = "<group>"; };
+		18C263EDBDA7A0547340C543 /* PhoneContentRotationPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneContentRotationPanel.swift; sourceTree = "<group>"; };
 		1E0D41AA3032A2C590F91404 /* PhoneStarterLoopPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneStarterLoopPanel.swift; sourceTree = "<group>"; };
 		1F2B8EE9F33FD02687ADA9AD /* GameSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSurface.swift; sourceTree = "<group>"; };
 		2785BF329A8DF8512EC6A0D6 /* PhoneWorkoutPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneWorkoutPlanner.swift; sourceTree = "<group>"; };
@@ -165,6 +167,7 @@
 				4FA42B69A30577005505320D /* PhoneCloudMirrorPanel.swift */,
 				B6E46300A234E62D872875A0 /* PhoneCollectionView.swift */,
 				2C3D26A6D761131D6B9EF6FD /* PhoneConnectivityManager.swift */,
+				18C263EDBDA7A0547340C543 /* PhoneContentRotationPanel.swift */,
 				F1E385404E47BEE9EBE310AC /* PhoneDashboardView.swift */,
 				3A401E55FD8B55C113229F30 /* PhoneDiagnosticsPanel.swift */,
 				9E1D232A467F7235E20D20A4 /* PhoneEssenceForgePanel.swift */,
@@ -337,6 +340,7 @@
 				5BF455D18F0537AADA89CCE6 /* PhoneCloudMirrorPanel.swift in Sources */,
 				0F444E8A966E0A960C219FA9 /* PhoneCollectionView.swift in Sources */,
 				1E9074838A9AF2F694709E98 /* PhoneConnectivityManager.swift in Sources */,
+				EDD9705F22CE23A4801B2464 /* PhoneContentRotationPanel.swift in Sources */,
 				ACE2CE5F4EE7FCFAB684E01A /* PhoneDashboardView.swift in Sources */,
 				91DB87EB4DD59DC1A6282104 /* PhoneDiagnosticsPanel.swift in Sources */,
 				338AC15FAD498178D66598B7 /* PhoneEssenceForgePanel.swift in Sources */,
