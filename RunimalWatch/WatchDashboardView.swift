@@ -9,6 +9,25 @@ struct WatchDashboardView: View {
         runSessionManager.livePet
     }
 
+    private var stageAccent: Color {
+        switch liveFeedback.label {
+        case "Rare Window":
+            return .mint
+        case "Surge":
+            return .orange
+        case "Stable":
+            return livePet.accentColor
+        case "Recover":
+            return .yellow
+        default:
+            return livePet.accentColor.opacity(0.82)
+        }
+    }
+
+    private var stageBadges: [String] {
+        connectivityManager.activeEffects.map(\.title)
+    }
+
     private var growthRatio: Double {
         min(max(runSessionManager.latestSnapshot.distanceMeters / 5000, 0.08), 1)
     }
@@ -23,7 +42,11 @@ struct WatchDashboardView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
-                WatchRunPulseCard(feedback: liveFeedback, accent: livePet.accentColor)
+                WatchRunPulseCard(
+                    feedback: liveFeedback,
+                    accent: stageAccent,
+                    badges: Array(stageBadges.prefix(2))
+                )
 
                 GameSurface {
                     VStack(spacing: 10) {
@@ -31,7 +54,23 @@ struct WatchDashboardView: View {
                             .font(.caption2.weight(.semibold))
                             .foregroundStyle(.white.opacity(0.7))
 
-                        PixelPetView(pet: livePet, pixelSize: 8)
+                        ZStack {
+                            Circle()
+                                .fill(stageAccent.opacity(0.20))
+                                .frame(width: 94, height: 94)
+                                .blur(radius: 10)
+
+                            Circle()
+                                .stroke(stageAccent.opacity(liveFeedback.intensity > 0.8 ? 0.9 : 0.45), lineWidth: 3)
+                                .frame(width: 80, height: 80)
+                                .scaleEffect(liveFeedback.intensity > 0.8 ? 1.08 : 1)
+
+                            Circle()
+                                .stroke(.white.opacity(0.16), style: StrokeStyle(lineWidth: 1, dash: [3, 4]))
+                                .frame(width: 92, height: 92)
+
+                            PixelPetView(pet: livePet, pixelSize: 8)
+                        }
 
                         VStack(spacing: 4) {
                             Text(livePet.displayName)
@@ -42,14 +81,33 @@ struct WatchDashboardView: View {
                                 .foregroundStyle(.white.opacity(0.75))
                         }
 
-                        RunimalProgressBar(progress: growthRatio, accent: livePet.accentColor, height: 8)
+                        RunimalProgressBar(progress: growthRatio, accent: stageAccent, height: 8)
 
                         Text(runSessionManager.sessionStateLabel == "running" ? liveFeedback.headline : "러닝을 시작하면 펫이 깨어납니다")
                             .font(.caption2)
                             .foregroundStyle(.white.opacity(0.72))
                             .multilineTextAlignment(.center)
+
+                        if stageBadges.isEmpty == false {
+                            HStack(spacing: 6) {
+                                ForEach(Array(stageBadges.prefix(2).enumerated()), id: \.offset) { _, badge in
+                                    TraitChip(label: badge, accent: stageAccent.opacity(0.82))
+                                }
+                            }
+                        }
                     }
                 }
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(
+                            RadialGradient(
+                                colors: [stageAccent.opacity(0.22), .clear],
+                                center: .center,
+                                startRadius: 8,
+                                endRadius: 120
+                            )
+                        )
+                )
 
                 GameSurface(title: "Live Metrics") {
                     HStack {
@@ -73,10 +131,10 @@ struct WatchDashboardView: View {
                         Text(liveFeedback.detail)
                             .font(.caption2)
                             .foregroundStyle(.white.opacity(0.62))
-                        if connectivityManager.activeEffects.isEmpty == false {
-                            Text(connectivityManager.activeEffects.map(\.title).joined(separator: " · "))
+                        if stageBadges.isEmpty == false {
+                            Text(stageBadges.joined(separator: " · "))
                                 .font(.caption2)
-                                .foregroundStyle(livePet.accentColor.opacity(0.85))
+                                .foregroundStyle(stageAccent.opacity(0.9))
                         }
                     }
                 }
@@ -120,7 +178,7 @@ struct WatchDashboardView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(livePet.accentColor)
+                .tint(stageAccent)
 
                 Button("Authorize HealthKit") {
                     Task {
@@ -134,7 +192,7 @@ struct WatchDashboardView: View {
         }
         .background(
             LinearGradient(
-                colors: [.black, livePet.accentColor.opacity(0.45)],
+                colors: [.black, stageAccent.opacity(0.55)],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -163,6 +221,7 @@ struct WatchDashboardView: View {
             connectivityManager.send(completedRun: record)
         }
         .animation(.spring(response: 0.7, dampingFraction: 0.84), value: runSessionManager.lastReward != nil)
+        .animation(.easeInOut(duration: 0.9), value: liveFeedback.label)
     }
 
     private func metric(_ label: String, _ value: String) -> some View {
