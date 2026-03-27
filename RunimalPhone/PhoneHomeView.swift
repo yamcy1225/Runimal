@@ -26,6 +26,10 @@ struct PhoneHomeView: View {
                     statusLabel: store.vault.statusLabel,
                     lastSyncedAt: store.vault.lastSyncedAt
                 )
+                PhoneSeasonEconomyPanel(
+                    board: store.seasonEconomyBoard,
+                    onClaim: store.claimSeasonReward
+                )
                 questCard
                 workoutCard
                 syncCard

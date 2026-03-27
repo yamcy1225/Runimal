@@ -108,6 +108,14 @@ final class PhoneDashboardStore {
         )
     }
 
+    var seasonEconomyBoard: SeasonEconomyBoard {
+        RunimalSeasonEconomyEngine.board(
+            for: weeklyBoard.season,
+            collection: collection,
+            claimedSeasonIDs: Set(progress.claimedSeasonRewardIDs)
+        )
+    }
+
     var claimableWeeklyReward: WeeklyReward? {
         weeklyBoard.rewards.first {
             weeklyBoard.completedMissionCount >= $0.unlockRequirement &&
@@ -250,6 +258,11 @@ final class PhoneDashboardStore {
     func unlockBuildNode(_ nodeID: String) {
         guard let node = buildNodes.first(where: { $0.id == nodeID }) else { return }
         _ = progress.unlockSkillNode(nodeID, for: featuredCompanion.id, cost: node.cost)
+        persistVault()
+    }
+
+    func claimSeasonReward() {
+        _ = progress.claimSeasonReward(id: seasonEconomyBoard.seasonID)
         persistVault()
     }
 

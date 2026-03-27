@@ -378,6 +378,7 @@ public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
     public let overdriveCharges: Int
     public let seasonSigils: Int
     public let buildStates: [CompanionBuildState]
+    public let claimedSeasonRewardIDs: [String]
 
     public init(
         savedAt: Date,
@@ -390,7 +391,8 @@ public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
         essenceBalance: Int,
         overdriveCharges: Int,
         seasonSigils: Int,
-        buildStates: [CompanionBuildState]
+        buildStates: [CompanionBuildState],
+        claimedSeasonRewardIDs: [String]
     ) {
         self.savedAt = savedAt
         self.journal = journal
@@ -403,6 +405,7 @@ public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
         self.overdriveCharges = overdriveCharges
         self.seasonSigils = seasonSigils
         self.buildStates = buildStates
+        self.claimedSeasonRewardIDs = claimedSeasonRewardIDs
     }
 }
 
@@ -429,6 +432,34 @@ public struct QAReplayReport: Codable, Equatable, Sendable {
         self.title = title
         self.severity = severity
         self.checkpoints = checkpoints
+    }
+}
+
+public struct SeasonEconomyBoard: Codable, Equatable, Sendable {
+    public let seasonID: String
+    public let title: String
+    public let headline: String
+    public let affinityCount: Int
+    public let requiredCount: Int
+    public let rewardLabel: String
+    public let claimable: Bool
+
+    public init(
+        seasonID: String,
+        title: String,
+        headline: String,
+        affinityCount: Int,
+        requiredCount: Int,
+        rewardLabel: String,
+        claimable: Bool
+    ) {
+        self.seasonID = seasonID
+        self.title = title
+        self.headline = headline
+        self.affinityCount = affinityCount
+        self.requiredCount = requiredCount
+        self.rewardLabel = rewardLabel
+        self.claimable = claimable
     }
 }
 

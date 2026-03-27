@@ -16,6 +16,7 @@ final class PhoneProgressStore {
         static let overdriveCharges = "runimal.phone.overdriveCharges"
         static let seasonSigils = "runimal.phone.seasonSigils"
         static let buildStates = "runimal.phone.buildStates"
+        static let claimedSeasonRewardIDs = "runimal.phone.claimedSeasonRewardIDs"
     }
 
     private let defaults: UserDefaults
@@ -29,6 +30,7 @@ final class PhoneProgressStore {
     var overdriveCharges = 0
     var seasonSigils = 0
     var buildStates: [CompanionBuildState] = []
+    var claimedSeasonRewardIDs: [String] = []
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -82,6 +84,8 @@ final class PhoneProgressStore {
         } else {
             buildStates = []
         }
+
+        claimedSeasonRewardIDs = defaults.stringArray(forKey: Keys.claimedSeasonRewardIDs) ?? []
     }
 
     func seedIfNeeded(from summaries: [RunSummary]) {
@@ -246,6 +250,16 @@ final class PhoneProgressStore {
         save()
     }
 
+    @discardableResult
+    func claimSeasonReward(id: String) -> Bool {
+        guard !claimedSeasonRewardIDs.contains(id) else { return false }
+        claimedSeasonRewardIDs.append(id)
+        essenceBalance += 40
+        seasonSigils += 1
+        save()
+        return true
+    }
+
     func snapshot(savedAt: Date = Date()) -> RunimalProgressSnapshot {
         RunimalProgressSnapshot(
             savedAt: savedAt,
@@ -258,7 +272,8 @@ final class PhoneProgressStore {
             essenceBalance: essenceBalance,
             overdriveCharges: overdriveCharges,
             seasonSigils: seasonSigils,
-            buildStates: buildStates
+            buildStates: buildStates,
+            claimedSeasonRewardIDs: claimedSeasonRewardIDs
         )
     }
 
@@ -273,6 +288,7 @@ final class PhoneProgressStore {
         overdriveCharges = snapshot.overdriveCharges
         seasonSigils = snapshot.seasonSigils
         buildStates = snapshot.buildStates
+        claimedSeasonRewardIDs = snapshot.claimedSeasonRewardIDs
         save()
     }
 
@@ -370,5 +386,7 @@ final class PhoneProgressStore {
         } catch {
             defaults.removeObject(forKey: Keys.buildStates)
         }
+
+        defaults.set(claimedSeasonRewardIDs, forKey: Keys.claimedSeasonRewardIDs)
     }
 }
