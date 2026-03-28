@@ -85,6 +85,24 @@ public extension RunimalGameEngine {
         return notes
     }
 
+    static func mythicTitle(for pet: GeneratedPet, season: WeeklySeason? = nil) -> String {
+        evolutionTitles(for: pet, season: season).last ?? "Mythic"
+    }
+
+    static func mythicSignalLine(for pet: GeneratedPet, season: WeeklySeason? = nil) -> String {
+        let title = mythicTitle(for: pet, season: season)
+        if let season, seasonAffinity(for: pet, season: season) {
+            return "\(title) 신호가 이번 시즌 포커스와 동기화됩니다."
+        }
+
+        if let rareVariant = pet.rareVariant,
+           let passive = RareVariantMeta.passives[rareVariant] {
+            return "\(title) 구간에서는 \(passive) 패시브가 최종 형태에 고정됩니다."
+        }
+
+        return "\(title) 구간은 최종형 보너스와 장기 성장 루프의 시작점입니다."
+    }
+
     private static func evolutionTitles(for pet: GeneratedPet, season: WeeklySeason?) -> [String] {
         let apexTitle: String
 

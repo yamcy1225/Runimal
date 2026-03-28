@@ -58,6 +58,80 @@ enum RunimalCuePlayer {
         #endif
     }
 
+    static func playAlertCue(kind: AlertCueKind) {
+        #if os(iOS)
+        let soundID: SystemSoundID
+
+        switch kind {
+        case .goal:
+            soundID = 1104
+        case .reward:
+            soundID = 1117
+        case .rare:
+            soundID = 1153
+        }
+
+        AudioServicesPlaySystemSound(soundID)
+        #elseif os(watchOS)
+        let cue: WKHapticType
+
+        switch kind {
+        case .goal:
+            cue = .directionUp
+        case .reward:
+            cue = .success
+        case .rare:
+            cue = .notification
+        }
+
+        WKInterfaceDevice.current().play(cue)
+        #endif
+    }
+
+    static func playMetronomeTick(shell: EggShellType, isStrongBeat: Bool = false) {
+        #if os(iOS)
+        let soundID: SystemSoundID
+
+        switch shell {
+        case .ember:
+            soundID = isStrongBeat ? 1104 : 1519
+        case .gale:
+            soundID = isStrongBeat ? 1157 : 1156
+        case .moss:
+            soundID = isStrongBeat ? 1117 : 1108
+        case .dusk:
+            soundID = isStrongBeat ? 1153 : 1110
+        case .stone:
+            soundID = isStrongBeat ? 1151 : 1123
+        }
+
+        AudioServicesPlaySystemSound(soundID)
+        #elseif os(watchOS)
+        let cue: WKHapticType
+
+        switch shell {
+        case .ember:
+            cue = isStrongBeat ? .directionUp : .click
+        case .gale:
+            cue = isStrongBeat ? .start : .click
+        case .moss:
+            cue = isStrongBeat ? .success : .click
+        case .dusk:
+            cue = isStrongBeat ? .notification : .click
+        case .stone:
+            cue = isStrongBeat ? .retry : .click
+        }
+
+        WKInterfaceDevice.current().play(cue)
+        #endif
+    }
+
+    enum AlertCueKind {
+        case goal
+        case reward
+        case rare
+    }
+
     #if os(iOS)
     private static func hatchSoundID(for pet: GeneratedPet?) -> SystemSoundID {
         guard let pet,

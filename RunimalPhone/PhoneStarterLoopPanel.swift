@@ -5,7 +5,7 @@ struct PhoneStarterLoopPanel: View {
     let steps: [StarterLoopStep]
 
     var body: some View {
-        GameSurface(title: "Starter Loop") {
+        GameSurface(title: "Starter Decode Path") {
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(steps) { step in
                     HStack(alignment: .top, spacing: 10) {
@@ -19,7 +19,7 @@ struct PhoneStarterLoopPanel: View {
                                 Text(step.title)
                                     .foregroundStyle(.white)
                                 Spacer()
-                                TraitChip(label: step.completed ? "DONE" : "NEXT", accent: step.completed ? .green : .orange)
+                                TraitChip(label: step.completed ? "LOCKED IN" : "NEXT", accent: step.completed ? .green : .orange)
                             }
                             Text(step.detail)
                                 .font(.caption)

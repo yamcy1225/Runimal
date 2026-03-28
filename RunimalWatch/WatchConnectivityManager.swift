@@ -13,6 +13,21 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
     var queuedTransferCount = 0
     var recentEvents: [SyncDiagnosticEvent] = []
 
+    var syncStatusLabel: String {
+        if queuedTransferCount > 0 {
+            return "자동 동기화 대기 \(queuedTransferCount)"
+        }
+
+        switch activationStateLabel {
+        case "activated":
+            return "자동 동기화 준비"
+        case "inactive":
+            return "페어링 준비"
+        default:
+            return "연결 확인 중"
+        }
+    }
+
     func activate() {
         guard WCSession.isSupported() else {
             activationStateLabel = "unsupported"
@@ -55,12 +70,10 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
             let session = WCSession.default
             if session.isReachable {
                 try session.updateApplicationContext(["runRewardSummary": data])
-                logEvent("push reward", reward.coreLabel)
-            } else {
-                session.transferUserInfo(["runRewardSummary": data])
-                queuedTransferCount = session.outstandingUserInfoTransfers.count
-                logEvent("queue reward", reward.coreLabel)
             }
+            session.transferUserInfo(["runRewardSummary": data])
+            queuedTransferCount = session.outstandingUserInfoTransfers.count
+            logEvent("queue reward", reward.coreLabel)
         } catch {
             lastSyncedWorkoutTitle = "Reward sync failed"
             logEvent("push reward failed", error.localizedDescription)
@@ -75,12 +88,10 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
             let session = WCSession.default
             if session.isReachable {
                 try session.updateApplicationContext(["completedRunRecord": data])
-                logEvent("push completed run", completedRun.id)
-            } else {
-                session.transferUserInfo(["completedRunRecord": data])
-                queuedTransferCount = session.outstandingUserInfoTransfers.count
-                logEvent("queue completed run", completedRun.id)
             }
+            session.transferUserInfo(["completedRunRecord": data])
+            queuedTransferCount = session.outstandingUserInfoTransfers.count
+            logEvent("queue completed run", completedRun.id)
         } catch {
             lastSyncedWorkoutTitle = "Run sync failed"
             logEvent("push completed run failed", error.localizedDescription)

@@ -10,6 +10,12 @@ final class PhoneTelemetryLogger {
         let detail: String
     }
 
+    struct SectionSummary {
+        let title: String
+        let count: Int
+        let lastDetail: String
+    }
+
     var lastEventLabel = "No telemetry yet"
     var eventCount = 0
 
@@ -42,9 +48,36 @@ final class PhoneTelemetryLogger {
         logURL()?.path ?? "unavailable"
     }
 
+    func sectionSummary(title: String, events: Set<String>) -> SectionSummary {
+        let records = readRecords().filter { events.contains($0.event) }
+        return SectionSummary(
+            title: title,
+            count: records.count,
+            lastDetail: records.first.map { "\($0.event) · \($0.detail)" } ?? "기록 없음"
+        )
+    }
+
     private func logURL() -> URL? {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
             .appendingPathComponent("RunimalVault", isDirectory: true)
             .appendingPathComponent("telemetry.jsonl", isDirectory: false)
+    }
+
+    private func readRecords() -> [Record] {
+        guard let url = logURL(),
+              let data = try? Data(contentsOf: url),
+              let content = String(data: data, encoding: .utf8) else {
+            return []
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .deferredToDate
+
+        return content
+            .split(separator: "\n")
+            .compactMap { line in
+                try? decoder.decode(Record.self, from: Data(line.utf8))
+            }
+            .reversed()
     }
 }

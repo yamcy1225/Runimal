@@ -1,0 +1,119 @@
+{
+  "meta": {
+    "title": "Runimal Hatch Evolution Teaser",
+    "preset": "Landscape-1080p",
+    "fps": 30,
+    "totalDurationSec": 18,
+    "theme": {
+      "aesthetic": "digital gap teaser",
+      "font": {
+        "display": "Chakra Petch",
+        "body": "Outfit"
+      },
+      "color": {
+        "accent": "#FF6B3D",
+        "bg": "#050913"
+      },
+      "gradient": {
+        "hero": "radial-gradient(circle at 16% 18%, rgba(255,107,61,0.32) 0%, rgba(7,12,23,0.96) 46%, #02050a 100%)"
+      }
+    }
+  },
+  "elements": [
+    {
+      "type": "title",
+      "durationSec": 2.2,
+      "props": {
+        "title": "RUNIMAL",
+        "subtitle": "decode the unknown"
+      },
+      "transition": {
+        "type": "fade"
+      },
+      "animation": {
+        "enter": "scale-in"
+      }
+    },
+    {
+      "type": "image",
+      "durationSec": 3.2,
+      "props": {
+        "src": "runimal-phone-phase2-live.png",
+        "title": "Signal Locked",
+        "caption": "an unknown egg begins scanning inside the digital gap",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "slide",
+        "direction": "from-right"
+      },
+      "animation": {
+        "enter": "scale-in"
+      }
+    },
+    {
+      "type": "image",
+      "durationSec": 3.2,
+      "props": {
+        "src": "runimal-phone-animation-polish.png",
+        "title": "Decode Burst",
+        "caption": "glitch, interference, and hatch energy spike at the moment of reveal",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "fade"
+      },
+      "animation": {
+        "enter": "scale-in"
+      }
+    },
+    {
+      "type": "image",
+      "durationSec": 3.6,
+      "props": {
+        "src": "runimal-phone-feed-cinematic.png",
+        "title": "Feed The Core",
+        "caption": "captured runs become growth fuel and trigger the evolution pulse",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "slide",
+        "direction": "from-right"
+      },
+      "animation": {
+        "enter": "slide-up"
+      }
+    },
+    {
+      "type": "image",
+      "durationSec": 3.4,
+      "props": {
+        "src": "runimal-phone-collection-detail.png",
+        "title": "Evolution Track",
+        "caption": "each run pushes the companion closer to its next form",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "fade"
+      },
+      "animation": {
+        "enter": "scale-in"
+      }
+    },
+    {
+      "type": "title",
+      "durationSec": 2.4,
+      "props": {
+        "title": "RUN. DECODE. EVOLVE.",
+        "subtitle": "the next run is the next transformation"
+      },
+      "transition": {
+        "type": "fade"
+      },
+      "animation": {
+        "enter": "scale-in"
+      }
+    }
+  ],
+  "audio": []
+}

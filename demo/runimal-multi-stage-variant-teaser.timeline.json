@@ -1,0 +1,144 @@
+{
+  "meta": {
+    "title": "Runimal Multi Stage Variant Teaser",
+    "preset": "Landscape-1080p",
+    "fps": 30,
+    "totalDurationSec": 28,
+    "theme": {
+      "aesthetic": "literal system teaser",
+      "font": {
+        "display": "Chakra Petch",
+        "body": "Noto Sans KR"
+      },
+      "color": {
+        "accent": "#FF6B3D",
+        "bg": "#050913"
+      },
+      "gradient": {
+        "hero": "radial-gradient(circle at 18% 18%, rgba(255,107,61,0.28) 0%, rgba(7,12,23,0.96) 44%, #02040a 100%)"
+      }
+    }
+  },
+  "elements": [
+    {
+      "type": "title",
+      "durationSec": 1.8,
+      "props": {
+        "title": "모든 알 초기화",
+        "subtitle": "초기 상태에서 러닝 결과로 다시 시작"
+      },
+      "transition": { "type": "fade" },
+      "animation": { "enter": "scale-in" }
+    },
+    {
+      "type": "video",
+      "durationSec": 2.8,
+      "props": {
+        "src": "runimal-watch-demo-session.mp4",
+        "title": "시뮬레이션 러닝 1회",
+        "caption": "거리 4.86km · 시간 28:14 · 케이던스 171spm"
+      },
+      "transition": { "type": "slide", "direction": "from-right" },
+      "animation": { "enter": "fade-in" }
+    },
+    {
+      "type": "image",
+      "durationSec": 2.5,
+      "props": {
+        "src": "runimal-phone-phase2-live.png",
+        "title": "첫 성공 러닝으로 ??? 알 생성",
+        "caption": "빈 슬롯 상태의 첫 성공 러닝은 새로운 알을 남김",
+        "fit": "contain"
+      },
+      "transition": { "type": "fade" },
+      "animation": { "enter": "scale-in" }
+    },
+    {
+      "type": "title",
+      "durationSec": 2.2,
+      "props": {
+        "title": "총 5단계 진화",
+        "subtitle": "Trace Egg → Stage 1 → Stage 2 → Ascended → Mythic"
+      },
+      "transition": { "type": "fade" },
+      "animation": { "enter": "slide-up" }
+    },
+    {
+      "type": "image",
+      "durationSec": 2.8,
+      "props": {
+        "src": "runimal-phone-animation-polish.png",
+        "title": "알 부화",
+        "caption": "Trace Egg 상태에서 디코딩 완료 후 첫 개체로 실체화",
+        "fit": "contain"
+      },
+      "transition": { "type": "slide", "direction": "from-right" },
+      "animation": { "enter": "scale-in" }
+    },
+    {
+      "type": "image",
+      "durationSec": 2.8,
+      "props": {
+        "src": "runimal-phone-feed-cinematic.png",
+        "title": "경험치 공급",
+        "caption": "Run Core를 먹여 Stage 1, Stage 2 구간을 차례로 밀어 올림",
+        "fit": "contain"
+      },
+      "transition": { "type": "fade" },
+      "animation": { "enter": "slide-up" }
+    },
+    {
+      "type": "image",
+      "durationSec": 3.0,
+      "props": {
+        "src": "runimal-phone-collection-detail.png",
+        "title": "Ascended → Mythic",
+        "caption": "누적 XP가 높아질수록 상위 단계가 열리고 최종 형태로 진입",
+        "fit": "contain"
+      },
+      "transition": { "type": "slide", "direction": "from-right" },
+      "animation": { "enter": "scale-in" }
+    },
+    {
+      "type": "title",
+      "durationSec": 2.3,
+      "props": {
+        "title": "희귀 변이 5종",
+        "subtitle": "Tempo Surge · Zen Bloom · Summit Heart · Eclipse Mark · Loop Sigil"
+      },
+      "transition": { "type": "fade" },
+      "animation": { "enter": "scale-in" }
+    },
+    {
+      "type": "title",
+      "durationSec": 3.3,
+      "props": {
+        "title": "변이는 러닝 패턴으로 분기",
+        "subtitle": "고케이던스 = Tempo Surge · 안정 페이스 = Zen Bloom · 언덕 = Summit Heart · 야간 = Eclipse Mark · 루프 경로 = Loop Sigil"
+      },
+      "transition": { "type": "slide", "direction": "from-right" },
+      "animation": { "enter": "slide-up" }
+    },
+    {
+      "type": "title",
+      "durationSec": 2.3,
+      "props": {
+        "title": "알 생성 → 부화 → 성장 → 진화 → 변이",
+        "subtitle": "Runimal 핵심 루프는 여기까지 이어짐"
+      },
+      "transition": { "type": "fade" },
+      "animation": { "enter": "scale-in" }
+    },
+    {
+      "type": "title",
+      "durationSec": 2.2,
+      "props": {
+        "title": "RUN. HATCH. EVOLVE. MUTATE.",
+        "subtitle": "러닝 데이터가 최종 형태를 바꾼다"
+      },
+      "transition": { "type": "fade" },
+      "animation": { "enter": "scale-in" }
+    }
+  ],
+  "audio": []
+}

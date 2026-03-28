@@ -1,0 +1,15 @@
+{
+  "status": "succeeded",
+  "outputPath": "/Users/heobella/jaw-bot-2/apps/runimal-apple/demo/render-sim-loop-literal/TimelineVideo.mp4",
+  "compositionId": "TimelineVideo",
+  "preset": "Landscape-1080p",
+  "valid": true,
+  "duration": 22.058667,
+  "codec": "h264",
+  "width": 1920,
+  "height": 1080,
+  "fileSize": 5536510,
+  "errors": [],
+  "renderMs": 150721,
+  "updatedAt": 1774664979345
+}

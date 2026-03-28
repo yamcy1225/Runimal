@@ -3,6 +3,9 @@ import SwiftUI
 
 struct PhoneCollectionView: View {
     let store: PhoneDashboardStore
+    @State private var showResetAlert = false
+    @State private var showDangerZone = false
+    @State private var hatchResult: HatchCinematicPayload?
 
     private let columns = [
         GridItem(.flexible(), spacing: 14),
@@ -29,26 +32,86 @@ struct PhoneCollectionView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 stableCard
-                evolutionCard
-                if let outcome = store.latestFeedOutcome {
-                    PhoneFeedCinematicPanel(
-                        pet: store.featuredCompanion.pet,
-                        outcome: outcome,
-                        onDismiss: store.clearFeedOutcome
-                    )
-                }
-                collectionEffectStage
-                PhonePetDetailPanel(
-                    companion: store.featuredCompanion,
-                    progress: store.evolutionProgress,
-                    activeEffects: store.activeWeeklyEffects,
-                    season: store.weeklyBoard.season
+                stableSection
+                growthSection
+                storageSection
+                shareSection
+                researchSection
+                dangerSection
+            }
+            .padding(20)
+        }
+        .fullScreenCover(item: $hatchResult) { payload in
+            HatchCinematicView(egg: payload.egg, pet: payload.pet) {
+                hatchResult = nil
+            }
+        }
+    }
+
+    private var stableSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            sectionHeader("메인 슬롯", detail: "지금 함께 들고 다닐 동행을 정합니다.")
+            PhoneCompanionRosterPanel(
+                mainSelection: store.mainSelection,
+                mainLabel: store.mainSelectionLabel,
+                mainDetail: store.mainSelectionDetail,
+                companions: store.collection,
+                eggs: store.eggInventory,
+                onSelectPet: store.activateCompanion(_:),
+                onSelectEgg: store.activateEgg(_:),
+                onHatchEgg: handleHatch(_:)
+            )
+            collectionGrid
+        }
+    }
+
+    private var growthSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            sectionHeader("성장", detail: "메인 동행의 진화와 성장만 모아 둡니다.")
+            evolutionCard
+            PhoneMythicApexPanel(
+                pet: store.featuredCompanion.pet,
+                progress: store.evolutionProgress,
+                season: store.weeklyBoard.season
+            )
+            if let outcome = store.latestFeedOutcome {
+                PhoneFeedCinematicPanel(
+                    pet: store.featuredCompanion.pet,
+                    outcome: outcome,
+                    onDismiss: store.clearFeedOutcome
                 )
-                PhoneGrowthDockPanel(
-                    activeCompanion: store.featuredCompanion,
-                    availableRuns: store.availableRunCores,
-                    onFeed: store.feedActiveCompanion(with:)
-                )
+            }
+            PhoneRunCoreDecisionPanel(
+                mainSelection: store.mainSelection,
+                mainLabel: store.mainSelectionLabel,
+                availableRuns: store.availableRunCores,
+                eggOpportunity: store.eggOpportunity(for:),
+                onFeedPet: store.feedActiveCompanion(with:),
+                onForgeEgg: store.forgeEgg(from:),
+                onIncubateEgg: store.incubateMainEgg(with:)
+            )
+            PhonePetDetailPanel(
+                companion: store.featuredCompanion,
+                progress: store.evolutionProgress,
+                activeEffects: store.activeWeeklyEffects,
+                season: store.weeklyBoard.season
+            )
+            growthTimeline
+        }
+    }
+
+    private var storageSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            sectionHeader("보관함", detail: "변이, 효과, 자원을 빠르게 읽습니다.")
+            PhoneRareVariantShowcasePanel(activeVariant: store.featuredCompanion.pet.rareVariant)
+            collectionEffectStage
+            resonanceCompareBoard
+        }
+    }
+
+    private var researchSection: some View {
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: 14) {
                 PhoneSurplusLabPanel(
                     essenceBalance: store.essenceBalance,
                     offers: store.retirableOffers,
@@ -69,54 +132,180 @@ struct PhoneCollectionView: View {
                     onSelectRole: store.selectRole(_:) ,
                     onUnlockNode: store.unlockBuildNode(_:)
                 )
-                resonanceCompareBoard
-                collectionGrid
-                growthTimeline
                 variantCodex
             }
-            .padding(20)
+            .padding(.top, 12)
+        } label: {
+            sectionHeader("연구실", detail: "고급 성장과 제작 기록을 펼쳐 봅니다.")
+        }
+        .tint(.white)
+    }
+
+    private var shareSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            sectionHeader("공유", detail: "가장 자랑할 만한 순간만 따로 모았습니다.")
+            PhoneMilestoneSharePanel(
+                featuredCompanion: store.featuredCompanion,
+                collection: store.collection,
+                progress: store.evolutionProgress,
+                season: store.weeklyBoard.season
+            )
+        }
+    }
+
+    private func sectionHeader(_ title: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption.weight(.black))
+                .tracking(1.2)
+                .foregroundStyle(store.mainAccentColor.opacity(0.9))
+            Text(detail)
+                .font(.headline.weight(.black))
+                .foregroundStyle(.white)
+            Text(title == "메인 슬롯" ? "메인 한 칸만 먼저 고릅니다." : title == "성장" ? "먹이기와 진화만 바로 이어집니다." : title == "보관함" ? "많이 읽지 않아도 상태가 보이게 정리했습니다." : "펼쳤을 때만 세부 기능이 보입니다.")
+                .font(.footnote)
+                .foregroundStyle(.white.opacity(0.6))
         }
     }
 
     private var stableCard: some View {
-        GameSurface(title: "Active Stable") {
+        GameSurface(title: "메인 동행체") {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .center, spacing: 16) {
-                    PixelPetView(pet: store.featuredCompanion.pet, pixelSize: 10, seasonalLayers: store.seasonalLayers)
+                    ZStack {
+                        Circle()
+                            .fill(store.mainAccentColor.opacity(0.16))
+                            .frame(width: 104, height: 104)
+                            .blur(radius: 10)
+
+                        if store.mainSelection?.kind == .egg {
+                            TraceEggView(
+                                accent: store.mainAccentColor,
+                                shell: store.mainEgg?.shell,
+                                pixelSize: 10,
+                                cracked: store.mainEgg?.readyToHatch == true,
+                                resonance: store.mainEggResonance
+                            )
+                        } else {
+                            PixelPetView(pet: store.featuredCompanion.pet, pixelSize: 10, seasonalLayers: store.seasonalLayers)
+                        }
+                    }
+                    .frame(width: 110, height: 110)
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(store.featuredCompanion.pet.displayName)
-                            .font(.headline)
+                        Text(store.mainSelectionLabel)
+                            .font(.title2.weight(.black))
                             .foregroundStyle(.white)
-                        Text(store.featuredCompanion.headline)
-                            .font(.subheadline)
+                        Text(store.mainSelectionDetail)
+                            .font(.footnote)
                             .foregroundStyle(.white.opacity(0.72))
 
-                        HStack {
-                            TraitChip(label: "Lv.\(store.featuredCompanion.level)", accent: store.featuredCompanion.pet.accentColor)
-                            TraitChip(label: "Bond \(store.featuredCompanion.bond)", accent: .white.opacity(0.28))
-                            TraitChip(label: "ACTIVE", accent: .green.opacity(0.72))
+                        HStack(spacing: 8) {
+                            if store.mainSelection?.kind == .egg, let egg = store.mainEgg {
+                                TraitChip(label: egg.shell.displayLabel, accent: egg.shell.accentColor)
+                                TraitChip(label: egg.readyToHatch ? "디코딩 준비" : "스캔 중", accent: .orange.opacity(0.72))
+                            } else {
+                                TraitChip(label: "Lv.\(store.featuredCompanion.level)", accent: store.featuredCompanion.pet.accentColor)
+                                TraitChip(label: "유대 \(store.featuredCompanion.bond)", accent: .white.opacity(0.28))
+                            }
                         }
                     }
                 }
 
-                Text("최근 러닝 패턴을 가장 잘 흡수한 주력 펫입니다. 홈의 추천 러닝과 연동해 성장 루프를 유지합니다.")
-                    .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.72))
+                HStack(spacing: 12) {
+                    RunimalMetricTile(
+                        icon: "sparkles",
+                        title: "알",
+                        value: "\(store.eggInventory.count)",
+                        accent: .mint
+                    )
+                    RunimalMetricTile(
+                        icon: "shippingbox.fill",
+                        title: "러닝 코어",
+                        value: "\(store.availableRunCores.count)",
+                        accent: store.mainAccentColor
+                    )
+                    RunimalMetricTile(
+                        icon: "hexagon.fill",
+                        title: "에센스",
+                        value: "\(store.essenceBalance)",
+                        accent: .orange
+                    )
+                }
 
                 if store.activeWeeklyEffects.isEmpty == false {
-                    HStack(spacing: 8) {
-                        ForEach(store.activeWeeklyEffects) { effect in
-                            TraitChip(label: effect.title, accent: store.featuredCompanion.pet.accentColor.opacity(0.78))
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(store.activeWeeklyEffects) { effect in
+                                TraitChip(label: effect.title, accent: store.featuredCompanion.pet.accentColor.opacity(0.78))
+                            }
                         }
                     }
+                }
+            }
+        }
+        .alert("모든 기록을 초기화할까요?", isPresented: $showResetAlert) {
+            Button("초기화", role: .destructive) {
+                store.resetProgress()
+            }
+            Button("취소", role: .cancel) {}
+        } message: {
+            Text("보유 펫, 알, 성장 기록, 주간 보상 상태를 초기 씨드 상태로 되돌립니다.")
+        }
+    }
+
+    private var dangerSection: some View {
+        GameSurface(title: "위험 구역", accent: .red.opacity(0.82), eyebrow: "신중하게 사용") {
+            VStack(alignment: .leading, spacing: 12) {
+                Button {
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                        showDangerZone.toggle()
+                    }
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("초기화 메뉴 열기")
+                                .font(.headline.weight(.black))
+                                .foregroundStyle(.white)
+                            Text("펼친 뒤에만 리셋 버튼이 보입니다.")
+                                .font(.footnote)
+                                .foregroundStyle(.white.opacity(0.62))
+                        }
+
+                        Spacer()
+
+                        Image(systemName: showDangerZone ? "chevron.up.circle.fill" : "chevron.down.circle.fill")
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(.red.opacity(0.92))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                if showDangerZone {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("모든 동행체, 알, 성장 기록을 초기 상태로 되돌립니다. 되돌리기 어렵기 때문에 마지막 구역에 분리했습니다.")
+                            .font(.footnote)
+                            .foregroundStyle(.white.opacity(0.68))
+
+                        Button(role: .destructive) {
+                            showResetAlert = true
+                        } label: {
+                            Label("처음부터 다시 시작", systemImage: "arrow.counterclockwise")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.red.opacity(0.9))
+                    }
+                    .transition(.move(edge: .top).combined(with: .opacity))
                 }
             }
         }
     }
 
     private var evolutionCard: some View {
-        GameSurface(title: "Evolution Pulse") {
+        GameSurface(title: "진화 진행도") {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Text(store.evolutionProgress.stageLabel)
@@ -136,7 +325,7 @@ struct PhoneCollectionView: View {
     }
 
     private var collectionEffectStage: some View {
-        GameSurface(title: "Effect Stage") {
+        GameSurface(title: "활성 효과") {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .center, spacing: 14) {
                     ZStack {
@@ -153,12 +342,12 @@ struct PhoneCollectionView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(store.activeWeeklyEffects.isEmpty ? "No active weekly effects" : "Current boost chain")
+                        Text(store.activeWeeklyEffects.isEmpty ? "아직 활성화된 효과가 없어요" : "현재 적용 중인 효과")
                             .font(.headline)
                             .foregroundStyle(.white)
                         Text(store.activeWeeklyEffects.isEmpty
-                             ? "주간 보상을 수령하면 이 주력 펫의 성장/진화/변이 판정이 여기서 바로 반영됩니다."
-                             : "현재 활성 효과가 주력 펫의 XP, 변이, 진화 속도에 직접 연결되어 있습니다.")
+                             ? "주간 보상을 받으면 이곳에 성장 효과가 쌓입니다."
+                             : "활성 효과가 메인 동행체 성장에 직접 반영됩니다.")
                             .font(.footnote)
                             .foregroundStyle(.white.opacity(0.72))
                     }
@@ -185,43 +374,64 @@ struct PhoneCollectionView: View {
 
     private var collectionGrid: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Field Collection")
+            Text("보유한 동행체")
                 .font(.headline)
                 .foregroundStyle(.white)
 
             LazyVGrid(columns: columns, spacing: 14) {
                 ForEach(store.collection) { entry in
-                    GameSurface {
+                    GameSurface(accent: entry.pet.accentColor, eyebrow: entry.id == store.featuredCompanion.id ? "메인 슬롯" : "보유 중") {
                         VStack(alignment: .leading, spacing: 10) {
-                            PixelPetView(
-                                pet: entry.pet,
-                                pixelSize: 8,
-                                seasonalLayers: entry.id == store.featuredCompanion.id ? store.seasonalLayers : []
+                            ZStack(alignment: .topTrailing) {
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    .fill(entry.pet.accentColor.opacity(0.08))
+                                    .frame(maxWidth: .infinity)
+
+                                PixelPetView(
+                                    pet: entry.pet,
+                                    pixelSize: 8,
+                                    seasonalLayers: entry.id == store.featuredCompanion.id ? store.seasonalLayers : []
+                                )
+
+                                if entry.id == store.featuredCompanion.id {
+                                    RunimalSignalBadge(icon: "star.fill", label: "메인", accent: .green)
+                                }
+                            }
+                            .frame(height: 108)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    .stroke(entry.pet.accentColor.opacity(0.24), lineWidth: 1)
                             )
 
-                            Text(entry.pet.displayName)
-                                .font(.subheadline.weight(.bold))
-                                .foregroundStyle(.white)
-                            Text(entry.pet.subtitle)
-                                .font(.caption)
-                                .foregroundStyle(.white.opacity(0.72))
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(entry.pet.displayName)
+                                    .font(.subheadline.weight(.black))
+                                    .foregroundStyle(.white)
+                                Text(entry.pet.subtitle)
+                                    .font(.caption2)
+                                    .foregroundStyle(entry.pet.accentColor.opacity(0.88))
+                                    .lineLimit(1)
+                            }
 
-                            HStack {
+                            HStack(spacing: 6) {
                                 TraitChip(label: "Lv.\(entry.level)", accent: entry.pet.accentColor)
                                 TraitChip(label: "\(entry.totalDistanceKm.formatted(.number.precision(.fractionLength(1))))km", accent: .white.opacity(0.24))
-                                if entry.id == store.featuredCompanion.id {
-                                    TraitChip(label: "ACTIVE", accent: .green.opacity(0.7))
-                                } else if store.activeWeeklyEffects.isEmpty == false {
-                                    TraitChip(label: "READY", accent: .white.opacity(0.18))
+                                if let rareVariant = entry.pet.rareVariant {
+                                    RunimalSignalBadge(
+                                        icon: "sparkles",
+                                        label: RareVariantMeta.badges[rareVariant] ?? "희귀",
+                                        accent: .orange.opacity(0.76)
+                                    )
                                 }
                             }
 
-                            Text(entry.headline)
-                                .font(.caption2)
-                                .foregroundStyle(.white.opacity(0.68))
-                                .lineLimit(2)
+                            RunimalProgressBar(
+                                progress: min(Double(entry.level) / 12.0, 1.0),
+                                accent: entry.pet.accentColor,
+                                height: 7
+                            )
 
-                            Button(entry.id == store.featuredCompanion.id ? "Selected" : "Set Active") {
+                            Button(entry.id == store.featuredCompanion.id ? "선택됨" : "메인으로") {
                                 store.activateCompanion(entry.id)
                             }
                             .buttonStyle(.bordered)
@@ -235,7 +445,7 @@ struct PhoneCollectionView: View {
     }
 
     private var resonanceCompareBoard: some View {
-        GameSurface(title: "Resonance Board") {
+        GameSurface(title: "궁합 보드") {
             VStack(alignment: .leading, spacing: 12) {
                 if resonanceBoard.isEmpty {
                     Text("비교할 컬렉션 데이터가 아직 없습니다.")
@@ -252,6 +462,7 @@ struct PhoneCollectionView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
                                     Text(item.companion.pet.displayName)
+                                        .font(.subheadline.weight(.black))
                                         .foregroundStyle(.white)
                                     Spacer()
                                     TraitChip(
@@ -260,12 +471,14 @@ struct PhoneCollectionView: View {
                                     )
                                 }
 
-                                Text(item.headline)
-                                    .font(.caption)
-                                    .foregroundStyle(.white.opacity(0.72))
+                                RunimalProgressBar(
+                                    progress: min(Double(item.totalScore) / 100.0, 1.0),
+                                    accent: item.companion.pet.accentColor,
+                                    height: 7
+                                )
 
                                 if let topEffectTitle = item.topEffectTitle {
-                                    Text("Top effect · \(topEffectTitle)")
+                                    Text("가장 잘 맞는 효과 · \(topEffectTitle)")
                                         .font(.caption2)
                                         .foregroundStyle(.white.opacity(0.56))
                                 }
@@ -278,7 +491,7 @@ struct PhoneCollectionView: View {
     }
 
     private var variantCodex: some View {
-        GameSurface(title: "Mutation Codex") {
+        GameSurface(title: "변이 도감") {
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(store.variantCodex) { entry in
                     HStack(alignment: .top, spacing: 12) {
@@ -293,7 +506,7 @@ struct PhoneCollectionView: View {
                                     .foregroundStyle(.white)
                                 Spacer()
                                 TraitChip(
-                                    label: entry.discovered ? "FOUND" : "LOCKED",
+                                    label: entry.discovered ? "발견" : "잠김",
                                     accent: entry.discovered ? .green : .white.opacity(0.2)
                                 )
                             }
@@ -312,7 +525,7 @@ struct PhoneCollectionView: View {
     }
 
     private var growthTimeline: some View {
-        GameSurface(title: "Growth Timeline") {
+        GameSurface(title: "성장 기록") {
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(store.recentJournal.prefix(4)) { entry in
                     HStack(alignment: .top, spacing: 12) {
@@ -332,5 +545,20 @@ struct PhoneCollectionView: View {
                 }
             }
         }
+    }
+
+    private func handleHatch(_ eggID: String) {
+        guard let egg = store.eggInventory.first(where: { $0.id == eggID }) else { return }
+        guard let pet = store.hatchEgg(eggID) else { return }
+        hatchResult = HatchCinematicPayload(egg: egg, pet: pet)
+    }
+}
+
+private struct HatchCinematicPayload: Identifiable {
+    let egg: EggInventoryEntry
+    let pet: PetCollectionEntry
+
+    var id: String {
+        egg.id
     }
 }

@@ -1,0 +1,198 @@
+{
+  "meta": {
+    "title": "Runimal Simulated Hatch Evolution",
+    "preset": "Landscape-1080p",
+    "fps": 30,
+    "totalDurationSec": 24,
+    "theme": {
+      "aesthetic": "high-drama digital arc",
+      "font": {
+        "display": "Chakra Petch",
+        "body": "Outfit"
+      },
+      "color": {
+        "accent": "#FF5C36",
+        "bg": "#04070D"
+      },
+      "gradient": {
+        "hero": "radial-gradient(circle at 18% 18%, rgba(255,92,54,0.36) 0%, rgba(9,15,28,0.95) 44%, #02040a 100%)"
+      }
+    }
+  },
+  "elements": [
+    {
+      "type": "title",
+      "durationSec": 2.2,
+      "props": {
+        "title": "VAULT RESET",
+        "subtitle": "all eggs cleared. one new run can restart the field."
+      },
+      "transition": {
+        "type": "fade"
+      },
+      "animation": {
+        "enter": "scale-in"
+      }
+    },
+    {
+      "type": "stat",
+      "durationSec": 2.2,
+      "props": {
+        "title": "Reset State",
+        "stats": [
+          {
+            "value": 0,
+            "label": "active eggs",
+            "trend": "neutral"
+          },
+          {
+            "value": 0,
+            "label": "stored run cores",
+            "trend": "neutral"
+          },
+          {
+            "value": 1,
+            "label": "next run needed",
+            "trend": "up"
+          }
+        ]
+      },
+      "transition": {
+        "type": "fade"
+      },
+      "animation": {
+        "enter": "slide-up"
+      }
+    },
+    {
+      "type": "video",
+      "durationSec": 3.2,
+      "props": {
+        "src": "runimal-watch-demo-session.mp4",
+        "title": "SIM RUN // 4.86 KM",
+        "caption": "28:14 · 171 spm · stable signal · first successful run returns a hidden egg",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "slide",
+        "direction": "from-right"
+      },
+      "animation": {
+        "enter": "fade-in"
+      }
+    },
+    {
+      "type": "image",
+      "durationSec": 3.2,
+      "props": {
+        "src": "runimal-phone-phase2-live.png",
+        "title": "Unknown Egg Acquired",
+        "caption": "specimen ??? appears after the first successful return",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "fade"
+      },
+      "animation": {
+        "enter": "scale-in"
+      }
+    },
+    {
+      "type": "stat",
+      "durationSec": 2.6,
+      "props": {
+        "title": "SIM RUN // 7.24 KM",
+        "stats": [
+          {
+            "value": 42.31,
+            "label": "minutes",
+            "trend": "up",
+            "decimals": 2
+          },
+          {
+            "value": 176,
+            "label": "cadence",
+            "suffix": " spm",
+            "trend": "up"
+          },
+          {
+            "value": 1,
+            "label": "decode ready",
+            "trend": "up"
+          }
+        ]
+      },
+      "transition": {
+        "type": "slide",
+        "direction": "from-right"
+      },
+      "animation": {
+        "enter": "slide-up"
+      }
+    },
+    {
+      "type": "image",
+      "durationSec": 3.2,
+      "props": {
+        "src": "runimal-phone-animation-polish.png",
+        "title": "Decode Burst",
+        "caption": "interference, flash, and hatch energy collapse into a living companion",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "fade"
+      },
+      "animation": {
+        "enter": "scale-in"
+      }
+    },
+    {
+      "type": "image",
+      "durationSec": 3.2,
+      "props": {
+        "src": "runimal-phone-feed-cinematic.png",
+        "title": "XP Absorption",
+        "caption": "simulated run cores are consumed as direct growth fuel",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "slide",
+        "direction": "from-right"
+      },
+      "animation": {
+        "enter": "slide-up"
+      }
+    },
+    {
+      "type": "image",
+      "durationSec": 3.0,
+      "props": {
+        "src": "runimal-phone-collection-detail.png",
+        "title": "Evolution Track Unlocked",
+        "caption": "stage rises, route opens, and the next form becomes visible",
+        "fit": "contain"
+      },
+      "transition": {
+        "type": "fade"
+      },
+      "animation": {
+        "enter": "scale-in"
+      }
+    },
+    {
+      "type": "title",
+      "durationSec": 1.2,
+      "props": {
+        "title": "RUN. HATCH. EVOLVE.",
+        "subtitle": "every run becomes a transformation"
+      },
+      "transition": {
+        "type": "fade"
+      },
+      "animation": {
+        "enter": "scale-in"
+      }
+    }
+  ],
+  "audio": []
+}

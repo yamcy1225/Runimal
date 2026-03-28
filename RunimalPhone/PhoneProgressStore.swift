@@ -8,8 +8,12 @@ final class PhoneProgressStore {
     private enum Keys {
         static let journal = "runimal.phone.journal"
         static let completedRuns = "runimal.phone.completedRuns"
+        static let ownedCompanions = "runimal.phone.ownedCompanions"
+        static let eggInventory = "runimal.phone.eggInventory"
+        static let unlockedEggAchievementIDs = "runimal.phone.unlockedEggAchievementIDs"
         static let claimedWeeklyRewards = "runimal.phone.claimedWeeklyRewards"
         static let activeCompanionID = "runimal.phone.activeCompanionID"
+        static let mainCompanionSelection = "runimal.phone.mainCompanionSelection"
         static let growthRecords = "runimal.phone.growthRecords"
         static let retiredCompanionIDs = "runimal.phone.retiredCompanionIDs"
         static let essenceBalance = "runimal.phone.essenceBalance"
@@ -29,8 +33,12 @@ final class PhoneProgressStore {
     private let defaults: UserDefaults
     var journal: [RunJournalEntry] = []
     var completedRuns: [CompletedRunRecord] = []
+    var ownedCompanions: [PetCollectionEntry] = []
+    var eggInventory: [EggInventoryEntry] = []
+    var unlockedEggAchievementIDs: [String] = []
     var claimedWeeklyRewards: [String] = []
     var activeCompanionID: String?
+    var mainCompanionSelection: MainCompanionSelection?
     var growthRecords: [CompanionGrowthRecord] = []
     var retiredCompanionIDs: [String] = []
     var essenceBalance = 0
@@ -45,6 +53,7 @@ final class PhoneProgressStore {
     var conflictPolicy: SnapshotConflictPolicy = .merged
     var verificationRecords: [DeviceVerificationRecord] = []
     var duplicatePriority: SnapshotDuplicatePriority = .newestWins
+    var lastSanctuaryReward: SanctuaryRewardEvent?
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -71,8 +80,26 @@ final class PhoneProgressStore {
             completedRuns = []
         }
 
+        if let data = defaults.data(forKey: Keys.ownedCompanions) {
+            ownedCompanions = (try? JSONDecoder().decode([PetCollectionEntry].self, from: data)) ?? []
+        } else {
+            ownedCompanions = []
+        }
+
+        if let data = defaults.data(forKey: Keys.eggInventory) {
+            eggInventory = (try? JSONDecoder().decode([EggInventoryEntry].self, from: data)) ?? []
+        } else {
+            eggInventory = []
+        }
+
+        unlockedEggAchievementIDs = defaults.stringArray(forKey: Keys.unlockedEggAchievementIDs) ?? []
         claimedWeeklyRewards = defaults.stringArray(forKey: Keys.claimedWeeklyRewards) ?? []
         activeCompanionID = defaults.string(forKey: Keys.activeCompanionID)
+        if let data = defaults.data(forKey: Keys.mainCompanionSelection) {
+            mainCompanionSelection = try? JSONDecoder().decode(MainCompanionSelection.self, from: data)
+        } else {
+            mainCompanionSelection = nil
+        }
 
         if let data = defaults.data(forKey: Keys.growthRecords) {
             do {
@@ -128,6 +155,10 @@ final class PhoneProgressStore {
     }
 
     func seedIfNeeded(from summaries: [RunSummary]) {
+        if ownedCompanions.isEmpty {
+            ownedCompanions = RunimalGameEngine.buildCollection(from: summaries)
+        }
+
         if journal.isEmpty {
             let seededEntries = summaries.enumerated().map { index, summary in
                 let reward = RunimalGameEngine.evaluateReward(for: summary)
@@ -171,11 +202,17 @@ final class PhoneProgressStore {
             ]
         }
 
+        if mainCompanionSelection == nil, let firstCompanion = ownedCompanions.first {
+            mainCompanionSelection = MainCompanionSelection(kind: .pet, targetID: firstCompanion.id)
+            activeCompanionID = activeCompanionID ?? firstCompanion.id
+        }
+
         save()
     }
 
     func activateCompanion(id: String) {
         activeCompanionID = id
+        mainCompanionSelection = MainCompanionSelection(kind: .pet, targetID: id)
         save()
     }
 
@@ -189,7 +226,8 @@ final class PhoneProgressStore {
 
     func unassignedRuns(from runs: [CompletedRunRecord]) -> [CompletedRunRecord] {
         let assigned = Set(growthRecords.flatMap(\.assignedRunIDs))
-        return runs.filter { !assigned.contains($0.id) }
+        let eggConsumed = Set(eggInventory.flatMap { [$0.sourceRunID] + $0.incubationRunIDs })
+        return runs.filter { !assigned.contains($0.id) && !eggConsumed.contains($0.id) }
     }
 
     @discardableResult
@@ -224,7 +262,21 @@ final class PhoneProgressStore {
             run: run,
             companion: companion
         )
-        let gainedExperience = run.reward.experience + bonusExperience + forgeBonus.bonus + buildBonus
+        let rawExperience = run.reward.experience + bonusExperience + forgeBonus.bonus + buildBonus
+        let starterStageGuarantee = (currentRecord?.feedCount ?? 0) == 0 &&
+            (currentRecord?.totalExperience ?? 0) >= 100 &&
+            beforeProgress.stageLabel == "Trace Egg"
+        let stageLock = RunimalRewardPulseEngine.stageLock(
+            currentProgress: beforeProgress,
+            proposedExperience: rawExperience
+        )
+        let gainedExperience: Int
+
+        if starterStageGuarantee {
+            gainedExperience = max(rawExperience + stageLock.bonusExperience, max(0, 160 - (currentRecord?.totalExperience ?? 0)))
+        } else {
+            gainedExperience = rawExperience + stageLock.bonusExperience
+        }
 
         let updated = CompanionGrowthRecord(
             companionID: companion.id,
@@ -249,6 +301,7 @@ final class PhoneProgressStore {
             runID: run.id,
             coreLabel: run.reward.coreLabel,
             gainedExperience: gainedExperience,
+            bonusLabels: stageLock.bonusLabels,
             beforeProgress: beforeProgress,
             afterProgress: afterProgress,
             stageAdvanced: beforeProgress.stageLabel != afterProgress.stageLabel
@@ -283,12 +336,53 @@ final class PhoneProgressStore {
     }
 
     func append(completedRun: CompletedRunRecord) {
-        if completedRuns.contains(where: { $0.id == completedRun.id }) {
-            return
-        }
-
+        completedRuns.removeAll(where: { $0.id == completedRun.id })
         completedRuns.insert(completedRun, at: 0)
         completedRuns = Array(completedRuns.prefix(12))
+        save()
+    }
+
+    func removeImportedExternalRuns() {
+        let importedIDs = Set(
+            completedRuns
+                .filter { $0.source.hasPrefix("healthkit:") || $0.source.hasPrefix("fit:") }
+                .map(\.id)
+        )
+        guard !importedIDs.isEmpty else { return }
+
+        completedRuns.removeAll { importedIDs.contains($0.id) }
+        journal.removeAll { importedIDs.contains($0.id) }
+        growthRecords = growthRecords.map { record in
+            CompanionGrowthRecord(
+                companionID: record.companionID,
+                totalExperience: record.totalExperience,
+                feedCount: record.feedCount,
+                assignedRunIDs: record.assignedRunIDs.filter { !importedIDs.contains($0) },
+                lastFedAt: record.lastFedAt
+            )
+        }
+        eggInventory.removeAll { importedIDs.contains($0.sourceRunID) }
+        eggInventory = eggInventory.map { egg in
+            EggInventoryEntry(
+                id: egg.id,
+                shell: egg.shell,
+                title: egg.title,
+                createdAt: egg.createdAt,
+                sourceRunID: egg.sourceRunID,
+                storedExperience: egg.storedExperience,
+                hatchThreshold: egg.hatchThreshold,
+                incubationRunIDs: egg.incubationRunIDs.filter { !importedIDs.contains($0) },
+                unlockedAchievementIDs: egg.unlockedAchievementIDs,
+                starterBoosted: egg.starterBoosted
+            )
+        }
+
+        if case .egg = mainCompanionSelection?.kind,
+           let targetID = mainCompanionSelection?.targetID,
+           eggInventory.contains(where: { $0.id == targetID }) == false {
+            mainCompanionSelection = activeCompanionID.map { MainCompanionSelection(kind: .pet, targetID: $0) }
+        }
+
         save()
     }
 
@@ -451,8 +545,12 @@ final class PhoneProgressStore {
             originDeviceID: deviceID,
             journal: journal,
             completedRuns: completedRuns,
+            ownedCompanions: ownedCompanions,
+            eggInventory: eggInventory,
+            unlockedEggAchievementIDs: unlockedEggAchievementIDs,
             claimedWeeklyRewards: claimedWeeklyRewards,
             activeCompanionID: activeCompanionID,
+            mainCompanionSelection: mainCompanionSelection,
             growthRecords: growthRecords,
             retiredCompanionIDs: retiredCompanionIDs,
             essenceBalance: essenceBalance,
@@ -461,15 +559,20 @@ final class PhoneProgressStore {
             buildStates: buildStates,
             claimedSeasonRewardIDs: claimedSeasonRewardIDs,
             claimedRaidRewardIDs: claimedRaidRewardIDs,
-            raidShardBalance: raidShardBalance
+            raidShardBalance: raidShardBalance,
+            raidContributionTotal: completedRuns.reduce(0) { $0 + $1.raidContribution }
         )
     }
 
     func restore(from snapshot: RunimalProgressSnapshot) {
         journal = snapshot.journal
         completedRuns = snapshot.completedRuns
+        ownedCompanions = snapshot.ownedCompanions
+        eggInventory = snapshot.eggInventory
+        unlockedEggAchievementIDs = snapshot.unlockedEggAchievementIDs
         claimedWeeklyRewards = snapshot.claimedWeeklyRewards
         activeCompanionID = snapshot.activeCompanionID
+        mainCompanionSelection = snapshot.mainCompanionSelection
         growthRecords = snapshot.growthRecords
         retiredCompanionIDs = snapshot.retiredCompanionIDs
         essenceBalance = snapshot.essenceBalance
@@ -543,7 +646,33 @@ final class PhoneProgressStore {
         return true
     }
 
-    private func save() {
+    func resetProgress(from summaries: [RunSummary]) {
+        journal = []
+        completedRuns = []
+        ownedCompanions = []
+        eggInventory = []
+        unlockedEggAchievementIDs = []
+        claimedWeeklyRewards = []
+        activeCompanionID = nil
+        mainCompanionSelection = nil
+        growthRecords = []
+        retiredCompanionIDs = []
+        essenceBalance = 0
+        overdriveCharges = 0
+        seasonSigils = 0
+        buildStates = []
+        claimedSeasonRewardIDs = []
+        claimedRaidRewardIDs = []
+        raidShardBalance = 0
+        lastRaidResolution = nil
+        verificationRecords = []
+        conflictPolicy = .merged
+        duplicatePriority = .newestWins
+        save()
+        seedIfNeeded(from: summaries)
+    }
+
+    func save() {
         do {
             let journalData = try JSONEncoder().encode(journal)
             defaults.set(journalData, forKey: Keys.journal)
@@ -558,8 +687,26 @@ final class PhoneProgressStore {
             defaults.removeObject(forKey: Keys.completedRuns)
         }
 
+        if let data = try? JSONEncoder().encode(ownedCompanions) {
+            defaults.set(data, forKey: Keys.ownedCompanions)
+        } else {
+            defaults.removeObject(forKey: Keys.ownedCompanions)
+        }
+
+        if let data = try? JSONEncoder().encode(eggInventory) {
+            defaults.set(data, forKey: Keys.eggInventory)
+        } else {
+            defaults.removeObject(forKey: Keys.eggInventory)
+        }
+
+        defaults.set(unlockedEggAchievementIDs, forKey: Keys.unlockedEggAchievementIDs)
         defaults.set(claimedWeeklyRewards, forKey: Keys.claimedWeeklyRewards)
         defaults.set(activeCompanionID, forKey: Keys.activeCompanionID)
+        if let data = try? JSONEncoder().encode(mainCompanionSelection) {
+            defaults.set(data, forKey: Keys.mainCompanionSelection)
+        } else {
+            defaults.removeObject(forKey: Keys.mainCompanionSelection)
+        }
 
         do {
             let growthRecordData = try JSONEncoder().encode(growthRecords)

@@ -14,6 +14,14 @@ public enum RunimalGameEngine {
             "\(summary.aura.rawValue) 시간대 러닝으로 \(element.rawValue) 속성이 부여되었습니다.",
         ]
 
+        if summary.environmentCondition != .unknown {
+            explanation.append("\(environmentLabel(summary.environmentCondition)) 환경 신호가 디코딩 결과에 섞였습니다.")
+        }
+
+        if summary.rareEventCompleted {
+            explanation.append("러닝 중 돌발 목표를 달성해 희귀 변이 공명이 상승했습니다.")
+        }
+
         if let rareVariant {
             explanation.append(describe(rareVariant: rareVariant))
         }
@@ -47,18 +55,23 @@ public enum RunimalGameEngine {
         generatePet(from: summarize(snapshot: snapshot), claimedRewardIDs: claimedRewardIDs)
     }
 
-    public static func summarize(snapshot: LiveRunSnapshot) -> RunSummary {
+    public static func summarize(snapshot: LiveRunSnapshot, preservingRecordedMetrics: Bool = false) -> RunSummary {
         let distanceKm = snapshot.distanceMeters / 1000
         let paceSeconds = snapshot.averagePaceSeconds ?? inferredPaceSeconds(from: snapshot)
+        let normalizedDistanceKm = preservingRecordedMetrics ? max(distanceKm, 0.01) : max(distanceKm, 0.2)
+        let normalizedPaceSeconds = preservingRecordedMetrics ? max(paceSeconds, 1) : max(paceSeconds, 260)
+        let normalizedCadence = preservingRecordedMetrics ? max(snapshot.cadence ?? 0, 0) : max(snapshot.cadence ?? 170, 120)
 
         return RunSummary(
-            distanceKm: max(distanceKm, 0.2),
-            averagePaceSeconds: max(paceSeconds, 260),
-            cadence: max(snapshot.cadence ?? 170, 120),
+            distanceKm: normalizedDistanceKm,
+            averagePaceSeconds: normalizedPaceSeconds,
+            cadence: normalizedCadence,
             elevationGainM: max(snapshot.elevationGainM, 0),
             variability: distanceKm >= 3 ? 0.12 : 0.22,
             aura: .day,
-            shape: .freeform
+            shape: .freeform,
+            environmentCondition: .unknown,
+            rareEventCompleted: false
         )
     }
 
@@ -135,19 +148,36 @@ public enum RunimalGameEngine {
         let pet = generatePet(from: summary, claimedRewardIDs: claimedRewardIDs)
         let completedQuestCount = evaluateRunQuests(for: summary, claimedRewardIDs: claimedRewardIDs).filter(\.completed).count
         let baseExperience = max(40, Int(summary.distanceKm * 14) + completedQuestCount * 18)
-        let experience = modifiedExperience(baseExperience: baseExperience, claimedRewardIDs: claimedRewardIDs)
+        let pulse = RunimalRewardPulseEngine.runPulse(for: summary, completedQuestCount: completedQuestCount)
+        let experience = modifiedExperience(
+            baseExperience: baseExperience + pulse.bonusExperience,
+            claimedRewardIDs: claimedRewardIDs
+        )
+        let flavorText = rewardFlavorText(for: pet, completedQuestCount: completedQuestCount, claimedRewardIDs: claimedRewardIDs)
+        let enrichedFlavorText = ([flavorText] + pulse.flavorFragments).joined(separator: " ")
 
         return RunRewardSummary(
             pet: pet,
             coreLabel: rewardCoreLabel(for: pet),
             experience: experience,
             completedQuestCount: completedQuestCount,
-            flavorText: rewardFlavorText(for: pet, completedQuestCount: completedQuestCount, claimedRewardIDs: claimedRewardIDs)
+            flavorText: enrichedFlavorText,
+            bonusLabels: pulse.bonusLabels
         )
     }
 
     public static func evaluateReward(for snapshot: LiveRunSnapshot, claimedRewardIDs: Set<String> = []) -> RunRewardSummary {
         evaluateReward(for: summarize(snapshot: snapshot), claimedRewardIDs: claimedRewardIDs)
+    }
+
+    public static func evaluateImportedWorkoutReward(
+        for snapshot: LiveRunSnapshot,
+        claimedRewardIDs: Set<String> = []
+    ) -> RunRewardSummary {
+        evaluateReward(
+            for: summarize(snapshot: snapshot, preservingRecordedMetrics: true),
+            claimedRewardIDs: claimedRewardIDs
+        )
     }
 
     public static func applyWeeklyRewardModifiers(
@@ -161,7 +191,8 @@ public enum RunimalGameEngine {
             coreLabel: reward.coreLabel,
             experience: modifiedExperience(baseExperience: reward.experience, claimedRewardIDs: claimedRewardIDs),
             completedQuestCount: reward.completedQuestCount,
-            flavorText: reward.flavorText
+            flavorText: reward.flavorText,
+            bonusLabels: reward.bonusLabels
         )
     }
 
@@ -266,9 +297,13 @@ public enum RunimalGameEngine {
         averageHeartRate: Double?,
         route: [RoutePoint],
         source: String,
+        sourceLabel: String? = nil,
+        environmentCondition: EnvironmentCondition = .unknown,
+        rareEventCompleted: Bool = false,
         id: String = UUID().uuidString
     ) -> CompletedRunRecord {
-        CompletedRunRecord(
+        let raidContribution = max((reward.experience / 12) + reward.completedQuestCount, 1)
+        return CompletedRunRecord(
             id: id,
             startedAt: startedAt,
             endedAt: endedAt,
@@ -280,7 +315,11 @@ public enum RunimalGameEngine {
             elevationGainM: snapshot.elevationGainM,
             reward: reward,
             route: route,
-            source: source
+            source: source,
+            sourceLabel: sourceLabel,
+            raidContribution: raidContribution,
+            environmentCondition: environmentCondition,
+            rareEventCompleted: rareEventCompleted
         )
     }
 
@@ -313,6 +352,17 @@ public enum RunimalGameEngine {
             return .earth
         }
 
+        switch summary.environmentCondition {
+        case .rain:
+            return .leaf
+        case .snow:
+            return .lunar
+        case .heat:
+            return .flame
+        default:
+            break
+        }
+
         switch summary.aura {
         case .dawn: return .light
         case .day: return .flame
@@ -322,6 +372,16 @@ public enum RunimalGameEngine {
     }
 
     private static func determineRareVariant(from summary: RunSummary, claimedRewardIDs: Set<String>) -> RareVariant? {
+        if summary.rareEventCompleted {
+            if summary.averagePaceSeconds <= 330 || summary.cadence >= 170 {
+                return .tempoSurge
+            }
+
+            if summary.distanceKm >= 6 {
+                return .loopSigil
+            }
+        }
+
         if summary.elevationGainM >= 120 {
             return .summitHeart
         }
@@ -331,6 +391,10 @@ public enum RunimalGameEngine {
         }
 
         if summary.distanceKm >= 10 && summary.variability <= 0.08 {
+            return .zenBloom
+        }
+
+        if summary.environmentCondition == .rain && summary.distanceKm >= 5 {
             return .zenBloom
         }
 
@@ -411,6 +475,19 @@ public enum RunimalGameEngine {
             return "빠른 페이스와 높은 케이던스가 tempo-surge 희귀 변이를 열었습니다."
         case .loopSigil:
             return "안정적인 루프 경로가 loop-sigil 희귀 변이를 남겼습니다."
+        }
+    }
+
+    private static func environmentLabel(_ condition: EnvironmentCondition) -> String {
+        switch condition {
+        case .clear: return "맑은"
+        case .rain: return "비"
+        case .snow: return "눈"
+        case .wind: return "강풍"
+        case .heat: return "고온"
+        case .cold: return "저온"
+        case .overcast: return "흐린"
+        case .unknown: return "미확인"
         }
     }
 

@@ -15,14 +15,26 @@ struct PhoneFeedCinematicPanel: View {
         outcome.stageAdvanced ? .orange : pet.accentColor
     }
 
+    private var mythicReached: Bool {
+        outcome.stageAdvanced && outcome.afterProgress.stageLabel == "Mythic"
+    }
+
+    private var mythicTitle: String {
+        RunimalGameEngine.mythicTitle(for: pet)
+    }
+
     private var stageHeadline: String {
-        outcome.stageAdvanced
+        if mythicReached {
+            return "최종형 신호 고정"
+        }
+
+        return outcome.stageAdvanced
             ? "\(outcome.afterProgress.stageLabel) 진화 임계점 돌파"
-            : "Growth Core synchronized"
+            : "성장 에너지 흡수 완료"
     }
 
     var body: some View {
-        GameSurface(title: "Feed Sequence", accent: accent, eyebrow: "Core Intake") {
+        GameSurface(title: "성장 연출", accent: accent, eyebrow: "에너지 흡수") {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .center, spacing: 16) {
                     ZStack {
@@ -36,7 +48,7 @@ struct PhoneFeedCinematicPanel: View {
                         PixelPetView(pet: pet, pixelSize: 10)
 
                         if showEvolutionCut {
-                            Text("EVOLVE")
+                            Text(mythicReached ? "MYTHIC" : "진화")
                                 .font(.caption.weight(.black))
                                 .tracking(1.8)
                                 .foregroundStyle(.black)
@@ -73,14 +85,20 @@ struct PhoneFeedCinematicPanel: View {
                                 .foregroundStyle(.white.opacity(0.45))
                             TraitChip(label: outcome.afterProgress.stageLabel, accent: accent)
                             if outcome.stageAdvanced {
-                                TraitChip(label: "CUT-IN", accent: .orange.opacity(0.82))
+                                TraitChip(label: mythicReached ? mythicTitle : "연출 발동", accent: .orange.opacity(0.82))
                             }
+                        }
+
+                        if mythicReached {
+                            Text(RunimalGameEngine.mythicSignalLine(for: pet))
+                                .font(.caption)
+                                .foregroundStyle(.orange.opacity(0.86))
                         }
                     }
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Evolution Pulse")
+                    Text("진화 게이지")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(.white.opacity(0.72))
 
@@ -89,6 +107,17 @@ struct PhoneFeedCinematicPanel: View {
                     Text(outcome.afterProgress.headline)
                         .font(.footnote)
                         .foregroundStyle(.white.opacity(0.72))
+
+                    if !outcome.bonusLabels.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(outcome.bonusLabels, id: \.self) { bonus in
+                                    RunimalSignalBadge(icon: "bolt.fill", label: bonus, accent: accent.opacity(0.84))
+                                }
+                            }
+                            .padding(.horizontal, 1)
+                        }
+                    }
                 }
             }
         }

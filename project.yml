@@ -7,6 +7,9 @@ options:
 packages:
   RunimalPackage:
     path: .
+  FitDataProtocol:
+    url: https://github.com/FitnessKit/FitDataProtocol
+    from: 2.1.6
 targets:
   RunimalMac:
     type: application
@@ -42,7 +45,10 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
-        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_ALLOWED: YES
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 8YJKN5NZT3
+        CODE_SIGN_IDENTITY: Apple Development
         PRODUCT_BUNDLE_IDENTIFIER: com.jaw.runimal.phone
         PRODUCT_NAME: RunimalPhone
         MARKETING_VERSION: 1.0
@@ -60,6 +66,8 @@ targets:
     dependencies:
       - package: RunimalPackage
         product: RunimalCore
+      - package: FitDataProtocol
+        product: FitDataProtocol
   RunimalWatch:
     type: application
     platform: watchOS
@@ -71,7 +79,10 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
-        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_ALLOWED: YES
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 8YJKN5NZT3
+        CODE_SIGN_IDENTITY: Apple Development
         PRODUCT_BUNDLE_IDENTIFIER: com.jaw.runimal.watch
         PRODUCT_NAME: RunimalWatch
         MARKETING_VERSION: 1.0

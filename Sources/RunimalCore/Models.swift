@@ -39,6 +39,17 @@ public enum RouteShape: String, Codable, CaseIterable, Sendable {
     case freeform
 }
 
+public enum EnvironmentCondition: String, Codable, CaseIterable, Sendable {
+    case clear
+    case rain
+    case snow
+    case wind
+    case heat
+    case cold
+    case overcast
+    case unknown
+}
+
 public struct RunSummary: Codable, Equatable, Sendable {
     public let distanceKm: Double
     public let averagePaceSeconds: Int
@@ -47,6 +58,8 @@ public struct RunSummary: Codable, Equatable, Sendable {
     public let variability: Double
     public let aura: RunTimeAura
     public let shape: RouteShape
+    public let environmentCondition: EnvironmentCondition
+    public let rareEventCompleted: Bool
 
     public init(
         distanceKm: Double,
@@ -55,7 +68,9 @@ public struct RunSummary: Codable, Equatable, Sendable {
         elevationGainM: Int,
         variability: Double,
         aura: RunTimeAura,
-        shape: RouteShape
+        shape: RouteShape,
+        environmentCondition: EnvironmentCondition = .unknown,
+        rareEventCompleted: Bool = false
     ) {
         self.distanceKm = distanceKm
         self.averagePaceSeconds = averagePaceSeconds
@@ -64,6 +79,8 @@ public struct RunSummary: Codable, Equatable, Sendable {
         self.variability = variability
         self.aura = aura
         self.shape = shape
+        self.environmentCondition = environmentCondition
+        self.rareEventCompleted = rareEventCompleted
     }
 }
 
@@ -216,19 +233,41 @@ public struct RunRewardSummary: Codable, Equatable, Sendable {
     public let experience: Int
     public let completedQuestCount: Int
     public let flavorText: String
+    public let bonusLabels: [String]
 
     public init(
         pet: GeneratedPet,
         coreLabel: String,
         experience: Int,
         completedQuestCount: Int,
-        flavorText: String
+        flavorText: String,
+        bonusLabels: [String] = []
     ) {
         self.pet = pet
         self.coreLabel = coreLabel
         self.experience = experience
         self.completedQuestCount = completedQuestCount
         self.flavorText = flavorText
+        self.bonusLabels = bonusLabels
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case pet
+        case coreLabel
+        case experience
+        case completedQuestCount
+        case flavorText
+        case bonusLabels
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        pet = try container.decode(GeneratedPet.self, forKey: .pet)
+        coreLabel = try container.decode(String.self, forKey: .coreLabel)
+        experience = try container.decode(Int.self, forKey: .experience)
+        completedQuestCount = try container.decode(Int.self, forKey: .completedQuestCount)
+        flavorText = try container.decode(String.self, forKey: .flavorText)
+        bonusLabels = try container.decodeIfPresent([String].self, forKey: .bonusLabels) ?? []
     }
 }
 
@@ -371,8 +410,12 @@ public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
     public let originDeviceID: String
     public let journal: [RunJournalEntry]
     public let completedRuns: [CompletedRunRecord]
+    public let ownedCompanions: [PetCollectionEntry]
+    public let eggInventory: [EggInventoryEntry]
+    public let unlockedEggAchievementIDs: [String]
     public let claimedWeeklyRewards: [String]
     public let activeCompanionID: String?
+    public let mainCompanionSelection: MainCompanionSelection?
     public let growthRecords: [CompanionGrowthRecord]
     public let retiredCompanionIDs: [String]
     public let essenceBalance: Int
@@ -382,14 +425,19 @@ public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
     public let claimedSeasonRewardIDs: [String]
     public let claimedRaidRewardIDs: [String]
     public let raidShardBalance: Int
+    public let raidContributionTotal: Int
 
     public init(
         savedAt: Date,
         originDeviceID: String,
         journal: [RunJournalEntry],
         completedRuns: [CompletedRunRecord],
+        ownedCompanions: [PetCollectionEntry] = [],
+        eggInventory: [EggInventoryEntry] = [],
+        unlockedEggAchievementIDs: [String] = [],
         claimedWeeklyRewards: [String],
         activeCompanionID: String?,
+        mainCompanionSelection: MainCompanionSelection? = nil,
         growthRecords: [CompanionGrowthRecord],
         retiredCompanionIDs: [String],
         essenceBalance: Int,
@@ -398,14 +446,19 @@ public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
         buildStates: [CompanionBuildState],
         claimedSeasonRewardIDs: [String],
         claimedRaidRewardIDs: [String],
-        raidShardBalance: Int
+        raidShardBalance: Int,
+        raidContributionTotal: Int = 0
     ) {
         self.savedAt = savedAt
         self.originDeviceID = originDeviceID
         self.journal = journal
         self.completedRuns = completedRuns
+        self.ownedCompanions = ownedCompanions
+        self.eggInventory = eggInventory
+        self.unlockedEggAchievementIDs = unlockedEggAchievementIDs
         self.claimedWeeklyRewards = claimedWeeklyRewards
         self.activeCompanionID = activeCompanionID
+        self.mainCompanionSelection = mainCompanionSelection
         self.growthRecords = growthRecords
         self.retiredCompanionIDs = retiredCompanionIDs
         self.essenceBalance = essenceBalance
@@ -415,6 +468,54 @@ public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
         self.claimedSeasonRewardIDs = claimedSeasonRewardIDs
         self.claimedRaidRewardIDs = claimedRaidRewardIDs
         self.raidShardBalance = raidShardBalance
+        self.raidContributionTotal = raidContributionTotal
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case savedAt
+        case originDeviceID
+        case journal
+        case completedRuns
+        case ownedCompanions
+        case eggInventory
+        case unlockedEggAchievementIDs
+        case claimedWeeklyRewards
+        case activeCompanionID
+        case mainCompanionSelection
+        case growthRecords
+        case retiredCompanionIDs
+        case essenceBalance
+        case overdriveCharges
+        case seasonSigils
+        case buildStates
+        case claimedSeasonRewardIDs
+        case claimedRaidRewardIDs
+        case raidShardBalance
+        case raidContributionTotal
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        savedAt = try container.decode(Date.self, forKey: .savedAt)
+        originDeviceID = try container.decode(String.self, forKey: .originDeviceID)
+        journal = try container.decode([RunJournalEntry].self, forKey: .journal)
+        completedRuns = try container.decode([CompletedRunRecord].self, forKey: .completedRuns)
+        ownedCompanions = try container.decodeIfPresent([PetCollectionEntry].self, forKey: .ownedCompanions) ?? []
+        eggInventory = try container.decodeIfPresent([EggInventoryEntry].self, forKey: .eggInventory) ?? []
+        unlockedEggAchievementIDs = try container.decodeIfPresent([String].self, forKey: .unlockedEggAchievementIDs) ?? []
+        claimedWeeklyRewards = try container.decode([String].self, forKey: .claimedWeeklyRewards)
+        activeCompanionID = try container.decodeIfPresent(String.self, forKey: .activeCompanionID)
+        mainCompanionSelection = try container.decodeIfPresent(MainCompanionSelection.self, forKey: .mainCompanionSelection)
+        growthRecords = try container.decode([CompanionGrowthRecord].self, forKey: .growthRecords)
+        retiredCompanionIDs = try container.decode([String].self, forKey: .retiredCompanionIDs)
+        essenceBalance = try container.decode(Int.self, forKey: .essenceBalance)
+        overdriveCharges = try container.decode(Int.self, forKey: .overdriveCharges)
+        seasonSigils = try container.decode(Int.self, forKey: .seasonSigils)
+        buildStates = try container.decode([CompanionBuildState].self, forKey: .buildStates)
+        claimedSeasonRewardIDs = try container.decode([String].self, forKey: .claimedSeasonRewardIDs)
+        claimedRaidRewardIDs = try container.decode([String].self, forKey: .claimedRaidRewardIDs)
+        raidShardBalance = try container.decode(Int.self, forKey: .raidShardBalance)
+        raidContributionTotal = try container.decodeIfPresent(Int.self, forKey: .raidContributionTotal) ?? completedRuns.reduce(0) { $0 + $1.raidContribution }
     }
 }
 
@@ -670,6 +771,10 @@ public struct CompletedRunRecord: Codable, Equatable, Identifiable, Sendable {
     public let reward: RunRewardSummary
     public let route: [RoutePoint]
     public let source: String
+    public let sourceLabel: String?
+    public let raidContribution: Int
+    public let environmentCondition: EnvironmentCondition
+    public let rareEventCompleted: Bool
 
     public init(
         id: String,
@@ -683,7 +788,11 @@ public struct CompletedRunRecord: Codable, Equatable, Identifiable, Sendable {
         elevationGainM: Int,
         reward: RunRewardSummary,
         route: [RoutePoint],
-        source: String
+        source: String,
+        sourceLabel: String? = nil,
+        raidContribution: Int = 0,
+        environmentCondition: EnvironmentCondition = .unknown,
+        rareEventCompleted: Bool = false
     ) {
         self.id = id
         self.startedAt = startedAt
@@ -697,6 +806,49 @@ public struct CompletedRunRecord: Codable, Equatable, Identifiable, Sendable {
         self.reward = reward
         self.route = route
         self.source = source
+        self.sourceLabel = sourceLabel
+        self.raidContribution = raidContribution
+        self.environmentCondition = environmentCondition
+        self.rareEventCompleted = rareEventCompleted
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case startedAt
+        case endedAt
+        case distanceMeters
+        case durationSeconds
+        case averageHeartRate
+        case averagePaceSeconds
+        case cadence
+        case elevationGainM
+        case reward
+        case route
+        case source
+        case sourceLabel
+        case raidContribution
+        case environmentCondition
+        case rareEventCompleted
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        startedAt = try container.decode(Date.self, forKey: .startedAt)
+        endedAt = try container.decode(Date.self, forKey: .endedAt)
+        distanceMeters = try container.decode(Double.self, forKey: .distanceMeters)
+        durationSeconds = try container.decode(Int.self, forKey: .durationSeconds)
+        averageHeartRate = try container.decodeIfPresent(Double.self, forKey: .averageHeartRate)
+        averagePaceSeconds = try container.decodeIfPresent(Int.self, forKey: .averagePaceSeconds)
+        cadence = try container.decodeIfPresent(Int.self, forKey: .cadence)
+        elevationGainM = try container.decode(Int.self, forKey: .elevationGainM)
+        reward = try container.decode(RunRewardSummary.self, forKey: .reward)
+        route = try container.decodeIfPresent([RoutePoint].self, forKey: .route) ?? []
+        source = try container.decode(String.self, forKey: .source)
+        sourceLabel = try container.decodeIfPresent(String.self, forKey: .sourceLabel)
+        raidContribution = try container.decodeIfPresent(Int.self, forKey: .raidContribution) ?? 0
+        environmentCondition = try container.decodeIfPresent(EnvironmentCondition.self, forKey: .environmentCondition) ?? .unknown
+        rareEventCompleted = try container.decodeIfPresent(Bool.self, forKey: .rareEventCompleted) ?? false
     }
 }
 

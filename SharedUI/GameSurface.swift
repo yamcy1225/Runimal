@@ -5,30 +5,34 @@ struct GameSurface<Content: View>: View {
     let title: String?
     let accent: Color?
     let eyebrow: String?
+    let compact: Bool
     @ViewBuilder var content: Content
 
-    init(title: String? = nil, accent: Color? = nil, eyebrow: String? = nil, @ViewBuilder content: () -> Content) {
+    init(title: String? = nil, accent: Color? = nil, eyebrow: String? = nil, compact: Bool = false, @ViewBuilder content: () -> Content) {
         self.title = title
         self.accent = accent
         self.eyebrow = eyebrow
+        self.compact = compact
         self.content = content()
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let cornerRadius: CGFloat = compact ? 22 : 28
+
+        VStack(alignment: .leading, spacing: compact ? 8 : 12) {
             if title != nil || eyebrow != nil {
                 HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: compact ? 2 : 4) {
                         if let eyebrow {
                             Text(eyebrow.uppercased())
                                 .font(.caption2.weight(.black))
-                                .tracking(1.4)
+                                .tracking(compact ? 1.0 : 1.4)
                                 .foregroundStyle((accent ?? .white).opacity(0.86))
                         }
 
                         if let title {
                             Text(title)
-                                .font(.headline.weight(.bold))
+                                .font(compact ? .subheadline.weight(.bold) : .headline.weight(.bold))
                                 .foregroundStyle(.white.opacity(0.94))
                         }
                     }
@@ -38,11 +42,11 @@ struct GameSurface<Content: View>: View {
                     if let accent {
                         Capsule()
                             .fill(accent.opacity(0.22))
-                            .frame(width: 46, height: 12)
+                            .frame(width: compact ? 34 : 46, height: compact ? 10 : 12)
                             .overlay(
                                 Capsule()
                                     .fill(accent)
-                                    .frame(width: 18, height: 4)
+                                    .frame(width: compact ? 14 : 18, height: 4)
                             )
                     }
                 }
@@ -50,10 +54,10 @@ struct GameSurface<Content: View>: View {
 
             content
         }
-        .padding(18)
+        .padding(compact ? 12 : 18)
         .background(
             ZStack {
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
@@ -65,7 +69,7 @@ struct GameSurface<Content: View>: View {
                         )
                     )
 
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(
                         RadialGradient(
                             colors: [(accent ?? .white).opacity(0.18), .clear],
@@ -88,16 +92,16 @@ struct GameSurface<Content: View>: View {
                         }
                     }
                 }
-                .padding(16)
-                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                .padding(compact ? 10 : 16)
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             }
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .strokeBorder(.white.opacity(0.08), lineWidth: 1)
         )
         .overlay(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .strokeBorder((accent ?? .white).opacity(0.16), lineWidth: 1)
                 .blur(radius: 10)
                 .padding(-1)

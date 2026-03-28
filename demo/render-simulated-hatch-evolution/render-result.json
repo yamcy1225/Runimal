@@ -1,0 +1,15 @@
+{
+  "status": "succeeded",
+  "outputPath": "/Users/heobella/jaw-bot-2/apps/runimal-apple/demo/render-simulated-hatch-evolution/TimelineVideo.mp4",
+  "compositionId": "TimelineVideo",
+  "preset": "Landscape-1080p",
+  "valid": true,
+  "duration": 24.042667,
+  "codec": "h264",
+  "width": 1920,
+  "height": 1080,
+  "fileSize": 5703440,
+  "errors": [],
+  "renderMs": 149979,
+  "updatedAt": 1774664341779
+}

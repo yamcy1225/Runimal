@@ -7,8 +7,8 @@ struct WatchRunPulseCard: View {
     let badges: [String]
 
     var body: some View {
-        GameSurface {
-            VStack(alignment: .leading, spacing: 10) {
+        GameSurface(compact: true) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     TraitChip(label: feedback.label.uppercased(), accent: accent)
                     Spacer(minLength: 8)
@@ -18,17 +18,19 @@ struct WatchRunPulseCard: View {
                 }
 
                 Text(feedback.headline)
-                    .font(.headline.weight(.bold))
+                    .font(.subheadline.weight(.bold))
                     .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
 
                 Text(feedback.detail)
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.72))
-                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(3)
 
                 if badges.isEmpty == false {
                     HStack(spacing: 6) {
-                        ForEach(Array(badges.enumerated()), id: \.offset) { _, badge in
+                        ForEach(Array(badges.prefix(2).enumerated()), id: \.offset) { _, badge in
                             TraitChip(label: badge, accent: accent.opacity(0.82))
                         }
                     }

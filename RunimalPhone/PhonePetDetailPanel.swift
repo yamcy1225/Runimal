@@ -24,7 +24,7 @@ struct PhonePetDetailPanel: View {
     }
 
     var body: some View {
-        GameSurface(title: "Companion Detail") {
+        GameSurface(title: "동행체 정보") {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .center, spacing: 16) {
                     PixelPetView(pet: companion.pet, pixelSize: 10)
@@ -38,7 +38,7 @@ struct PhonePetDetailPanel: View {
                             .foregroundStyle(.white.opacity(0.72))
                         HStack {
                             TraitChip(label: "Lv.\(companion.level)", accent: companion.pet.accentColor)
-                            TraitChip(label: "Bond \(companion.bond)", accent: .white.opacity(0.22))
+                            TraitChip(label: "유대 \(companion.bond)", accent: .white.opacity(0.22))
                             if RunimalGameEngine.seasonAffinity(for: companion.pet, season: season) {
                                 TraitChip(label: season.title, accent: .mint.opacity(0.7))
                             }
@@ -47,7 +47,7 @@ struct PhonePetDetailPanel: View {
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Evolution Track")
+                    Text("진화 경로")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.white)
 
@@ -79,7 +79,7 @@ struct PhonePetDetailPanel: View {
                         .overlay(.white.opacity(0.12))
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Effect Link")
+                        Text("효과 연결")
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(.white)
 
@@ -104,7 +104,7 @@ struct PhonePetDetailPanel: View {
                     .overlay(.white.opacity(0.12))
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Balance Notes")
+                    Text("성장 힌트")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.white)
 

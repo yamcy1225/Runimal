@@ -6,6 +6,7 @@ import SwiftUI
 @MainActor
 final class PhoneDashboardStore {
     let healthKit = PhoneHealthKitManager()
+    let fitImport = PhoneFITImportManager()
     let connectivity = PhoneConnectivityManager()
     let planner = PhoneWorkoutPlanner()
     let progress = PhoneProgressStore()
@@ -40,12 +41,12 @@ final class PhoneDashboardStore {
         RunimalGameEngine.activeWeeklyEffects(from: claimedWeeklyRewardIDs)
     }
 
-    var baseCollection: [PetCollectionEntry] {
-        RunimalGameEngine.buildCollection(from: runArchive)
-    }
-
     var pet: GeneratedPet {
         featuredCompanion.pet
+    }
+
+    var mainAccentColor: Color {
+        mainEgg?.shell.accentColor ?? featuredCompanion.pet.accentColor
     }
 
     var quests: [RunQuestStatus] {
@@ -53,11 +54,11 @@ final class PhoneDashboardStore {
     }
 
     var suggestedWorkout: WorkoutPlanSuggestion {
-        RunimalGameEngine.suggestWorkoutPlan(for: pet)
+        RunimalGameEngine.suggestWorkoutPlan(for: featuredCompanion.pet)
     }
 
     var collection: [PetCollectionEntry] {
-        baseCollection.map { companion in
+        progress.ownedCompanions.map { companion in
             RunimalCompanionGrowthEngine.effectiveCompanion(
                 from: companion,
                 growthRecord: progress.growthRecord(for: companion.id)
@@ -83,7 +84,51 @@ final class PhoneDashboardStore {
     }
 
     var variantCodex: [VariantCodexEntry] {
-        RunimalGameEngine.buildVariantCodex(from: baseCollection)
+        RunimalGameEngine.buildVariantCodex(from: collection)
+    }
+
+    var eggInventory: [EggInventoryEntry] {
+        progress.eggInventory
+    }
+
+    var mainSelection: MainCompanionSelection? {
+        progress.mainCompanionSelection
+    }
+
+    var mainEgg: EggInventoryEntry? {
+        progress.mainEggSelection
+    }
+
+    var mainEggResonance: Double {
+        guard let egg = mainEgg else { return 0.24 }
+        let bpm = latestCompletedRun?.averageHeartRate ?? Double(summary.cadence) * 0.78
+        let bpmRatio = min(max((bpm - 95) / 75, 0.16), 1)
+        return min(max((egg.progressRatio * 0.58) + (bpmRatio * 0.42), 0.18), 1)
+    }
+
+    var mainSelectionLabel: String {
+        switch mainSelection?.kind {
+        case .egg:
+            return mainEgg?.title ?? "???"
+        case .pet:
+            return featuredCompanion.pet.displayName
+        case nil:
+            return featuredCompanion.pet.displayName
+        }
+    }
+
+    var mainSelectionDetail: String {
+        switch mainSelection?.kind {
+        case .egg:
+            guard let mainEgg else { return "새 알을 메인으로 들고 다니는 중" }
+            return mainEgg.readyToHatch
+                ? "디코딩 안정화 완료. 실체화 시퀀스를 시작할 수 있습니다."
+                : mainEgg.shell.hatchHint
+        case .pet:
+            return featuredCompanion.headline
+        case nil:
+            return featuredCompanion.headline
+        }
     }
 
     var evolutionProgress: EvolutionProgress {
@@ -102,6 +147,10 @@ final class PhoneDashboardStore {
 
     var latestCompletedRun: CompletedRunRecord? {
         progress.completedRuns.first
+    }
+
+    var sanctuaryReward: SanctuaryRewardEvent? {
+        progress.lastSanctuaryReward
     }
 
     var weeklyBoard: WeeklyBoard {
@@ -138,6 +187,10 @@ final class PhoneDashboardStore {
 
     var availableRunCores: [CompletedRunRecord] {
         progress.unassignedRuns(from: completedRuns)
+    }
+
+    func eggOpportunity(for run: CompletedRunRecord) -> EggCreationOpportunity {
+        progress.eggOpportunity(for: run)
     }
 
     var retirableOffers: [RetirableCompanionOffer] {
@@ -190,10 +243,15 @@ final class PhoneDashboardStore {
     }
 
     var starterLoop: [StarterLoopStep] {
-        RunimalOnboardingEngine.starterLoop(
+        let hasStageAdvance = progress.growthRecords.contains {
+            RunimalCompanionGrowthEngine.evolutionProgress(for: $0).stageLabel != "Trace Egg"
+        }
+
+        return RunimalOnboardingEngine.starterLoop(
             completedRuns: completedRuns,
             collection: collection,
-            activeEffects: activeWeeklyEffects
+            eggInventory: eggInventory,
+            hasStageAdvance: hasStageAdvance
         )
     }
 
@@ -340,6 +398,7 @@ final class PhoneDashboardStore {
             progress.restore(from: single)
         }
         progress.seedIfNeeded(from: runArchive)
+        progress.evaluateSanctuaryRewardIfNeeded()
         persistVault()
         cloudMirror.validateRuntime()
         telemetry.log("bootstrap", detail: "store initialized")
@@ -347,6 +406,50 @@ final class PhoneDashboardStore {
 
     func requestHealthAuthorization() async {
         await healthKit.requestAuthorization()
+    }
+
+    func syncExternalHealthKitRuns() async {
+        if healthKit.authorizationStatus == "not requested" {
+            await healthKit.requestAuthorization()
+        }
+
+        let imports = await healthKit.syncExternalRuns(
+            claimedRewardIDs: claimedWeeklyRewardIDs,
+            existingRunsByID: Dictionary(uniqueKeysWithValues: completedRuns.map { ($0.id, $0) })
+        )
+
+        guard !imports.isEmpty else { return }
+
+        for item in imports.reversed() {
+            progress.append(completedRun: item.record)
+            progress.append(reward: item.reward, snapshot: item.snapshot)
+            telemetry.log("external_workout_imported", detail: "\(item.sourceName) · \(item.id)")
+        }
+
+        persistVault()
+    }
+
+    func importFITRun(from url: URL) async {
+        do {
+            let item = try await fitImport.importFile(
+                from: url,
+                claimedRewardIDs: claimedWeeklyRewardIDs
+            )
+            progress.append(completedRun: item.record)
+            progress.append(reward: item.reward, snapshot: item.snapshot)
+            telemetry.log("fit_file_imported", detail: "\(item.sourceName) · \(item.id)")
+            persistVault()
+        } catch {
+            fitImport.markImportFailed(error.localizedDescription)
+        }
+    }
+
+    func clearImportedExternalRuns() {
+        progress.removeImportedExternalRuns()
+        healthKit.resetImportedWorkoutIDs()
+        fitImport.resetImportedStatus()
+        telemetry.log("external_workout_cleared", detail: "manual clear")
+        persistVault()
     }
 
     func syncWorkoutPlan() async {
@@ -367,13 +470,18 @@ final class PhoneDashboardStore {
 
         progress.append(reward: adjustedReward, snapshot: connectivity.lastSnapshot)
         persistVault()
+        logRewardPulseTelemetry(for: adjustedReward)
         telemetry.log("reward_ingested", detail: adjustedReward.coreLabel)
     }
 
     func ingestCompletedRun() {
         guard let record = connectivity.lastCompletedRun else { return }
+        let isFirstCompletedRun = completedRuns.contains(where: { $0.source != "seeded-archive" }) == false
         progress.append(completedRun: record)
         persistVault()
+        if isFirstCompletedRun {
+            telemetry.log("first_run_completed", detail: record.id)
+        }
         telemetry.log("completed_run_ingested", detail: record.id)
     }
 
@@ -391,8 +499,15 @@ final class PhoneDashboardStore {
         telemetry.log("activate_companion", detail: companionID)
     }
 
+    func activateEgg(_ eggID: String) {
+        progress.activateEgg(id: eggID)
+        persistVault()
+        telemetry.log("activate_egg", detail: eggID)
+    }
+
     func feedActiveCompanion(with runID: String) {
         guard let run = completedRuns.first(where: { $0.id == runID }) else { return }
+        let wasFirstStageUp = hasUnlockedNonTraceStage == false
         latestFeedOutcome = progress.feed(
             run: run,
             to: featuredCompanion,
@@ -400,7 +515,65 @@ final class PhoneDashboardStore {
             season: weeklyBoard.season
         )
         persistVault()
+        if let outcome = latestFeedOutcome {
+            if outcome.bonusLabels.contains("Signal Lock") {
+                telemetry.log("signal_lock_applied", detail: "\(run.id):\(outcome.afterProgress.stageLabel)")
+            }
+            if outcome.stageAdvanced, wasFirstStageUp {
+                telemetry.log("first_stage_up", detail: outcome.afterProgress.stageLabel)
+            }
+        }
         telemetry.log("feed_companion", detail: run.id)
+    }
+
+    func forgeEgg(from runID: String) {
+        guard let run = completedRuns.first(where: { $0.id == runID }) else { return }
+        guard progress.eggOpportunity(for: run).eligible else { return }
+        let wasFirstEgg = eggInventory.isEmpty
+        let forgedEgg = progress.forgeEgg(from: run)
+        persistVault()
+        if let forgedEgg {
+            let firstFlag = wasFirstEgg ? "first" : "repeat"
+            telemetry.log("egg_created", detail: "\(forgedEgg.shell.rawValue):\(firstFlag)")
+        }
+        telemetry.log("forge_egg", detail: run.id)
+    }
+
+    func incubateMainEgg(with runID: String) {
+        guard let run = completedRuns.first(where: { $0.id == runID }) else { return }
+        guard let eggBefore = mainEgg else { return }
+        let proposedExperience = RunimalEggEngine.incubationExperienceGain(for: run, egg: eggBefore)
+        let updatedEgg = progress.incubateMainEgg(with: run)
+        persistVault()
+        if let updatedEgg, updatedEgg.storedExperience > eggBefore.storedExperience + proposedExperience {
+            telemetry.log("decode_lock_applied", detail: "\(updatedEgg.id):\(updatedEgg.shell.rawValue)")
+        }
+        telemetry.log("incubate_egg", detail: run.id)
+    }
+
+    @discardableResult
+    func hatchEgg(_ eggID: String) -> PetCollectionEntry? {
+        let isFirstHatch = progress.ownedCompanions.contains(where: { $0.id.hasPrefix("hatched-") }) == false
+        let companion = progress.hatchEgg(eggID)
+        persistVault()
+        if let companion {
+            let hatchDetail = isFirstHatch ? "first:\(companion.pet.species.rawValue)" : companion.pet.species.rawValue
+            telemetry.log("egg_hatched", detail: hatchDetail)
+            if let rareVariant = companion.pet.rareVariant {
+                let rareLabel = RareVariantMeta.labels[rareVariant] ?? rareVariant.rawValue
+                telemetry.log("rare_variant_obtained", detail: "\(rareLabel):\(companion.pet.species.rawValue)")
+            }
+        }
+        telemetry.log("hatch_egg", detail: eggID)
+        return companion
+    }
+
+    func resetProgress() {
+        progress.resetProgress(from: runArchive)
+        latestFeedOutcome = nil
+        persistVault()
+        syncCompanionEffects()
+        telemetry.log("reset_progress", detail: "seeded")
     }
 
     func clearFeedOutcome() {
@@ -539,31 +712,49 @@ final class PhoneDashboardStore {
         vault.save(snapshot: snapshot)
         cloudMirror.mirror(snapshot: snapshot)
     }
+
+    private var hasUnlockedNonTraceStage: Bool {
+        progress.growthRecords.contains {
+            RunimalCompanionGrowthEngine.evolutionProgress(for: $0).stageLabel != "Trace Egg"
+        }
+    }
+
+    private func logRewardPulseTelemetry(for reward: RunRewardSummary) {
+        guard reward.bonusLabels.isEmpty == false else { return }
+        telemetry.log("reward_pulse_applied", detail: reward.bonusLabels.joined(separator: ", "))
+    }
 }
 
 struct PhoneDashboardView: View {
     @State private var store = PhoneDashboardStore()
-    @State private var selectedTab = ProcessInfo.processInfo.environment["RUNIMAL_OPEN_COLLECTION_ON_LAUNCH"] == "1" ? 1 : 0
+    @State private var selectedTab = ProcessInfo.processInfo.environment["RUNIMAL_OPEN_COLLECTION_ON_LAUNCH"] == "1" ? 2 : 0
+    private let pageTitles = ["동행", "러닝", "보관함"]
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            NavigationStack {
-                PhoneHomeView(store: store)
-                    .navigationTitle("Runimal")
-            }
-            .tag(0)
-            .tabItem {
-                Label("Home", systemImage: "bolt.heart")
-            }
+        VStack(spacing: 0) {
+            pageHeader
+            pageIndicator
 
-            NavigationStack {
-                PhoneCollectionView(store: store)
-                    .navigationTitle("Collection")
+            TabView(selection: $selectedTab) {
+                NavigationStack {
+                    PhoneHomeView(store: store)
+                        .navigationBarTitleDisplayMode(.inline)
+                }
+                .tag(0)
+
+                NavigationStack {
+                    PhoneRunDeckView(store: store)
+                        .navigationBarTitleDisplayMode(.inline)
+                }
+                .tag(1)
+
+                NavigationStack {
+                    PhoneCollectionView(store: store)
+                        .navigationBarTitleDisplayMode(.inline)
+                }
+                .tag(2)
             }
-            .tag(1)
-            .tabItem {
-                Label("Codex", systemImage: "sparkles.rectangle.stack")
-            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
         }
         .task {
             store.bootstrap()
@@ -583,6 +774,89 @@ struct PhoneDashboardView: View {
             )
             .ignoresSafeArea()
         )
+    }
+
+    private var pageHeader: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("RUNIMAL")
+                        .font(.title3.weight(.black))
+                        .tracking(1.1)
+                        .foregroundStyle(.white)
+                    Text("Digital gap field guide")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.58))
+                }
+
+                Spacer()
+
+                RunimalSignalBadge(
+                    icon: "sparkles",
+                    label: store.weeklyBoard.season.title,
+                    accent: store.pet.accentColor
+                )
+            }
+
+            HStack(spacing: 10) {
+                pagePill(title: "동행", icon: "sparkles", tag: 0)
+                pagePill(title: "러닝", icon: "figure.run", tag: 1)
+                pagePill(title: "보관함", icon: "shippingbox.fill", tag: 2)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+        .padding(.bottom, 10)
+        .background(.black.opacity(0.28))
+    }
+
+    private var pageIndicator: some View {
+        HStack(spacing: 8) {
+            ForEach(Array(pageTitles.enumerated()), id: \.offset) { index, title in
+                VStack(spacing: 4) {
+                    Capsule()
+                        .fill(selectedTab == index ? store.pet.accentColor : .white.opacity(0.12))
+                        .frame(width: selectedTab == index ? 26 : 8, height: 5)
+                    Text(title)
+                        .font(.caption2.weight(selectedTab == index ? .black : .medium))
+                        .foregroundStyle(selectedTab == index ? .white : .white.opacity(0.42))
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 6)
+        .padding(.bottom, 4)
+    }
+
+    private func pagePill(title: String, icon: String, tag: Int) -> some View {
+        let isActive = selectedTab == tag
+
+        return Button {
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                selectedTab = tag
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                Text(title)
+                    .fontWeight(.black)
+            }
+            .font(.subheadline)
+            .foregroundStyle(isActive ? .black : .white.opacity(0.82))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(isActive ? store.pet.accentColor : .white.opacity(0.08))
+            )
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(isActive ? store.pet.accentColor.opacity(0.2) : .white.opacity(0.08), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 

@@ -10,6 +10,7 @@ let package = Package(
         .library(name: "RunimalCore", targets: ["RunimalCore"]),
         .executable(name: "RunimalCLI", targets: ["RunimalCLI"]),
         .executable(name: "RunimalSelfCheck", targets: ["RunimalSelfCheck"]),
+        .executable(name: "RunimalRewardSimulation", targets: ["RunimalRewardSimulation"]),
     ],
     targets: [
         .target(
@@ -21,6 +22,10 @@ let package = Package(
         ),
         .executableTarget(
             name: "RunimalSelfCheck",
+            dependencies: ["RunimalCore"]
+        ),
+        .executableTarget(
+            name: "RunimalRewardSimulation",
             dependencies: ["RunimalCore"]
         ),
     ]

@@ -5,6 +5,7 @@ struct WatchDashboardView: View {
     @State private var runSessionManager = WatchRunSessionManager()
     @State private var connectivityManager = WatchConnectivityManager()
     @State private var hatchBurstScale: CGFloat = 0.9
+    @State private var countdownValue: Int?
 
     private var livePet: GeneratedPet {
         runSessionManager.livePet
@@ -33,6 +34,11 @@ struct WatchDashboardView: View {
         min(max(runSessionManager.latestSnapshot.distanceMeters / 5000, 0.08), 1)
     }
 
+    private var heartResonance: Double {
+        guard let bpm = runSessionManager.latestSnapshot.currentHeartRate else { return 0.28 }
+        return min(max((bpm - 90) / 80, 0.18), 1)
+    }
+
     private var liveFeedback: LiveRunFeedback {
         RunimalGameEngine.evaluateLiveFeedback(
             for: runSessionManager.latestSnapshot,
@@ -52,199 +58,41 @@ struct WatchDashboardView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 12) {
-                WatchRunPulseCard(
-                    feedback: liveFeedback,
-                    accent: stageAccent,
-                    badges: Array(stageBadges.prefix(2))
-                )
-
-                WatchGoalTrackCard(
-                    goals: liveGoals,
+        WatchDashboardPages(
+            runtimeAlert: runSessionManager.runtimeAlert,
+            livePet: livePet,
+            sessionShell: runSessionManager.sessionShell,
+            stageAccent: stageAccent,
+            sessionStateLabel: runSessionManager.sessionStateLabel,
+            syncStatusLabel: connectivityManager.syncStatusLabel,
+            heartResonance: heartResonance,
+            growthRatio: growthRatio,
+            latestSnapshot: runSessionManager.latestSnapshot,
+            liveFeedback: liveFeedback,
+            stageBadges: stageBadges,
+            liveGoals: liveGoals,
+            primaryGoalDetail: primaryGoal?.detail ?? liveFeedback.detail,
+            lastSyncedWorkoutTitle: connectivityManager.lastSyncedWorkoutTitle,
+            activationStateLabel: connectivityManager.activationStateLabel,
+            authorizationStatus: runSessionManager.authorizationStatus,
+            locationStatusLabel: runSessionManager.locationStatusLabel,
+            lastSavedWorkoutLabel: runSessionManager.lastSavedWorkoutLabel,
+            queuedTransferCount: connectivityManager.queuedTransferCount,
+            recentEvents: Array((runSessionManager.recentSessionEvents + connectivityManager.recentEvents).prefix(4)),
+            reward: runSessionManager.lastReward,
+            hatchBurstScale: hatchBurstScale,
+            countdownValue: countdownValue,
+            onStartRun: startRunWithCountdown,
+            onEndRun: endRun,
+            onRequestAuthorization: requestAuthorization
+        )
+        .overlay {
+            if let countdownValue {
+                WatchRunCountdownOverlay(
+                    value: countdownValue,
                     accent: stageAccent
                 )
-
-                GameSurface {
-                    VStack(spacing: 10) {
-                        Text(runSessionManager.sessionStateLabel == "running" ? "Run Live" : "Trace Egg")
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.white.opacity(0.7))
-
-                        ZStack {
-                            Circle()
-                                .fill(stageAccent.opacity(0.20))
-                                .frame(width: 94, height: 94)
-                                .blur(radius: 10)
-
-                            Circle()
-                                .stroke(stageAccent.opacity(liveFeedback.intensity > 0.8 ? 0.9 : 0.45), lineWidth: 3)
-                                .frame(width: 80, height: 80)
-                                .scaleEffect(liveFeedback.intensity > 0.8 ? 1.08 : 1)
-
-                            Circle()
-                                .stroke(.white.opacity(0.16), style: StrokeStyle(lineWidth: 1, dash: [3, 4]))
-                                .frame(width: 92, height: 92)
-
-                            if runSessionManager.sessionStateLabel == "running" {
-                                PixelPetView(pet: livePet, pixelSize: 8)
-                                    .transition(.scale(scale: 0.9).combined(with: .opacity))
-                            } else {
-                                TraceEggView(accent: stageAccent, pixelSize: 8)
-                                    .transition(.scale(scale: 1.04).combined(with: .opacity))
-                            }
-                        }
-
-                        VStack(spacing: 4) {
-                            Text(livePet.displayName)
-                                .font(.headline.weight(.bold))
-                                .foregroundStyle(.white)
-                            Text(livePet.subtitle)
-                                .font(.caption2)
-                                .foregroundStyle(.white.opacity(0.75))
-                        }
-
-                        RunimalProgressBar(progress: growthRatio, accent: stageAccent, height: 8)
-
-                        Text(runSessionManager.sessionStateLabel == "running" ? liveFeedback.headline : "러닝을 시작하면 펫이 깨어납니다")
-                            .font(.caption2)
-                            .foregroundStyle(.white.opacity(0.72))
-                            .multilineTextAlignment(.center)
-
-                        if let primaryGoal, runSessionManager.sessionStateLabel == "running" {
-                            VStack(spacing: 4) {
-                                Text(primaryGoal.title)
-                                    .font(.caption2.weight(.bold))
-                                    .foregroundStyle(stageAccent.opacity(0.94))
-                                Text(primaryGoal.detail)
-                                    .font(.caption2)
-                                    .foregroundStyle(.white.opacity(0.64))
-                                    .multilineTextAlignment(.center)
-                            }
-                        }
-
-                        if stageBadges.isEmpty == false {
-                            HStack(spacing: 6) {
-                                ForEach(Array(stageBadges.prefix(2).enumerated()), id: \.offset) { _, badge in
-                                    TraitChip(label: badge, accent: stageAccent.opacity(0.82))
-                                }
-                            }
-                        }
-                    }
-                }
-                .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(
-                            RadialGradient(
-                                colors: [stageAccent.opacity(0.22), .clear],
-                                center: .center,
-                                startRadius: 8,
-                                endRadius: 120
-                            )
-                        )
-                )
-
-                GameSurface(title: "Live Metrics") {
-                    HStack {
-                        metric("m", "\(Int(runSessionManager.latestSnapshot.distanceMeters))")
-                        metric("spm", "\(runSessionManager.latestSnapshot.cadence ?? 0)")
-                        metric("hr", "\(Int(runSessionManager.latestSnapshot.currentHeartRate ?? 0))")
-                    }
-                }
-
-                GameSurface(title: "Run Plan") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(connectivityManager.lastSyncedWorkoutTitle)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.white)
-                        Text("Sync \(connectivityManager.activationStateLabel) · HealthKit \(runSessionManager.authorizationStatus)")
-                            .font(.caption2)
-                            .foregroundStyle(.white.opacity(0.72))
-                        Text("Route \(runSessionManager.locationStatusLabel) · \(runSessionManager.lastSavedWorkoutLabel)")
-                            .font(.caption2)
-                            .foregroundStyle(.white.opacity(0.65))
-                        Text(liveFeedback.detail)
-                            .font(.caption2)
-                            .foregroundStyle(.white.opacity(0.62))
-                        if stageBadges.isEmpty == false {
-                            Text(stageBadges.joined(separator: " · "))
-                                .font(.caption2)
-                                .foregroundStyle(stageAccent.opacity(0.9))
-                        }
-                    }
-                }
-
-                GameSurface(title: "Diagnostics") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Link \(connectivityManager.activationStateLabel) · Queue \(connectivityManager.queuedTransferCount) · Save \(runSessionManager.lastSavedWorkoutLabel)")
-                            .font(.caption2)
-                            .foregroundStyle(.white.opacity(0.72))
-
-                        ForEach(Array((runSessionManager.recentSessionEvents + connectivityManager.recentEvents).prefix(4))) { event in
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(event.title)
-                                    .foregroundStyle(.white)
-                                Text(event.detail)
-                                    .font(.caption2)
-                                    .foregroundStyle(.white.opacity(0.62))
-                            }
-                        }
-                    }
-                }
-
-                if let reward = runSessionManager.lastReward {
-                    GameSurface(title: "Hatch Result") {
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack(spacing: 10) {
-                                ZStack {
-                                    HatchBurstView(accent: reward.pet.accentColor, pet: reward.pet, scale: hatchBurstScale)
-                                    PixelPetView(pet: reward.pet, pixelSize: 6)
-                                }
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(reward.pet.displayName)
-                                        .font(.headline)
-                                        .foregroundStyle(.white)
-                                    Text(reward.flavorText)
-                                        .font(.caption2)
-                                        .foregroundStyle(.white.opacity(0.72))
-                                }
-                            }
-
-                            HStack {
-                                TraitChip(label: reward.coreLabel, accent: reward.pet.accentColor)
-                                TraitChip(label: "+\(reward.experience) XP", accent: .green)
-                            }
-
-                            Text("Completed quests \(reward.completedQuestCount)")
-                                .font(.caption2)
-                                .foregroundStyle(.white.opacity(0.72))
-                        }
-                    }
-                    .transition(.scale(scale: 0.92).combined(with: .opacity))
-                }
-
-                Button(runSessionManager.sessionStateLabel == "running" ? "Finish Run" : "Start Run") {
-                    Task {
-                        if runSessionManager.sessionStateLabel == "running" {
-                            await runSessionManager.endRun()
-                        } else {
-                            await runSessionManager.startRun()
-                        }
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(stageAccent)
-
-                Button("Authorize HealthKit") {
-                    Task {
-                        await runSessionManager.requestAuthorization()
-                    }
-                }
-                .buttonStyle(.bordered)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
         }
         .background(
             LinearGradient(
@@ -295,16 +143,384 @@ struct WatchDashboardView: View {
         }
     }
 
-    private func metric(_ label: String, _ value: String) -> some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(.headline.monospacedDigit())
-                .foregroundStyle(.white)
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(.white.opacity(0.7))
+    private func startRunWithCountdown() {
+        guard countdownValue == nil else { return }
+        Task {
+            for value in stride(from: 3, through: 1, by: -1) {
+                await MainActor.run {
+                    countdownValue = value
+                }
+                WKInterfaceDevice.current().play(.start)
+                try? await Task.sleep(for: .seconds(1))
+            }
+
+            await MainActor.run {
+                countdownValue = nil
+            }
+
+            await runSessionManager.startRun()
         }
-        .frame(maxWidth: .infinity)
+    }
+
+    private func endRun() {
+        Task {
+            await runSessionManager.endRun()
+        }
+    }
+
+    private func requestAuthorization() {
+        Task {
+            await runSessionManager.requestAuthorization()
+        }
+    }
+}
+
+private struct WatchDashboardPages: View {
+    let runtimeAlert: WatchRuntimeAlert?
+    let livePet: GeneratedPet
+    let sessionShell: EggShellType
+    let stageAccent: Color
+    let sessionStateLabel: String
+    let syncStatusLabel: String
+    let heartResonance: Double
+    let growthRatio: Double
+    let latestSnapshot: LiveRunSnapshot
+    let liveFeedback: LiveRunFeedback
+    let stageBadges: [String]
+    let liveGoals: [LiveGoalTarget]
+    let primaryGoalDetail: String
+    let lastSyncedWorkoutTitle: String
+    let activationStateLabel: String
+    let authorizationStatus: String
+    let locationStatusLabel: String
+    let lastSavedWorkoutLabel: String
+    let queuedTransferCount: Int
+    let recentEvents: [SyncDiagnosticEvent]
+    let reward: RunRewardSummary?
+    let hatchBurstScale: CGFloat
+    let countdownValue: Int?
+    let onStartRun: () -> Void
+    let onEndRun: () -> Void
+    let onRequestAuthorization: () -> Void
+
+    var body: some View {
+        TabView {
+            WatchSingleCardPage {
+                VStack(spacing: 10) {
+                    if let runtimeAlert {
+                        WatchRuntimeAlertBanner(alert: runtimeAlert)
+                    }
+
+                    WatchCompanionHeroCard(
+                        pet: livePet,
+                        sessionShell: sessionShell,
+                        accent: stageAccent,
+                        sessionStateLabel: sessionStateLabel,
+                        syncStatusLabel: syncStatusLabel,
+                        heartResonance: heartResonance,
+                        progress: growthRatio
+                    )
+                }
+            }
+            .tag(0)
+
+            WatchSingleCardPage {
+                WatchRunStatsPanel(
+                    snapshot: latestSnapshot,
+                    accent: stageAccent
+                )
+            }
+            .tag(1)
+
+            WatchSingleCardPage {
+                VStack(spacing: 10) {
+                    Button(sessionStateLabel == "running" ? "운동 끝내기" : "러닝 시작하기") {
+                        if sessionStateLabel == "running" {
+                            onEndRun()
+                        } else {
+                            onStartRun()
+                        }
+                    }
+                        .buttonStyle(.borderedProminent)
+                        .tint(stageAccent)
+                        .disabled(countdownValue != nil)
+
+                    if authorizationStatus != "authorized" {
+                        Button("센서 연결", action: onRequestAuthorization)
+                            .buttonStyle(.bordered)
+                        }
+                }
+            }
+            .tag(2)
+
+            WatchSingleCardPage {
+                WatchRunPulseCard(
+                    feedback: liveFeedback,
+                    accent: stageAccent,
+                    badges: Array(stageBadges.prefix(2))
+                )
+            }
+            .tag(3)
+
+            WatchSingleCardPage {
+                WatchGoalTrackCard(
+                    goals: liveGoals,
+                    accent: stageAccent
+                )
+            }
+            .tag(4)
+
+            if sessionStateLabel == "running" {
+                WatchSingleCardPage {
+                    WatchRunningGoalSection(
+                        lastSyncedWorkoutTitle: lastSyncedWorkoutTitle,
+                        detail: primaryGoalDetail
+                    )
+                }
+                .tag(5)
+            }
+
+            WatchSingleCardPage {
+                WatchConnectivitySection(
+                    activationStateLabel: activationStateLabel,
+                    authorizationStatus: authorizationStatus,
+                    locationStatusLabel: locationStatusLabel,
+                    lastSavedWorkoutLabel: lastSavedWorkoutLabel,
+                    stageBadges: stageBadges,
+                    stageAccent: stageAccent
+                )
+            }
+            .tag(6)
+
+            WatchSingleCardPage {
+                WatchDiagnosticsSection(
+                    activationStateLabel: activationStateLabel,
+                    queuedTransferCount: queuedTransferCount,
+                    lastSavedWorkoutLabel: lastSavedWorkoutLabel,
+                    recentEvents: recentEvents
+                )
+            }
+            .tag(7)
+
+            if let reward {
+                WatchSingleCardPage {
+                    WatchRewardSection(
+                        reward: reward,
+                        hatchBurstScale: hatchBurstScale
+                    )
+                }
+                .tag(8)
+            }
+        }
+        .tabViewStyle(.page(indexDisplayMode: .automatic))
+    }
+}
+
+private struct WatchRunCountdownOverlay: View {
+    let value: Int
+    let accent: Color
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.78)
+                .ignoresSafeArea()
+
+            VStack(spacing: 8) {
+                Text("\(value)")
+                    .font(.system(size: 44, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                Text("러닝 시작")
+                    .font(.caption.weight(.black))
+                    .foregroundStyle(accent)
+            }
+            .padding(18)
+            .background(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(.white.opacity(0.08))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .stroke(accent.opacity(0.44), lineWidth: 1.5)
+                    )
+            )
+        }
+        .transition(.opacity)
+    }
+}
+
+private struct WatchSingleCardPage<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        GeometryReader { proxy in
+            VStack {
+                Spacer(minLength: 6)
+                content
+                    .frame(maxWidth: proxy.size.width - 2)
+                Spacer(minLength: 18)
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+        }
+        .padding(.horizontal, 2)
+        .padding(.top, 6)
+        .padding(.bottom, 14)
+    }
+}
+
+private struct WatchRunningGoalSection: View {
+    let lastSyncedWorkoutTitle: String
+    let detail: String
+
+    var body: some View {
+        GameSurface(title: "러닝 목표") {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(lastSyncedWorkoutTitle)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+                Text(detail)
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.68))
+            }
+        }
+    }
+}
+
+private struct WatchConnectivitySection: View {
+    let activationStateLabel: String
+    let authorizationStatus: String
+    let locationStatusLabel: String
+    let lastSavedWorkoutLabel: String
+    let stageBadges: [String]
+    let stageAccent: Color
+
+    var body: some View {
+        GameSurface(title: "연결 정보", compact: true) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Sync \(activationStateLabel) · HealthKit \(authorizationStatus)")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.72))
+                Text("Route \(locationStatusLabel) · \(lastSavedWorkoutLabel)")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.65))
+                if stageBadges.isEmpty == false {
+                    Text(stageBadges.joined(separator: " · "))
+                        .font(.caption2)
+                        .foregroundStyle(stageAccent.opacity(0.9))
+                }
+            }
+        }
+    }
+}
+
+private struct WatchDiagnosticsSection: View {
+    let activationStateLabel: String
+    let queuedTransferCount: Int
+    let lastSavedWorkoutLabel: String
+    let recentEvents: [SyncDiagnosticEvent]
+
+    var body: some View {
+        GameSurface(title: "진단", compact: true) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Link \(activationStateLabel) · Queue \(queuedTransferCount) · Save \(lastSavedWorkoutLabel)")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.72))
+                    .lineLimit(2)
+
+                ForEach(recentEvents.prefix(3)) { event in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(event.title)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                        Text(event.detail)
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.62))
+                            .lineLimit(2)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct WatchRewardSection: View {
+    let reward: RunRewardSummary
+    let hatchBurstScale: CGFloat
+
+    var body: some View {
+        GameSurface(title: "생성 결과", compact: true) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    ZStack {
+                        HatchBurstView(accent: reward.pet.accentColor, pet: reward.pet, scale: hatchBurstScale)
+                        PixelPetView(pet: reward.pet, pixelSize: 5)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(reward.pet.displayName)
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                        Text(reward.flavorText)
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.72))
+                            .lineLimit(2)
+                    }
+                }
+
+                HStack {
+                    TraitChip(label: reward.coreLabel, accent: reward.pet.accentColor)
+                    TraitChip(label: "+\(reward.experience) XP", accent: .green)
+                }
+
+                Text("Completed quests \(reward.completedQuestCount)")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.72))
+            }
+        }
+    }
+}
+
+private struct WatchRuntimeAlertBanner: View {
+    let alert: WatchRuntimeAlert
+
+    private var accent: Color {
+        switch alert.kind {
+        case .goal:
+            .orange
+        case .reward:
+            .green
+        case .rare:
+            .mint
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(accent)
+                .frame(width: 8, height: 8)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(alert.title)
+                    .font(.caption2.weight(.black))
+                    .foregroundStyle(.white)
+                Text(alert.detail)
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.72))
+                    .lineLimit(2)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(accent.opacity(0.16))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(accent.opacity(0.32), lineWidth: 1)
+                )
+        )
     }
 }
 

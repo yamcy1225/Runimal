@@ -1,19 +1,23 @@
+import RunimalCore
 import SwiftUI
 
 struct TraceEggView: View {
     let accent: Color
+    var shell: EggShellType? = nil
     var pixelSize: CGFloat = 10
     var cracked: Bool = false
+    var resonance: Double = 0.5
 
     @State private var drifting = false
     @State private var glowPulse = false
+    @State private var scanShift = false
 
     var body: some View {
         ZStack {
             Circle()
                 .fill(
                     RadialGradient(
-                        colors: [accent.opacity(glowPulse ? 0.34 : 0.18), .clear],
+                        colors: [accent.opacity(glowPulse ? 0.34 + resonance * 0.18 : 0.18 + resonance * 0.08), .clear],
                         center: .center,
                         startRadius: pixelSize,
                         endRadius: pixelSize * 5.8
@@ -26,9 +30,11 @@ struct TraceEggView: View {
                 .frame(width: 9.1 * pixelSize, height: 9.1 * pixelSize)
                 .rotationEffect(.degrees(drifting ? 8 : -8))
 
+            shellAura
             pixelLayer(shellPixels, color: .white.opacity(0.92))
-            pixelLayer(shellShadePixels, color: accent.opacity(0.55))
+            pixelLayer(shellShadePixels, color: shell?.shellTint.opacity(0.72) ?? accent.opacity(0.55))
             pixelLayer(corePixels, color: accent.opacity(0.94), inset: pixelSize * 0.18)
+            shellParticles
 
             if cracked {
                 pixelLayer(crackPixels, color: .black.opacity(0.68), inset: pixelSize * 0.25)
@@ -49,9 +55,32 @@ struct TraceEggView: View {
         .onAppear {
             drifting = true
             glowPulse = true
+            scanShift = true
         }
-        .animation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true), value: drifting)
-        .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: glowPulse)
+        .animation(.easeInOut(duration: max(0.7, 1.4 - resonance * 0.5)).repeatForever(autoreverses: true), value: drifting)
+        .animation(.easeInOut(duration: max(0.65, 1.2 - resonance * 0.4)).repeatForever(autoreverses: true), value: glowPulse)
+        .animation(.linear(duration: 2.4).repeatForever(autoreverses: true), value: scanShift)
+    }
+
+    private var shellAura: some View {
+        RoundedRectangle(cornerRadius: pixelSize * 0.8, style: .continuous)
+            .stroke((shell?.particleColor ?? accent).opacity(0.28), lineWidth: max(1, pixelSize * 0.12))
+            .frame(width: 7.4 * pixelSize, height: 8.2 * pixelSize)
+            .rotationEffect(.degrees(scanShift ? 2 : -2))
+            .blur(radius: 0.6)
+    }
+
+    private var shellParticles: some View {
+        ForEach(Array(shellParticleLayout.enumerated()), id: \.offset) { _, point in
+            Rectangle()
+                .fill((shell?.particleColor ?? accent).opacity(0.92))
+                .frame(width: pixelSize * 0.45, height: pixelSize * 0.45)
+                .position(
+                    x: CGFloat(point.0) * pixelSize + pixelSize / 2,
+                    y: CGFloat(point.1) * pixelSize + pixelSize / 2
+                )
+                .offset(x: scanShift ? pixelSize * 0.22 : -pixelSize * 0.18, y: drifting ? -pixelSize * 0.08 : pixelSize * 0.08)
+        }
     }
 
     private func pixelLayer(_ pixels: [(Int, Int)], color: Color, inset: CGFloat = 0) -> some View {
@@ -93,5 +122,22 @@ struct TraceEggView: View {
 
     private var sparkPixels: [(Int, Int)] {
         [(2, 1), (7, 1), (1, 4), (8, 4)]
+    }
+
+    private var shellParticleLayout: [(Int, Int)] {
+        switch shell {
+        case .ember:
+            return [(1, 1), (7, 0), (0, 4), (8, 3), (2, 7)]
+        case .gale:
+            return [(1, 2), (7, 1), (8, 5), (2, 7), (0, 5)]
+        case .moss:
+            return [(1, 6), (2, 7), (7, 6), (8, 4), (0, 3)]
+        case .dusk:
+            return [(1, 1), (7, 1), (8, 5), (2, 7), (0, 5), (6, 7)]
+        case .stone:
+            return [(1, 7), (2, 6), (7, 7), (8, 5), (0, 6)]
+        case nil:
+            return [(1, 1), (7, 1), (1, 7), (7, 7)]
+        }
     }
 }
