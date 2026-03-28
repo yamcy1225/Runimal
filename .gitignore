@@ -7,3 +7,5 @@ xcuserdata/
 demo/frames/*.png
 demo/**/*.mp4
 demo/**/concat.txt
+demo/**/render-result.json
+*.log
