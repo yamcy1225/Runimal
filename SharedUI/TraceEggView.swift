@@ -44,13 +44,13 @@ struct TraceEggView: View {
         .frame(width: 10 * pixelSize, height: 10 * pixelSize)
         .offset(y: drifting ? -pixelSize * 0.28 : pixelSize * 0.12)
         .rotationEffect(.degrees(drifting ? 1.6 : -1.8))
-        .shadow(color: accent.opacity(0.34), radius: 18, y: 12)
+        .shadow(color: accent.opacity(0.2), radius: 8, y: 4)
         .overlay(alignment: .bottom) {
             RoundedRectangle(cornerRadius: pixelSize)
                 .fill(.black.opacity(0.24))
                 .frame(width: 5.8 * pixelSize, height: pixelSize * 0.7)
-                .blur(radius: 6)
-                .offset(y: pixelSize * 1.7)
+                .blur(radius: 3)
+                .offset(y: pixelSize * 1.2)
         }
         .onAppear {
             drifting = true

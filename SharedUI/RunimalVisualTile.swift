@@ -7,38 +7,52 @@ struct RunimalMetricTile: View {
     let accent: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             ZStack {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(accent.opacity(0.16))
-                    .frame(width: 36, height: 36)
+                Rectangle()
+                    .fill(GameBoyPalette.mediumLight)
+                    .frame(width: 34, height: 34)
+                    .overlay(
+                        Rectangle()
+                            .stroke(GameBoyPalette.darkest, lineWidth: 1)
+                    )
 
                 Image(systemName: icon)
-                    .font(.system(size: 15, weight: .black))
-                    .foregroundStyle(.white)
+                    .font(.system(size: 14, weight: .black))
+                    .foregroundStyle(GameBoyPalette.darkest)
             }
 
             Text(title.uppercased())
-                .font(.caption2.weight(.black))
-                .tracking(1.0)
-                .foregroundStyle(.white.opacity(0.48))
+                .font(.caption2.monospaced().weight(.black))
+                .tracking(0.9)
+                .foregroundStyle(GameBoyPalette.mediumDark)
 
             Text(value)
-                .font(.headline.weight(.black))
-                .foregroundStyle(.white)
+                .font(.headline.monospaced().weight(.black))
+                .foregroundStyle(GameBoyPalette.darkest)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
+        .padding(12)
         .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(.white.opacity(0.04))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(.white.opacity(0.08), lineWidth: 1)
-                )
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(GameBoyPalette.lightest)
+                GameBoyLCDOverlay()
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(GameBoyPalette.darkest, lineWidth: 1.5)
+        )
+        .overlay(alignment: .topLeading) {
+            Rectangle()
+                .fill(accent.opacity(0.82))
+                .frame(width: 16, height: 4)
+                .padding(6)
+        }
     }
 }
 
@@ -48,23 +62,29 @@ struct RunimalSignalBadge: View {
     let accent: Color
 
     var body: some View {
-        HStack(spacing: 7) {
+        HStack(spacing: 6) {
             Image(systemName: icon)
                 .font(.caption2.weight(.black))
             Text(label.uppercased())
-                .font(.caption2.weight(.black))
+                .font(.caption2.monospaced().weight(.black))
                 .tracking(0.8)
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 7)
+        .padding(.vertical, 6)
         .background(
-            Capsule()
-                .fill(accent.opacity(0.14))
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(GameBoyPalette.lightest)
                 .overlay(
-                    Capsule()
-                        .stroke(accent.opacity(0.32), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(GameBoyPalette.darkest, lineWidth: 1)
                 )
         )
-        .foregroundStyle(.white.opacity(0.94))
+        .foregroundStyle(GameBoyPalette.darkest)
+        .overlay(alignment: .topLeading) {
+            Rectangle()
+                .fill(accent.opacity(0.78))
+                .frame(width: 12, height: 3)
+                .padding(4)
+        }
     }
 }

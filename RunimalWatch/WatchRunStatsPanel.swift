@@ -23,11 +23,11 @@ struct WatchRunStatsPanel: View {
 
     private var cards: [WatchStatCardModel] {
         [
-            .init(title: "거리", value: distanceText, accent: accent),
-            .init(title: "시간", value: elapsedText, accent: .white.opacity(0.16)),
-            .init(title: "페이스", value: paceText, accent: .white.opacity(0.16)),
-            .init(title: "심박", value: heartRateText, accent: .red.opacity(0.22)),
-            .init(title: "평균 케이던스", value: cadenceText, accent: .orange.opacity(0.24)),
+            .init(title: "거리", value: distanceText, accent: GameBoyPalette.mediumLight),
+            .init(title: "시간", value: elapsedText, accent: GameBoyPalette.lightest),
+            .init(title: "페이스", value: paceText, accent: GameBoyPalette.lightest),
+            .init(title: "심박", value: heartRateText, accent: GameBoyPalette.mediumLight),
+            .init(title: "평균 케이던스", value: cadenceText, accent: GameBoyPalette.mediumLight),
         ]
     }
 
@@ -61,12 +61,12 @@ struct WatchRunStatsPanel: View {
     private func statCard(title: String, value: String, accent: Color) -> some View {
         HStack(spacing: 8) {
             Text(title)
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(.white.opacity(0.64))
+                .font(.caption2.monospaced().weight(.black))
+                .foregroundStyle(GameBoyPalette.mediumDark)
                 .frame(width: 76, alignment: .leading)
             Text(value)
                 .font(.footnote.monospacedDigit().weight(.black))
-                .foregroundStyle(.white)
+                .foregroundStyle(GameBoyPalette.darkest)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -74,11 +74,11 @@ struct WatchRunStatsPanel: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(accent)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(.white.opacity(0.08), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(GameBoyPalette.darkest, lineWidth: 1)
                 )
         )
     }

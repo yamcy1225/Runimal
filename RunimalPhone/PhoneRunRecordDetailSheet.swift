@@ -50,13 +50,14 @@ struct PhoneRunRecordDetailSheet: View {
             ZStack {
                 LinearGradient(
                     colors: [
-                        Color(red: 0.03, green: 0.05, blue: 0.08),
-                        Color(red: 0.02, green: 0.03, blue: 0.05),
-                        accent.opacity(0.18)
+                        GameBoyPalette.mediumLight,
+                        GameBoyPalette.lightest,
+                        GameBoyPalette.mediumLight.opacity(0.88)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
+                GameBoyLCDOverlay()
                 .ignoresSafeArea()
 
                 if let run {
@@ -75,24 +76,47 @@ struct PhoneRunRecordDetailSheet: View {
                     VStack(spacing: 12) {
                         Image(systemName: "exclamationmark.circle.fill")
                             .font(.system(size: 36, weight: .black))
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(GameBoyPalette.mediumDark)
                         Text("러닝 기록을 찾을 수 없습니다")
-                            .font(.headline.weight(.black))
-                            .foregroundStyle(.white)
+                            .font(.headline.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.darkest)
                         Text("삭제되었거나 이미 정리된 기록입니다.")
-                            .font(.footnote)
-                            .foregroundStyle(.white.opacity(0.7))
+                            .font(.footnote.monospaced())
+                            .foregroundStyle(GameBoyPalette.mediumDark)
                     }
                     .padding(24)
                 }
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("닫기") { dismiss() }
-                        .fontWeight(.bold)
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text("닫기")
+                            .font(.caption.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.lightest)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(GameBoyPalette.mediumDark)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .stroke(GameBoyPalette.darkest, lineWidth: 2)
+                                    )
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                ToolbarItem(placement: .principal) {
+                    Text("러닝 기록")
+                        .font(.headline.monospaced().weight(.black))
+                        .foregroundStyle(GameBoyPalette.darkest)
                 }
             }
-            .navigationTitle("러닝 기록")
+            .toolbarBackground(GameBoyPalette.lightest, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .navigationBarTitleDisplayMode(.inline)
         }
     }
@@ -102,29 +126,27 @@ struct PhoneRunRecordDetailSheet: View {
             VStack(alignment: .leading, spacing: 14) {
                 ZStack(alignment: .topLeading) {
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    accent.opacity(0.24),
-                                    Color.black.opacity(0.86),
-                                    .white.opacity(0.04)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
+                        .fill(GameBoyPalette.lightest)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                                .stroke(GameBoyPalette.darkest, lineWidth: 2)
                         )
 
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(.white.opacity(0.08), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(GameBoyPalette.mediumLight.opacity(0.22))
+                        .padding(6)
+
+                    GameBoyLCDOverlay()
+                        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
 
                     if !run.route.isEmpty {
                         RoutePreviewShape(points: run.route)
-                            .stroke(accent, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+                            .stroke(GameBoyPalette.mediumDark, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
                             .padding(26)
                     } else {
                         Image(systemName: "point.bottomleft.forward.to.point.topright.scurvepath")
                             .font(.system(size: 42, weight: .black))
-                            .foregroundStyle(accent.opacity(0.82))
+                            .foregroundStyle(GameBoyPalette.mediumDark)
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
@@ -139,12 +161,12 @@ struct PhoneRunRecordDetailSheet: View {
                 .aspectRatio(1, contentMode: .fit)
 
                 Text(summaryLine(for: run))
-                    .font(.headline.weight(.black))
-                    .foregroundStyle(.white)
+                    .font(.headline.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.darkest)
 
                 Text(run.startedAt.formatted(date: .abbreviated, time: .shortened))
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.68))
+                    .font(.subheadline.monospaced())
+                    .foregroundStyle(GameBoyPalette.mediumDark)
             }
         }
     }
@@ -177,66 +199,45 @@ struct PhoneRunRecordDetailSheet: View {
             VStack(alignment: .leading, spacing: 12) {
                 if canUseRunCore {
                     Text("이 러닝 코어를 바로 성장 재료로 전환할 수 있습니다.")
-                        .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.7))
+                        .font(.footnote.monospaced())
+                        .foregroundStyle(GameBoyPalette.mediumDark)
 
                     if store.mainSelection?.kind == .egg, store.mainEgg != nil {
-                        Button {
+                        pixelActionButton(title: "메인 알 주입", detail: "알 게이지를 올립니다.", filled: true) {
                             if let updatedEgg = store.incubateMainEgg(with: run.id) {
                                 actionFeedback = .incubated(updatedEgg)
                             }
-                        } label: {
-                            actionLabel(
-                                title: "메인 알에 주입",
-                                detail: "현재 메인 알의 디코딩 진척을 올립니다."
-                            )
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(accent)
                     } else {
-                        Button {
+                        pixelActionButton(title: "메인 동행체 성장", detail: "\(store.featuredCompanion.pet.displayName) XP로 변환합니다.", filled: true) {
                             if let outcome = store.feedActiveCompanion(with: run.id) {
                                 actionFeedback = .fed(outcome)
                             }
-                        } label: {
-                            actionLabel(
-                                title: "메인 동행체에 먹이기",
-                                detail: "\(store.featuredCompanion.pet.displayName)의 경험치로 변환합니다."
-                            )
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(accent)
                     }
 
                     if eggOpportunity?.eligible == true {
-                        Button {
+                        pixelActionButton(title: "새 알 생성", detail: eggOpportunity?.summary ?? "이 코어로 새 알을 만듭니다.") {
                             if let forgedEgg = store.forgeEgg(from: run.id) {
                                 actionFeedback = .forged(forgedEgg)
                             }
-                        } label: {
-                            actionLabel(
-                                title: "새 알 만들기",
-                                detail: eggOpportunity?.summary ?? "이 러닝으로 새로운 알을 만듭니다."
-                            )
                         }
-                        .buttonStyle(.bordered)
-                        .tint(.white.opacity(0.3))
                     }
                 } else {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(usageSummary?.title ?? "이미 사용한 코어")
-                            .font(.headline.weight(.black))
-                            .foregroundStyle(.white)
+                            .font(.headline.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.darkest)
                         Text(usageSummary?.detail ?? "이 러닝 코어는 이미 성장 또는 알 생성에 사용되었습니다.")
-                            .font(.footnote)
-                            .foregroundStyle(.white.opacity(0.68))
+                            .font(.footnote.monospaced())
+                            .foregroundStyle(GameBoyPalette.mediumDark)
                     }
                     .padding(14)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .background(GameBoyPalette.mediumLight.opacity(0.18), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                     .overlay {
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke((usageSummary?.accent ?? .white.opacity(0.18)).opacity(0.45), lineWidth: 1)
+                            .stroke((usageSummary?.accent ?? GameBoyPalette.mediumDark).opacity(0.45), lineWidth: 1)
                     }
                 }
             }
@@ -251,8 +252,8 @@ struct PhoneRunRecordDetailSheet: View {
                 VStack(alignment: .leading, spacing: 12) {
                     resultHero(
                         icon: outcome.stageAdvanced ? "arrow.up.right.circle.fill" : "bolt.fill",
-                        title: outcome.stageAdvanced ? "단계 상승 완료" : "성장 에너지 흡수 완료",
-                        detail: "\(outcome.beforeProgress.stageLabel)에서 \(outcome.afterProgress.stageLabel)로 갱신됐습니다."
+                        title: outcome.stageAdvanced ? "단계 상승" : "성장 흡수 완료",
+                        detail: "\(outcome.beforeProgress.stageLabel) -> \(outcome.afterProgress.stageLabel)"
                     )
 
                     HStack(spacing: 8) {
@@ -263,11 +264,12 @@ struct PhoneRunRecordDetailSheet: View {
                         }
                     }
 
-                    RunimalProgressBar(progress: outcome.afterProgress.progressRatio, accent: accent, height: 10)
-
-                    Text(outcome.afterProgress.headline)
-                        .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.76))
+                    pixelProgressPanel(
+                        title: "성장 게이지",
+                        progress: outcome.afterProgress.progressRatio,
+                        accent: accent,
+                        detail: outcome.afterProgress.headline
+                    )
 
                     if !outcome.bonusLabels.isEmpty {
                         ScrollView(.horizontal, showsIndicators: false) {
@@ -288,8 +290,8 @@ struct PhoneRunRecordDetailSheet: View {
                 VStack(alignment: .leading, spacing: 12) {
                     resultHero(
                         icon: "sparkles.rectangle.stack.fill",
-                        title: "새 알이 생성됐습니다",
-                        detail: "이 러닝 코어가 새로운 디코딩 쉘로 고정됐습니다."
+                        title: "새 알 생성",
+                        detail: "코어가 새 쉘로 고정됐습니다."
                     )
 
                     HStack(spacing: 12) {
@@ -297,19 +299,21 @@ struct PhoneRunRecordDetailSheet: View {
 
                         VStack(alignment: .leading, spacing: 6) {
                             Text(egg.title)
-                                .font(.headline.weight(.black))
-                                .foregroundStyle(.white)
+                                .font(.headline.monospaced().weight(.black))
+                                .foregroundStyle(GameBoyPalette.darkest)
                             Text(egg.shell.hatchHint)
-                                .font(.footnote)
-                                .foregroundStyle(.white.opacity(0.72))
+                                .font(.footnote.monospaced())
+                                .foregroundStyle(GameBoyPalette.mediumDark)
                         }
                     }
 
-                    RunimalProgressBar(progress: egg.progressRatio, accent: egg.shell.accentColor, height: 10)
-                    Text("임계치 \(egg.hatchThreshold) XP · 현재 \(egg.storedExperience) XP")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.white.opacity(0.78))
-                    resultNextStep("다음 추천", detail: "메인 알로 들고 다니며 다음 러닝 코어를 주입하면 부화 준비까지 빠르게 진행됩니다.")
+                    pixelProgressPanel(
+                        title: "알 생성 게이지",
+                        progress: egg.progressRatio,
+                        accent: egg.shell.accentColor,
+                        detail: "임계치 \(egg.hatchThreshold) XP · 현재 \(egg.storedExperience) XP"
+                    )
+                    resultNextStep("다음 행동", detail: "메인 알로 지정하고 다음 코어를 더 주입하세요.")
                 }
             }
 
@@ -318,8 +322,8 @@ struct PhoneRunRecordDetailSheet: View {
                 VStack(alignment: .leading, spacing: 12) {
                     resultHero(
                         icon: egg.readyToHatch ? "checkmark.seal.fill" : "waveform.badge.plus",
-                        title: egg.readyToHatch ? "실체화 준비 완료" : "디코딩이 더 안정화됐습니다",
-                        detail: egg.readyToHatch ? "이제 컬렉션에서 바로 부화 시퀀스를 시작할 수 있습니다." : "다음 러닝 코어를 더 주입하면 부화 임계점에 도달합니다."
+                        title: egg.readyToHatch ? "부화 준비 완료" : "디코딩 안정화",
+                        detail: egg.readyToHatch ? "이제 바로 부화할 수 있습니다." : "다음 코어를 넣으면 부화에 가까워집니다."
                     )
 
                     HStack(spacing: 12) {
@@ -328,19 +332,21 @@ struct PhoneRunRecordDetailSheet: View {
 
                         VStack(alignment: .leading, spacing: 6) {
                             Text(egg.title)
-                                .font(.headline.weight(.black))
-                                .foregroundStyle(.white)
-                            Text(egg.readyToHatch ? "실체화 준비 완료" : "디코딩 신호가 더 안정화되었습니다.")
-                                .font(.footnote)
-                                .foregroundStyle(.white.opacity(0.72))
+                                .font(.headline.monospaced().weight(.black))
+                                .foregroundStyle(GameBoyPalette.darkest)
+                            Text(egg.readyToHatch ? "부화 가능" : "게이지 상승")
+                                .font(.footnote.monospaced())
+                                .foregroundStyle(GameBoyPalette.mediumDark)
                         }
                     }
 
-                    RunimalProgressBar(progress: egg.progressRatio, accent: accent, height: 9)
-                    Text("\(egg.storedExperience) / \(egg.hatchThreshold) XP")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.white.opacity(0.78))
-                    resultNextStep("다음 추천", detail: egg.readyToHatch ? "보관함으로 이동해 실체화 시퀀스를 시작하세요." : "같은 방식으로 다음 코어를 주입해 부화 게이지를 채우세요.")
+                    pixelProgressPanel(
+                        title: "디코딩 게이지",
+                        progress: egg.progressRatio,
+                        accent: accent,
+                        detail: "\(egg.storedExperience) / \(egg.hatchThreshold) XP"
+                    )
+                    resultNextStep("다음 행동", detail: egg.readyToHatch ? "보관함으로 가서 바로 부화하세요." : "다음 코어를 더 넣어 게이지를 채우세요.")
                 }
             }
         }
@@ -349,56 +355,103 @@ struct PhoneRunRecordDetailSheet: View {
     private func resultHero(icon: String, title: String, detail: String) -> some View {
         HStack(alignment: .top, spacing: 12) {
             ZStack {
-                Circle()
-                    .fill(accent.opacity(0.18))
-                    .frame(width: 44, height: 44)
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(GameBoyPalette.lightest)
+                    .frame(width: 46, height: 46)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(GameBoyPalette.darkest, lineWidth: 2)
+                    )
                 Image(systemName: icon)
                     .font(.system(size: 20, weight: .black))
-                    .foregroundStyle(accent)
+                    .foregroundStyle(GameBoyPalette.mediumDark)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.headline.weight(.black))
-                    .foregroundStyle(.white)
+                    .font(.headline.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.darkest)
                 Text(detail)
-                    .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.72))
+                    .font(.footnote.monospaced())
+                    .foregroundStyle(GameBoyPalette.mediumDark)
             }
         }
+    }
+
+    private func pixelProgressPanel(title: String, progress: Double, accent: Color, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(title)
+                    .font(.caption.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.darkest)
+                Spacer()
+                Rectangle()
+                    .fill(accent.opacity(0.8))
+                    .frame(width: 14, height: 4)
+            }
+
+            RunimalProgressBar(progress: progress, accent: accent, height: 10)
+
+            Text(detail)
+                .font(.caption.monospaced().weight(.black))
+                .foregroundStyle(GameBoyPalette.mediumDark)
+        }
+        .padding(12)
+        .background(GameBoyPalette.mediumLight.opacity(0.16), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(GameBoyPalette.darkest.opacity(0.22), lineWidth: 1)
+        )
     }
 
     private func resultNextStep(_ title: String, detail: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.caption.weight(.black))
-                .foregroundStyle(accent.opacity(0.92))
+                .font(.caption.monospaced().weight(.black))
+                .foregroundStyle(GameBoyPalette.darkest)
             Text(detail)
-                .font(.footnote)
-                .foregroundStyle(.white.opacity(0.72))
+                .font(.footnote.monospaced())
+                .foregroundStyle(GameBoyPalette.mediumDark)
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(GameBoyPalette.mediumLight.opacity(0.18), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
-    private func actionLabel(title: String, detail: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.subheadline.weight(.black))
-            Text(detail)
-                .font(.caption)
-                .foregroundStyle(.white.opacity(0.72))
+    private func pixelActionButton(title: String, detail: String, filled: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.subheadline.monospaced().weight(.black))
+                Text(detail)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(filled ? GameBoyPalette.lightest.opacity(0.9) : GameBoyPalette.mediumDark)
+            }
+            .foregroundStyle(filled ? GameBoyPalette.lightest : GameBoyPalette.darkest)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(filled ? GameBoyPalette.mediumDark : GameBoyPalette.lightest)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(GameBoyPalette.darkest, lineWidth: 2)
+                    )
+            )
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .buttonStyle(.plain)
     }
 
     private func sourceEyebrow(for run: CompletedRunRecord) -> String {
         if run.source == "watch-healthkit" {
-            return "Runimal 워치 러닝"
+            return "Runimal"
         }
 
-        return run.sourceLabel ?? "외부 러닝"
+        if run.source.hasPrefix("fit:") {
+            return "FIT"
+        }
+
+        return run.sourceLabel ?? "외부"
     }
 
     private func environmentLabel(_ condition: EnvironmentCondition) -> String {

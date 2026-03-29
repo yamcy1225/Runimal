@@ -18,14 +18,13 @@ struct WatchCompanionHeroCard: View {
         GameSurface(title: "동행", accent: accent, compact: true) {
             VStack(spacing: 8) {
                 ZStack {
-                    Circle()
-                        .fill(accent.opacity(0.18))
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(GameBoyPalette.mediumLight.opacity(0.2))
                         .frame(width: 62, height: 62)
-                        .blur(radius: 8)
-
-                    Circle()
-                        .stroke(accent.opacity(0.34), lineWidth: 2)
-                        .frame(width: 52, height: 52)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(GameBoyPalette.darkest, lineWidth: 2)
+                        )
 
                     if sessionStateLabel == "running" {
                         PixelPetView(pet: pet, pixelSize: 4)
@@ -37,18 +36,18 @@ struct WatchCompanionHeroCard: View {
                 VStack(spacing: 3) {
                     Text(pet.displayName)
                         .font(.footnote.weight(.black))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(GameBoyPalette.darkest)
                         .multilineTextAlignment(.center)
                         .lineLimit(1)
                         .minimumScaleFactor(0.72)
                     Text(statusTitle)
-                        .font(.caption2.weight(.black))
-                        .foregroundStyle(accent.opacity(0.92))
+                        .font(.caption2.monospaced().weight(.black))
+                        .foregroundStyle(GameBoyPalette.mediumDark)
                 }
 
                 RunimalProgressBar(progress: progress, accent: accent, height: 6)
 
-                WatchStatusChip(label: syncChipLabel, accent: sessionStateLabel == "running" ? accent : .white.opacity(0.14))
+                WatchStatusChip(label: syncChipLabel, accent: sessionStateLabel == "running" ? GameBoyPalette.mediumDark : GameBoyPalette.mediumLight)
             }
         }
     }
@@ -64,18 +63,18 @@ private struct WatchStatusChip: View {
 
     var body: some View {
         Text(label)
-            .font(.caption2.weight(.bold))
-            .foregroundStyle(.white.opacity(0.82))
+            .font(.caption2.monospaced().weight(.black))
+            .foregroundStyle(GameBoyPalette.darkest)
             .lineLimit(1)
             .minimumScaleFactor(0.72)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
             .background(
-                Capsule(style: .continuous)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(accent)
                     .overlay(
-                        Capsule(style: .continuous)
-                            .stroke(.white.opacity(0.08), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(GameBoyPalette.darkest, lineWidth: 1)
                     )
             )
     }

@@ -30,15 +30,15 @@ struct PhoneRunDeckView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.03, green: 0.05, blue: 0.08),
-                    Color(red: 0.02, green: 0.03, blue: 0.05),
-                    .cyan.opacity(0.1)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            ZStack {
+                LinearGradient(
+                    colors: [GameBoyPalette.mediumLight, GameBoyPalette.lightest, GameBoyPalette.mediumLight.opacity(0.88)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                GameBoyLCDOverlay()
+                    .opacity(0.72)
+            }
             .ignoresSafeArea()
 
             ScrollView {
@@ -155,20 +155,26 @@ struct PhoneRunDeckView: View {
                         archiveFilter = filter
                     } label: {
                         Text(filter.label)
-                            .font(.caption.weight(.black))
+                            .font(.caption.monospaced().weight(.black))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
                             .background(
-                                Capsule()
-                                    .fill(archiveFilter == filter ? store.pet.accentColor.opacity(0.22) : .white.opacity(0.06))
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(archiveFilter == filter ? GameBoyPalette.mediumDark : GameBoyPalette.lightest)
                             )
                             .overlay(
-                                Capsule()
-                                    .stroke(archiveFilter == filter ? store.pet.accentColor.opacity(0.5) : .white.opacity(0.08), lineWidth: 1)
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .stroke(GameBoyPalette.darkest, lineWidth: 2)
                             )
+                            .overlay(alignment: .topLeading) {
+                                Rectangle()
+                                    .fill(store.pet.accentColor.opacity(0.82))
+                                    .frame(width: archiveFilter == filter ? 12 : 8, height: 4)
+                                    .padding(6)
+                            }
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(archiveFilter == filter ? .white : .white.opacity(0.68))
+                    .foregroundStyle(archiveFilter == filter ? GameBoyPalette.lightest : GameBoyPalette.darkest)
                 }
             }
         }
@@ -177,8 +183,8 @@ struct PhoneRunDeckView: View {
     private var archiveEmptyState: some View {
         GameSurface(title: "표시할 러닝 기록이 없습니다", accent: store.pet.accentColor, eyebrow: archiveFilter.label) {
             Text(emptyStateDescription)
-                .font(.footnote)
-                .foregroundStyle(.white.opacity(0.72))
+                .font(.footnote.monospaced())
+                .foregroundStyle(GameBoyPalette.mediumDark)
         }
     }
 
@@ -194,25 +200,28 @@ struct PhoneRunDeckView: View {
     }
 
     private var headerDeck: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("러닝 준비")
-                .font(.caption.weight(.black))
-                .tracking(1.4)
-                .foregroundStyle(.cyan.opacity(0.9))
+        GameSurface(title: "러닝 준비", accent: store.pet.accentColor, eyebrow: "운동 코어 허브") {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(store.suggestedWorkout.title.uppercased())
+                            .font(.system(size: 26, weight: .black, design: .monospaced))
+                            .foregroundStyle(GameBoyPalette.darkest)
+                        Text("운동 에너지, 돌발 목표, 최근 동기화 결과를 한 화면에서 확인합니다.")
+                            .font(.footnote.monospaced())
+                            .foregroundStyle(GameBoyPalette.mediumDark)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
 
-            HStack(alignment: .bottom) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(store.suggestedWorkout.title.capitalized)
-                        .font(.system(size: 28, weight: .black, design: .rounded))
-                        .foregroundStyle(.white)
-                    Text("운동 에너지, 돌발 목표, 최근 동기화 결과를 한 화면에서 확인합니다.")
-                        .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.68))
+                    Spacer(minLength: 10)
+
+                    TraitChip(label: store.weeklyBoard.season.title, accent: store.pet.accentColor)
                 }
 
-                Spacer()
-
-                TraitChip(label: store.weeklyBoard.season.title, accent: store.pet.accentColor)
+                HStack(spacing: 8) {
+                    RunimalSignalBadge(icon: "figure.run", label: "RUN CORE", accent: GameBoyPalette.mediumDark)
+                    RunimalSignalBadge(icon: "shippingbox.fill", label: archiveFilter.label, accent: GameBoyPalette.mediumLight)
+                }
             }
         }
     }
@@ -231,8 +240,8 @@ struct PhoneRunDeckView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
                             Text("지금 목표")
-                                .font(.headline.weight(.black))
-                                .foregroundStyle(.white)
+                                .font(.headline.monospaced().weight(.black))
+                                .foregroundStyle(GameBoyPalette.darkest)
                             Spacer()
                             TraitChip(
                                 label: primaryMission.completed ? "완료" : primaryMission.progressLabel,
@@ -241,8 +250,8 @@ struct PhoneRunDeckView: View {
                         }
 
                         Text(primaryMission.title)
-                            .font(.subheadline.weight(.bold))
-                            .foregroundStyle(.white)
+                            .font(.subheadline.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.darkest)
 
                         RunimalProgressBar(
                             progress: primaryMission.progressRatio,
@@ -255,8 +264,8 @@ struct PhoneRunDeckView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
                         Text("남은 미션")
-                            .font(.headline.weight(.black))
-                            .foregroundStyle(.white)
+                            .font(.headline.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.darkest)
                         Spacer()
                         RunimalSignalBadge(
                             icon: "crown.fill",
@@ -269,12 +278,12 @@ struct PhoneRunDeckView: View {
                         VStack(alignment: .leading, spacing: 6) {
                             HStack {
                                 Text(mission.title)
-                                    .font(.subheadline.weight(.bold))
-                                    .foregroundStyle(.white)
+                                    .font(.subheadline.monospaced().weight(.black))
+                                    .foregroundStyle(GameBoyPalette.darkest)
                                 Spacer()
                                 TraitChip(
                                     label: mission.completed ? "완료" : mission.progressLabel,
-                                    accent: mission.completed ? .green : .white.opacity(0.18)
+                                    accent: mission.completed ? .green : GameBoyPalette.mediumLight
                                 )
                             }
 
@@ -295,30 +304,34 @@ struct PhoneRunDeckView: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .top, spacing: 12) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(.white.opacity(0.05))
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(GameBoyPalette.lightest)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .stroke(GameBoyPalette.darkest, lineWidth: 2)
+                            )
                             .frame(width: 72, height: 72)
 
                         if !run.route.isEmpty {
                             RoutePreviewShape(points: run.route)
-                                .stroke(.cyan, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                                .stroke(GameBoyPalette.mediumDark, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
                                 .padding(12)
                                 .frame(width: 72, height: 72)
                         } else {
                             Image(systemName: "applewatch.radiowaves.left.and.right")
                                 .font(.system(size: 24, weight: .black))
-                                .foregroundStyle(.cyan.opacity(0.82))
+                                .foregroundStyle(GameBoyPalette.mediumDark)
                         }
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text(run.startedAt.formatted(date: .abbreviated, time: .shortened))
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.cyan.opacity(0.88))
+                            .font(.caption.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.mediumDark)
 
                         Text("워치에서 직접 측정한 러닝이 코어로 정리됐습니다. 아래 기록에서 바로 성장, 알 생성, 인큐베이트에 쓸 수 있습니다.")
-                            .font(.footnote)
-                            .foregroundStyle(.white.opacity(0.76))
+                            .font(.footnote.monospaced())
+                            .foregroundStyle(GameBoyPalette.mediumDark)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -350,8 +363,8 @@ struct PhoneRunDeckView: View {
         ) {
             VStack(alignment: .leading, spacing: 12) {
                 Text("워치에서 막 들어온 원본값과 iPhone에 저장된 값을 나란히 비교합니다. 실기 QA 때 거리, 평균 심박, 평균 케이던스 차이를 바로 확인할 수 있습니다.")
-                    .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.74))
+                    .font(.footnote.monospaced())
+                    .foregroundStyle(GameBoyPalette.mediumDark)
 
                 metricDiffRow(
                     title: "거리",
@@ -395,8 +408,8 @@ struct PhoneRunDeckView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text(title)
-                    .font(.caption.weight(.black))
-                    .foregroundStyle(.white)
+                    .font(.caption.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.darkest)
                 Spacer()
                 TraitChip(label: delta, accent: delta == "일치" ? .green.opacity(0.28) : .orange.opacity(0.32))
             }
@@ -465,48 +478,72 @@ struct PhoneRunDeckView: View {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .center, spacing: 14) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .fill(store.pet.accentColor.opacity(0.14))
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(GameBoyPalette.lightest)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(GameBoyPalette.darkest, lineWidth: 2)
+                            )
                             .frame(width: 96, height: 96)
 
                         Image(systemName: "figure.run.circle.fill")
                             .font(.system(size: 42, weight: .black))
-                            .foregroundStyle(store.pet.accentColor)
+                            .foregroundStyle(GameBoyPalette.mediumDark)
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text(store.suggestedWorkout.title.capitalized)
-                            .font(.title2.weight(.black))
-                            .foregroundStyle(.white)
+                            .font(.title2.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.darkest)
 
                         HStack(spacing: 8) {
                             TraitChip(label: "\(store.suggestedWorkout.scheduledDistanceKm.formatted()) km", accent: store.pet.accentColor)
-                            TraitChip(label: store.suggestedWorkout.targetPaceBand, accent: .white.opacity(0.22))
+                            TraitChip(label: store.suggestedWorkout.targetPaceBand, accent: GameBoyPalette.mediumLight)
                         }
 
                         Text(store.suggestedWorkout.summary)
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.7))
+                            .font(.subheadline.monospaced())
+                            .foregroundStyle(GameBoyPalette.mediumDark)
                             .lineLimit(2)
                     }
                 }
 
                 HStack(spacing: 10) {
-                    Button("운동 에너지 연결") {
+                    pixelDeckButton(title: "운동 에너지 연결", filled: true) {
                         Task { await store.requestHealthAuthorization() }
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(store.pet.accentColor)
-                    .fontWeight(.black)
 
-                    Button("워치에 동기화") {
+                    pixelDeckButton(title: "워치에 동기화") {
                         Task { await store.syncWorkoutPlan() }
                     }
-                    .buttonStyle(.bordered)
-                    .tint(.white.opacity(0.3))
                 }
             }
         }
+    }
+
+    private func pixelDeckButton(title: String, filled: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title.uppercased())
+                .font(.caption.monospaced().weight(.black))
+                .foregroundStyle(filled ? GameBoyPalette.lightest : GameBoyPalette.darkest)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 11)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(filled ? GameBoyPalette.mediumDark : GameBoyPalette.lightest)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .stroke(GameBoyPalette.darkest, lineWidth: 2)
+                        )
+                )
+                .overlay(alignment: .topLeading) {
+                    Rectangle()
+                        .fill(store.pet.accentColor.opacity(0.82))
+                        .frame(width: filled ? 14 : 9, height: 4)
+                        .padding(6)
+                }
+        }
+        .buttonStyle(.plain)
     }
 
     private var syncCard: some View {
@@ -521,11 +558,11 @@ struct PhoneRunDeckView: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("FIT 가져오기")
-                        .font(.headline.weight(.black))
-                        .foregroundStyle(.white)
+                        .font(.headline.monospaced().weight(.black))
+                        .foregroundStyle(GameBoyPalette.darkest)
                     Text(store.fitImport.importStatusLabel)
-                        .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.7))
+                        .font(.footnote.monospaced())
+                        .foregroundStyle(GameBoyPalette.mediumDark)
                 }
 
                 if let reward = store.connectivity.lastReward {
@@ -534,14 +571,14 @@ struct PhoneRunDeckView: View {
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text("최근 생성")
-                                .font(.caption.weight(.black))
-                                .foregroundStyle(reward.pet.accentColor)
+                                .font(.caption.monospaced().weight(.black))
+                                .foregroundStyle(GameBoyPalette.mediumDark)
                             Text(reward.pet.displayName)
-                                .font(.headline.weight(.black))
-                                .foregroundStyle(.white)
+                                .font(.headline.monospaced().weight(.black))
+                                .foregroundStyle(GameBoyPalette.darkest)
                             Text(reward.coreLabel)
-                                .font(.footnote)
-                                .foregroundStyle(.white.opacity(0.68))
+                                .font(.footnote.monospaced())
+                                .foregroundStyle(GameBoyPalette.mediumDark)
                         }
 
                         Spacer()
@@ -561,19 +598,28 @@ struct PhoneRunDeckView: View {
                 }
 
                 HStack(spacing: 10) {
-                    Button("가져오기") {
+                    pixelDeckButton(title: "가져오기", filled: true) {
                         isImportingFITFile = true
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(store.pet.accentColor)
-                    .fontWeight(.black)
 
-                    Button("지우기") {
+                    Button {
                         store.clearImportedExternalRuns()
+                    } label: {
+                        Text("지우기")
+                            .font(.caption.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.darkest)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 11)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(GameBoyPalette.lightest)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                            .stroke(GameBoyPalette.darkest, lineWidth: 2)
+                                    )
+                            )
                     }
-                    .buttonStyle(.bordered)
-                    .tint(.white.opacity(0.32))
-                    .fontWeight(.black)
+                    .buttonStyle(.plain)
                 }
             }
         }

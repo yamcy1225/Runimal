@@ -12,19 +12,19 @@ struct PhoneCompanionRosterPanel: View {
     let onHatchEgg: (String) -> Void
 
     var body: some View {
-        GameSurface(title: "메인 슬롯", accent: .orange, eyebrow: "함께 달릴 동행체") {
+        GameSurface(title: "메인 슬롯", accent: GameBoyPalette.mediumDark, eyebrow: "함께 달릴 동행체") {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 10) {
-                    RunimalSignalBadge(icon: "star.fill", label: mainLabel, accent: .green)
-                    RunimalSignalBadge(icon: "waveform.path.ecg", label: "활성 링크", accent: .white.opacity(0.2))
+                    RunimalSignalBadge(icon: "star.fill", label: mainLabel, accent: GameBoyPalette.mediumDark)
+                    RunimalSignalBadge(icon: "waveform.path.ecg", label: "활성 링크", accent: GameBoyPalette.mediumLight)
                 }
 
                 if eggs.isEmpty == false {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("메인 알 후보")
-                            .font(.caption.weight(.black))
+                            .font(.caption.monospaced().weight(.black))
                             .tracking(1.1)
-                            .foregroundStyle(.orange.opacity(0.9))
+                            .foregroundStyle(GameBoyPalette.mediumDark)
 
                         ForEach(eggs) { egg in
                             HStack(alignment: .center, spacing: 12) {
@@ -34,22 +34,22 @@ struct PhoneCompanionRosterPanel: View {
 
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(egg.title)
-                                        .font(.subheadline.weight(.black))
-                                        .foregroundStyle(.white)
+                                        .font(.subheadline.monospaced().weight(.black))
+                                        .foregroundStyle(GameBoyPalette.darkest)
                                     Text(egg.shell.scanHeadline)
-                                        .font(.caption)
-                                        .foregroundStyle(.white.opacity(0.62))
+                                        .font(.caption.monospaced())
+                                        .foregroundStyle(GameBoyPalette.mediumDark)
                                         .lineLimit(2)
                                     RunimalProgressBar(progress: egg.progressRatio, accent: egg.shell.accentColor, height: 7)
                                     HStack(spacing: 6) {
                                         TraitChip(label: egg.shell.displayLabel, accent: egg.shell.accentColor)
-                                        TraitChip(label: "\(egg.storedExperience) XP", accent: .white.opacity(0.2))
+                                        TraitChip(label: "\(egg.storedExperience) XP", accent: GameBoyPalette.mediumLight)
                                     }
                                     VStack(alignment: .leading, spacing: 3) {
                                         ForEach(egg.shell.scanLogLines.prefix(2), id: \.self) { line in
                                             Text(line)
                                                 .font(.caption2.monospaced())
-                                                .foregroundStyle(.white.opacity(0.48))
+                                                .foregroundStyle(GameBoyPalette.mediumDark.opacity(0.84))
                                                 .lineLimit(1)
                                         }
                                     }
@@ -58,17 +58,20 @@ struct PhoneCompanionRosterPanel: View {
                                 Spacer()
 
                                 VStack(spacing: 8) {
-                                    Button(mainSelection?.targetID == egg.id && mainSelection?.kind == .egg ? "메인 알" : "선택") {
+                                    pixelActionButton(
+                                        title: mainSelection?.targetID == egg.id && mainSelection?.kind == .egg ? "메인 알" : "선택",
+                                        accent: egg.shell.accentColor
+                                    ) {
                                         onSelectEgg(egg.id)
                                     }
-                                    .buttonStyle(.bordered)
-                                    .tint(egg.shell.accentColor)
 
-                                    Button("디코딩") {
+                                    pixelActionButton(
+                                        title: "디코딩",
+                                        accent: egg.readyToHatch ? GameBoyPalette.mediumDark : GameBoyPalette.mediumLight,
+                                        filled: egg.readyToHatch
+                                    ) {
                                         onHatchEgg(egg.id)
                                     }
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(.green)
                                     .disabled(!egg.readyToHatch)
                                 }
                             }
@@ -78,9 +81,9 @@ struct PhoneCompanionRosterPanel: View {
 
                 VStack(alignment: .leading, spacing: 10) {
                     Text("메인 펫 후보")
-                        .font(.caption.weight(.black))
+                        .font(.caption.monospaced().weight(.black))
                         .tracking(1.1)
-                        .foregroundStyle(.white.opacity(0.78))
+                        .foregroundStyle(GameBoyPalette.mediumDark)
 
                     ForEach(companions) { companion in
                         HStack(alignment: .center, spacing: 12) {
@@ -90,21 +93,22 @@ struct PhoneCompanionRosterPanel: View {
 
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(companion.pet.displayName)
-                                    .font(.subheadline.weight(.black))
-                                    .foregroundStyle(.white)
+                                    .font(.subheadline.monospaced().weight(.black))
+                                    .foregroundStyle(GameBoyPalette.darkest)
                                 HStack(spacing: 6) {
                                     TraitChip(label: "Lv.\(companion.level)", accent: companion.pet.accentColor)
-                                    TraitChip(label: "유대 \(companion.bond)", accent: .white.opacity(0.2))
+                                    TraitChip(label: "유대 \(companion.bond)", accent: GameBoyPalette.mediumLight)
                                 }
                             }
 
                             Spacer()
 
-                            Button(mainSelection?.targetID == companion.id && mainSelection?.kind == .pet ? "메인 펫" : "선택") {
+                            pixelActionButton(
+                                title: mainSelection?.targetID == companion.id && mainSelection?.kind == .pet ? "메인 펫" : "선택",
+                                accent: companion.pet.accentColor
+                            ) {
                                 onSelectPet(companion.id)
                             }
-                            .buttonStyle(.bordered)
-                            .tint(companion.pet.accentColor)
                         }
                     }
                 }
@@ -118,31 +122,55 @@ struct PhoneCompanionRosterPanel: View {
         @ViewBuilder content: () -> Content
     ) -> some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            .black.opacity(0.9),
-                            accent.opacity(0.16),
-                            supportAccent.opacity(0.12),
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(GameBoyPalette.lightest)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(.white.opacity(0.08), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(GameBoyPalette.darkest, lineWidth: 2)
                 )
 
-            Circle()
-                .fill(supportAccent.opacity(0.16))
-                .frame(width: 42, height: 42)
-                .blur(radius: 12)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(GameBoyPalette.mediumLight.opacity(0.18))
+                .padding(5)
+
+            GameBoyLCDOverlay()
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .padding(3)
+
+            Rectangle()
+                .fill(accent.opacity(0.82))
+                .frame(width: 14, height: 4)
+                .offset(x: -23, y: -26)
 
             content()
                 .scaleEffect(1.06)
         }
         .frame(width: 72, height: 72)
+    }
+
+    private func pixelActionButton(
+        title: String,
+        accent: Color,
+        filled: Bool = false,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(title.uppercased())
+                .font(.caption2.monospaced().weight(.black))
+                .tracking(0.6)
+                .foregroundStyle(filled ? GameBoyPalette.lightest : GameBoyPalette.darkest)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .frame(minWidth: 56)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(filled ? accent : GameBoyPalette.lightest)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .stroke(GameBoyPalette.darkest, lineWidth: 1)
+                        )
+                )
+        }
+        .buttonStyle(.plain)
     }
 }

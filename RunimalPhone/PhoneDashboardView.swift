@@ -839,11 +839,15 @@ struct PhoneDashboardView: View {
             store.ingestCompletedRun()
         }
         .background(
-            LinearGradient(
-                colors: [.black, store.pet.accentColor.opacity(0.26), Color(.systemGroupedBackground)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            ZStack {
+                LinearGradient(
+                    colors: [GameBoyPalette.mediumLight, GameBoyPalette.lightest, GameBoyPalette.mediumLight.opacity(0.88)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                GameBoyLCDOverlay()
+                    .opacity(0.7)
+            }
             .ignoresSafeArea()
         )
     }
@@ -853,12 +857,13 @@ struct PhoneDashboardView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("RUNIMAL")
-                        .font(.title3.weight(.black))
-                        .tracking(1.1)
-                        .foregroundStyle(.white)
-                    Text("Digital gap field guide")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.58))
+                        .font(.title3.monospaced().weight(.black))
+                        .tracking(1.6)
+                        .foregroundStyle(GameBoyPalette.darkest)
+                    Text("DIGITAL FIELD GUIDE")
+                        .font(.caption2.monospaced().weight(.black))
+                        .tracking(1.4)
+                        .foregroundStyle(GameBoyPalette.mediumDark)
                 }
 
                 Spacer()
@@ -879,19 +884,31 @@ struct PhoneDashboardView: View {
         .padding(.horizontal, 16)
         .padding(.top, 12)
         .padding(.bottom, 10)
-        .background(.black.opacity(0.28))
+        .background(
+            Rectangle()
+                .fill(GameBoyPalette.lightest.opacity(0.92))
+                .overlay(alignment: .bottom) {
+                    Rectangle()
+                        .fill(GameBoyPalette.darkest)
+                        .frame(height: 2)
+                }
+        )
     }
 
     private var pageIndicator: some View {
         HStack(spacing: 8) {
             ForEach(Array(pageTitles.enumerated()), id: \.offset) { index, title in
                 VStack(spacing: 4) {
-                    Capsule()
-                        .fill(selectedTab == index ? store.pet.accentColor : .white.opacity(0.12))
-                        .frame(width: selectedTab == index ? 26 : 8, height: 5)
+                    Rectangle()
+                        .fill(selectedTab == index ? GameBoyPalette.darkest : GameBoyPalette.mediumLight)
+                        .frame(width: selectedTab == index ? 28 : 10, height: 5)
+                        .overlay(
+                            Rectangle()
+                                .stroke(GameBoyPalette.darkest, lineWidth: selectedTab == index ? 0 : 1)
+                        )
                     Text(title)
-                        .font(.caption2.weight(selectedTab == index ? .black : .medium))
-                        .foregroundStyle(selectedTab == index ? .white : .white.opacity(0.42))
+                        .font(.caption2.monospaced().weight(selectedTab == index ? .black : .medium))
+                        .foregroundStyle(selectedTab == index ? GameBoyPalette.darkest : GameBoyPalette.mediumDark)
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -914,19 +931,25 @@ struct PhoneDashboardView: View {
                 Text(title)
                     .fontWeight(.black)
             }
-            .font(.subheadline)
-            .foregroundStyle(isActive ? .black : .white.opacity(0.82))
+            .font(.subheadline.monospaced())
+            .foregroundStyle(isActive ? GameBoyPalette.lightest : GameBoyPalette.darkest)
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
             .frame(maxWidth: .infinity)
             .background(
-                Capsule(style: .continuous)
-                    .fill(isActive ? store.pet.accentColor : .white.opacity(0.08))
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(isActive ? GameBoyPalette.mediumDark : GameBoyPalette.lightest)
             )
             .overlay(
-                Capsule(style: .continuous)
-                    .stroke(isActive ? store.pet.accentColor.opacity(0.2) : .white.opacity(0.08), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(GameBoyPalette.darkest, lineWidth: 2)
             )
+            .overlay(alignment: .topLeading) {
+                Rectangle()
+                    .fill(store.pet.accentColor.opacity(0.82))
+                    .frame(width: isActive ? 14 : 9, height: 4)
+                    .padding(6)
+            }
         }
         .buttonStyle(.plain)
     }

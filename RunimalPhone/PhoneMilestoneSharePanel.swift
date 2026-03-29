@@ -249,7 +249,7 @@ struct PhoneMilestoneSharePanel: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 188)
-        .shadow(color: card.accent.opacity(0.18), radius: 18, y: 10)
+        .shadow(color: card.accent.opacity(0.1), radius: 8, y: 4)
     }
 
     private func renderShareImage(for milestone: ShareMilestone) -> UIImage? {

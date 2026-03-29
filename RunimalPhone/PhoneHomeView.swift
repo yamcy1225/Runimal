@@ -8,21 +8,14 @@ struct PhoneHomeView: View {
         ZStack {
             LinearGradient(
                 colors: [
-                    Color(red: 0.04, green: 0.05, blue: 0.08),
-                    Color(red: 0.02, green: 0.03, blue: 0.05),
-                    store.mainAccentColor.opacity(0.12)
+                    GameBoyPalette.mediumLight,
+                    GameBoyPalette.lightest,
+                    GameBoyPalette.mediumLight.opacity(0.88)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            .ignoresSafeArea()
-
-            RadialGradient(
-                colors: [store.mainAccentColor.opacity(0.16), .clear],
-                center: .top,
-                startRadius: 40,
-                endRadius: 420
-            )
+            GameBoyLCDOverlay()
             .ignoresSafeArea()
 
             ScrollView {
@@ -50,18 +43,18 @@ struct PhoneHomeView: View {
     private var headerDeck: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("오늘의 동행")
-                .font(.caption.weight(.black))
+                .font(.caption.monospaced().weight(.black))
                 .tracking(1.4)
-                .foregroundStyle(store.mainAccentColor.opacity(0.92))
+                .foregroundStyle(GameBoyPalette.mediumDark)
 
             HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(store.mainSelectionLabel)
-                        .font(.system(size: 30, weight: .black, design: .rounded))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 30, weight: .black, design: .monospaced))
+                        .foregroundStyle(GameBoyPalette.darkest)
                     Text(store.mainSelectionDetail)
-                        .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.68))
+                        .font(.footnote.monospaced())
+                        .foregroundStyle(GameBoyPalette.mediumDark)
                         .lineLimit(2)
                 }
 
@@ -94,10 +87,10 @@ struct PhoneHomeView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             TraitChip(label: "\(store.summary.distanceKm.formatted(.number.precision(.fractionLength(1)))) km", accent: store.mainAccentColor)
-                            TraitChip(label: "\(store.summary.cadence) spm", accent: .white.opacity(0.3))
+                            TraitChip(label: "\(store.summary.cadence) spm", accent: GameBoyPalette.mediumLight)
                             TraitChip(
                                 label: store.mainSelection?.kind == .egg ? (store.mainEgg?.shell.displayLabel ?? "숨김 알") : store.evolutionProgress.stageLabel,
-                                accent: .white.opacity(0.22)
+                                accent: GameBoyPalette.mediumLight
                             )
                         }
 
@@ -135,7 +128,7 @@ struct PhoneHomeView: View {
                                     .frame(width: 5, height: 5)
                                 Text(line)
                                     .font(.caption2.monospaced())
-                                    .foregroundStyle(.white.opacity(0.6))
+                                    .foregroundStyle(GameBoyPalette.mediumDark)
                                     .lineLimit(1)
                                 Spacer()
                             }
@@ -185,19 +178,19 @@ struct PhoneHomeView: View {
                         }
 
                         Text(nextReward.title)
-                            .font(.headline.weight(.black))
-                            .foregroundStyle(.white)
+                            .font(.headline.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.darkest)
                         Text(nextReward.detail)
-                            .font(.footnote)
-                            .foregroundStyle(.white.opacity(0.66))
+                            .font(.footnote.monospaced())
+                            .foregroundStyle(GameBoyPalette.mediumDark)
                     }
                     .padding(14)
                     .background(
                         RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .fill(.white.opacity(0.05))
+                            .fill(GameBoyPalette.mediumLight.opacity(0.16))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                                    .stroke(.white.opacity(0.08), lineWidth: 1)
+                                    .stroke(GameBoyPalette.darkest.opacity(0.22), lineWidth: 1)
                             )
                     )
                 }
@@ -205,8 +198,8 @@ struct PhoneHomeView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
                         Text("핵심 미션")
-                            .font(.headline.weight(.black))
-                            .foregroundStyle(.white)
+                            .font(.headline.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.darkest)
                         Spacer()
                         RunimalSignalBadge(
                             icon: "crown.fill",
@@ -219,12 +212,12 @@ struct PhoneHomeView: View {
                         VStack(alignment: .leading, spacing: 6) {
                             HStack {
                                 Text(mission.title)
-                                    .font(.subheadline.weight(.bold))
-                                    .foregroundStyle(.white)
+                                    .font(.subheadline.monospaced().weight(.black))
+                                    .foregroundStyle(GameBoyPalette.darkest)
                                 Spacer()
                                 TraitChip(
                                     label: mission.completed ? "완료" : mission.progressLabel,
-                                    accent: mission.completed ? .green : .white.opacity(0.18)
+                                    accent: mission.completed ? .green : GameBoyPalette.mediumLight
                                 )
                             }
 
@@ -243,21 +236,21 @@ struct PhoneHomeView: View {
     private func statPillar(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.caption2.weight(.black))
+                .font(.caption2.monospaced().weight(.black))
                 .tracking(1.1)
-                .foregroundStyle(.white.opacity(0.56))
+                .foregroundStyle(GameBoyPalette.mediumDark)
             Text(value)
-                .font(.subheadline.weight(.black))
-                .foregroundStyle(.white)
+                .font(.subheadline.monospaced().weight(.black))
+                .foregroundStyle(GameBoyPalette.darkest)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(.white.opacity(0.05))
+                .fill(GameBoyPalette.mediumLight.opacity(0.16))
                 .overlay(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(.white.opacity(0.08), lineWidth: 1)
+                        .stroke(GameBoyPalette.darkest.opacity(0.22), lineWidth: 1)
                 )
         )
     }

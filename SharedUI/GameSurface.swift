@@ -1,6 +1,13 @@
 import RunimalCore
 import SwiftUI
 
+enum GameBoyPalette {
+    static let darkest = Color(red: 0.10, green: 0.18, blue: 0.14)
+    static let mediumDark = Color(red: 0.29, green: 0.40, blue: 0.30)
+    static let mediumLight = Color(red: 0.54, green: 0.66, blue: 0.54)
+    static let lightest = Color(red: 0.82, green: 0.89, blue: 0.82)
+}
+
 struct GameSurface<Content: View>: View {
     let title: String?
     let accent: Color?
@@ -17,7 +24,8 @@ struct GameSurface<Content: View>: View {
     }
 
     var body: some View {
-        let cornerRadius: CGFloat = compact ? 22 : 28
+        let cornerRadius: CGFloat = compact ? 14 : 18
+        let headerAccent = accent ?? GameBoyPalette.mediumDark
 
         VStack(alignment: .leading, spacing: compact ? 8 : 12) {
             if title != nil || eyebrow != nil {
@@ -25,87 +33,62 @@ struct GameSurface<Content: View>: View {
                     VStack(alignment: .leading, spacing: compact ? 2 : 4) {
                         if let eyebrow {
                             Text(eyebrow.uppercased())
-                                .font(.caption2.weight(.black))
+                                .font(.caption2.monospaced().weight(.black))
                                 .tracking(compact ? 1.0 : 1.4)
-                                .foregroundStyle((accent ?? .white).opacity(0.86))
+                                .foregroundStyle(headerAccent.opacity(0.96))
                         }
 
                         if let title {
                             Text(title)
-                                .font(compact ? .subheadline.weight(.bold) : .headline.weight(.bold))
-                                .foregroundStyle(.white.opacity(0.94))
+                                .font(compact ? .subheadline.monospaced().weight(.black) : .headline.monospaced().weight(.black))
+                                .foregroundStyle(GameBoyPalette.darkest)
                         }
                     }
 
                     Spacer()
 
-                    if let accent {
-                        Capsule()
-                            .fill(accent.opacity(0.22))
-                            .frame(width: compact ? 34 : 46, height: compact ? 10 : 12)
-                            .overlay(
-                                Capsule()
-                                    .fill(accent)
-                                    .frame(width: compact ? 14 : 18, height: 4)
-                            )
-                    }
+                    Rectangle()
+                        .fill(GameBoyPalette.mediumLight)
+                        .frame(width: compact ? 34 : 42, height: compact ? 10 : 12)
+                        .overlay(alignment: .leading) {
+                            Rectangle()
+                                .fill(headerAccent)
+                                .frame(width: compact ? 14 : 18, height: compact ? 4 : 5)
+                                .padding(.horizontal, 3)
+                        }
+                        .overlay(
+                            Rectangle()
+                                .stroke(GameBoyPalette.darkest, lineWidth: 1)
+                        )
                 }
             }
 
             content
+                .foregroundStyle(GameBoyPalette.darkest)
         }
         .padding(compact ? 12 : 18)
         .background(
             ZStack {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.08, green: 0.09, blue: 0.12),
-                                Color(red: 0.03, green: 0.04, blue: 0.06)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(GameBoyPalette.lightest)
 
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(
-                        RadialGradient(
-                            colors: [(accent ?? .white).opacity(0.18), .clear],
-                            center: .topLeading,
-                            startRadius: 12,
-                            endRadius: 260
-                        )
-                    )
+                RoundedRectangle(cornerRadius: cornerRadius - 4, style: .continuous)
+                    .fill(GameBoyPalette.mediumLight.opacity(0.22))
+                    .padding(4)
 
-                VStack(spacing: 10) {
-                    Capsule()
-                        .fill(.white.opacity(0.10))
-                        .frame(height: 1)
-                    Spacer()
-                    HStack(spacing: 10) {
-                        ForEach(0..<7, id: \.self) { _ in
-                            Capsule()
-                                .fill(.white.opacity(0.03))
-                                .frame(height: 2)
-                        }
-                    }
-                }
-                .padding(compact ? 10 : 16)
-                .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                GameBoyLCDOverlay()
+                    .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+
+                RoundedRectangle(cornerRadius: cornerRadius - 5, style: .continuous)
+                    .stroke(headerAccent.opacity(0.34), lineWidth: 1)
+                    .padding(6)
             }
         )
         .overlay(
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .strokeBorder(.white.opacity(0.08), lineWidth: 1)
+                .strokeBorder(GameBoyPalette.darkest, lineWidth: 2)
         )
-        .overlay(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .strokeBorder((accent ?? .white).opacity(0.16), lineWidth: 1)
-                .blur(radius: 10)
-                .padding(-1)
-        }
+        .shadow(color: GameBoyPalette.darkest.opacity(0.12), radius: 0, x: 1, y: 2)
     }
 }
 
@@ -115,19 +98,42 @@ struct TraitChip: View {
 
     var body: some View {
         Text(label.uppercased())
-            .font(.caption2.weight(.black))
+            .font(.caption2.monospaced().weight(.black))
             .tracking(0.8)
-            .padding(.horizontal, 11)
-            .padding(.vertical, 7)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
             .background(
-                Capsule()
-                    .fill(accent.opacity(0.18))
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(GameBoyPalette.lightest)
                     .overlay(
-                        Capsule()
-                            .stroke(accent.opacity(0.34), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(GameBoyPalette.darkest, lineWidth: 1)
                     )
             )
-            .foregroundStyle(.white.opacity(0.96))
+            .foregroundStyle(GameBoyPalette.darkest)
+            .overlay(alignment: .topLeading) {
+                Rectangle()
+                    .fill(accent.opacity(0.72))
+                    .frame(width: 8, height: 3)
+                    .padding(4)
+            }
+    }
+}
+
+struct GameBoyLCDOverlay: View {
+    var body: some View {
+        Canvas { context, size in
+            let step: CGFloat = 6
+            for x in stride(from: 0, through: size.width, by: step) {
+                let rect = CGRect(x: x, y: 0, width: 1, height: size.height)
+                context.fill(Path(rect), with: .color(GameBoyPalette.mediumDark.opacity(0.08)))
+            }
+            for y in stride(from: 0, through: size.height, by: step) {
+                let rect = CGRect(x: 0, y: y, width: size.width, height: 1)
+                context.fill(Path(rect), with: .color(GameBoyPalette.mediumDark.opacity(0.06)))
+            }
+        }
+        .allowsHitTesting(false)
     }
 }
 
@@ -160,11 +166,11 @@ extension GeneratedPet {
 
     var accentColor: Color {
         switch element {
-        case .light: return Color(red: 0.96, green: 0.81, blue: 0.34)
-        case .flame: return Color(red: 0.94, green: 0.39, blue: 0.24)
-        case .leaf: return Color(red: 0.36, green: 0.73, blue: 0.42)
-        case .lunar: return Color(red: 0.41, green: 0.58, blue: 0.93)
-        case .earth: return Color(red: 0.63, green: 0.49, blue: 0.32)
+        case .light: return Color(red: 0.78, green: 0.72, blue: 0.34)
+        case .flame: return Color(red: 0.78, green: 0.43, blue: 0.26)
+        case .leaf: return Color(red: 0.38, green: 0.62, blue: 0.40)
+        case .lunar: return Color(red: 0.44, green: 0.56, blue: 0.76)
+        case .earth: return Color(red: 0.56, green: 0.48, blue: 0.34)
         }
     }
 }

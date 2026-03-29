@@ -73,18 +73,11 @@ struct WatchDashboardView: View {
             liveGoals: liveGoals,
             primaryGoalDetail: primaryGoal?.detail ?? liveFeedback.detail,
             lastSyncedWorkoutTitle: connectivityManager.lastSyncedWorkoutTitle,
-            activationStateLabel: connectivityManager.activationStateLabel,
-            authorizationStatus: runSessionManager.authorizationStatus,
-            locationStatusLabel: runSessionManager.locationStatusLabel,
-            lastSavedWorkoutLabel: runSessionManager.lastSavedWorkoutLabel,
-            queuedTransferCount: connectivityManager.queuedTransferCount,
-            recentEvents: Array((runSessionManager.recentSessionEvents + connectivityManager.recentEvents).prefix(4)),
             reward: runSessionManager.lastReward,
             hatchBurstScale: hatchBurstScale,
             countdownValue: countdownValue,
             onStartRun: startRunWithCountdown,
-            onEndRun: endRun,
-            onRequestAuthorization: requestAuthorization
+            onEndRun: endRun
         )
         .overlay {
             if let countdownValue {
@@ -95,11 +88,15 @@ struct WatchDashboardView: View {
             }
         }
         .background(
-            LinearGradient(
-                colors: [.black, stageAccent.opacity(0.55)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            ZStack {
+                LinearGradient(
+                    colors: [GameBoyPalette.mediumLight, GameBoyPalette.lightest, GameBoyPalette.mediumLight.opacity(0.88)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                GameBoyLCDOverlay()
+                    .opacity(0.7)
+            }
             .ignoresSafeArea()
         )
         .task {
@@ -146,6 +143,10 @@ struct WatchDashboardView: View {
     private func startRunWithCountdown() {
         guard countdownValue == nil else { return }
         Task {
+            if runSessionManager.authorizationStatus != "authorized", runSessionManager.isDemoMode == false {
+                await runSessionManager.requestAuthorization()
+            }
+
             for value in stride(from: 3, through: 1, by: -1) {
                 await MainActor.run {
                     countdownValue = value
@@ -167,12 +168,6 @@ struct WatchDashboardView: View {
             await runSessionManager.endRun()
         }
     }
-
-    private func requestAuthorization() {
-        Task {
-            await runSessionManager.requestAuthorization()
-        }
-    }
 }
 
 private struct WatchDashboardPages: View {
@@ -190,18 +185,11 @@ private struct WatchDashboardPages: View {
     let liveGoals: [LiveGoalTarget]
     let primaryGoalDetail: String
     let lastSyncedWorkoutTitle: String
-    let activationStateLabel: String
-    let authorizationStatus: String
-    let locationStatusLabel: String
-    let lastSavedWorkoutLabel: String
-    let queuedTransferCount: Int
-    let recentEvents: [SyncDiagnosticEvent]
     let reward: RunRewardSummary?
     let hatchBurstScale: CGFloat
     let countdownValue: Int?
     let onStartRun: () -> Void
     let onEndRun: () -> Void
-    let onRequestAuthorization: () -> Void
 
     var body: some View {
         TabView {
@@ -242,13 +230,9 @@ private struct WatchDashboardPages: View {
                         }
                     }
                         .buttonStyle(.borderedProminent)
-                        .tint(stageAccent)
+                        .tint(GameBoyPalette.mediumDark)
+                        .foregroundStyle(GameBoyPalette.lightest)
                         .disabled(countdownValue != nil)
-
-                    if authorizationStatus != "authorized" {
-                        Button("센서 연결", action: onRequestAuthorization)
-                            .buttonStyle(.bordered)
-                        }
                 }
             }
             .tag(2)
@@ -280,28 +264,6 @@ private struct WatchDashboardPages: View {
                 .tag(5)
             }
 
-            WatchSingleCardPage {
-                WatchConnectivitySection(
-                    activationStateLabel: activationStateLabel,
-                    authorizationStatus: authorizationStatus,
-                    locationStatusLabel: locationStatusLabel,
-                    lastSavedWorkoutLabel: lastSavedWorkoutLabel,
-                    stageBadges: stageBadges,
-                    stageAccent: stageAccent
-                )
-            }
-            .tag(6)
-
-            WatchSingleCardPage {
-                WatchDiagnosticsSection(
-                    activationStateLabel: activationStateLabel,
-                    queuedTransferCount: queuedTransferCount,
-                    lastSavedWorkoutLabel: lastSavedWorkoutLabel,
-                    recentEvents: recentEvents
-                )
-            }
-            .tag(7)
-
             if let reward {
                 WatchSingleCardPage {
                     WatchRewardSection(
@@ -309,7 +271,7 @@ private struct WatchDashboardPages: View {
                         hatchBurstScale: hatchBurstScale
                     )
                 }
-                .tag(8)
+                .tag(6)
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .automatic))
@@ -322,24 +284,24 @@ private struct WatchRunCountdownOverlay: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.78)
+            GameBoyPalette.mediumLight.opacity(0.94)
                 .ignoresSafeArea()
 
             VStack(spacing: 8) {
                 Text("\(value)")
-                    .font(.system(size: 44, weight: .black, design: .rounded))
-                    .foregroundStyle(.white)
+                    .font(.system(size: 44, weight: .black, design: .monospaced))
+                    .foregroundStyle(GameBoyPalette.darkest)
                 Text("러닝 시작")
-                    .font(.caption.weight(.black))
-                    .foregroundStyle(accent)
+                    .font(.caption.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.mediumDark)
             }
             .padding(18)
             .background(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(.white.opacity(0.08))
+                    .fill(GameBoyPalette.lightest)
                     .overlay(
                         RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .stroke(accent.opacity(0.44), lineWidth: 1.5)
+                            .stroke(GameBoyPalette.darkest, lineWidth: 2)
                     )
             )
         }
@@ -375,68 +337,10 @@ private struct WatchRunningGoalSection: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(lastSyncedWorkoutTitle)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(GameBoyPalette.darkest)
                 Text(detail)
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.68))
-            }
-        }
-    }
-}
-
-private struct WatchConnectivitySection: View {
-    let activationStateLabel: String
-    let authorizationStatus: String
-    let locationStatusLabel: String
-    let lastSavedWorkoutLabel: String
-    let stageBadges: [String]
-    let stageAccent: Color
-
-    var body: some View {
-        GameSurface(title: "연결 정보", compact: true) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Sync \(activationStateLabel) · HealthKit \(authorizationStatus)")
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.72))
-                Text("Route \(locationStatusLabel) · \(lastSavedWorkoutLabel)")
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.65))
-                if stageBadges.isEmpty == false {
-                    Text(stageBadges.joined(separator: " · "))
-                        .font(.caption2)
-                        .foregroundStyle(stageAccent.opacity(0.9))
-                }
-            }
-        }
-    }
-}
-
-private struct WatchDiagnosticsSection: View {
-    let activationStateLabel: String
-    let queuedTransferCount: Int
-    let lastSavedWorkoutLabel: String
-    let recentEvents: [SyncDiagnosticEvent]
-
-    var body: some View {
-        GameSurface(title: "진단", compact: true) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Link \(activationStateLabel) · Queue \(queuedTransferCount) · Save \(lastSavedWorkoutLabel)")
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.72))
-                    .lineLimit(2)
-
-                ForEach(recentEvents.prefix(3)) { event in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(event.title)
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
-                        Text(event.detail)
-                            .font(.caption2)
-                            .foregroundStyle(.white.opacity(0.62))
-                            .lineLimit(2)
-                    }
-                }
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(GameBoyPalette.mediumDark)
             }
         }
     }
@@ -458,11 +362,11 @@ private struct WatchRewardSection: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(reward.pet.displayName)
                             .font(.subheadline.weight(.bold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(GameBoyPalette.darkest)
                             .lineLimit(1)
                         Text(reward.flavorText)
-                            .font(.caption2)
-                            .foregroundStyle(.white.opacity(0.72))
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(GameBoyPalette.mediumDark)
                             .lineLimit(2)
                     }
                 }
@@ -473,8 +377,8 @@ private struct WatchRewardSection: View {
                 }
 
                 Text("Completed quests \(reward.completedQuestCount)")
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.72))
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(GameBoyPalette.mediumDark)
             }
         }
     }
@@ -502,11 +406,11 @@ private struct WatchRuntimeAlertBanner: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(alert.title)
-                    .font(.caption2.weight(.black))
-                    .foregroundStyle(.white)
+                    .font(.caption2.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.darkest)
                 Text(alert.detail)
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.72))
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(GameBoyPalette.mediumDark)
                     .lineLimit(2)
             }
 
@@ -515,10 +419,10 @@ private struct WatchRuntimeAlertBanner: View {
         .padding(10)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(accent.opacity(0.16))
+                .fill(GameBoyPalette.lightest)
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(accent.opacity(0.32), lineWidth: 1)
+                        .stroke(GameBoyPalette.darkest, lineWidth: 1)
                 )
         )
     }

@@ -46,13 +46,13 @@ struct PixelPetView: View {
         .offset(y: hovering ? -pixelSize * 0.24 : 0)
         .scaleEffect(hovering ? 1.04 : 0.98)
         .rotationEffect(.degrees(hovering ? tiltDegrees : -tiltDegrees * 0.45))
-        .shadow(color: pet.accentColor.opacity(0.38), radius: 14, y: 10)
+        .shadow(color: pet.accentColor.opacity(0.22), radius: 8, y: 4)
         .overlay(alignment: .bottom) {
             RoundedRectangle(cornerRadius: pixelSize)
                 .fill(.black.opacity(0.25))
                 .frame(width: 6 * pixelSize, height: pixelSize * 0.7)
-                .blur(radius: 6)
-                .offset(y: pixelSize * 1.8)
+                .blur(radius: 3)
+                .offset(y: pixelSize * 1.25)
         }
         .overlay {
             if pet.rareVariant != nil {

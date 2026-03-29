@@ -15,8 +15,8 @@ struct PhoneRunSyncHistoryPanel: View {
         GameSurface(title: title, accent: accent, eyebrow: eyebrow) {
             VStack(alignment: .leading, spacing: 12) {
                 Text(description)
-                    .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.68))
+                    .font(.footnote.monospaced())
+                    .foregroundStyle(GameBoyPalette.mediumDark)
 
                 ForEach(Array(runs.prefix(5))) { run in
                     Button {
@@ -34,26 +34,30 @@ struct PhoneRunSyncHistoryPanel: View {
         HStack(alignment: .top, spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(.white.opacity(0.05))
+                    .fill(GameBoyPalette.lightest)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(GameBoyPalette.darkest, lineWidth: 2)
+                    )
                     .frame(width: 72, height: 72)
 
                 if !run.route.isEmpty {
                     RoutePreviewShape(points: run.route)
-                        .stroke(accent, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                        .stroke(GameBoyPalette.mediumDark, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
                         .padding(12)
                         .frame(width: 72, height: 72)
                 } else {
                     Image(systemName: "point.bottomleft.forward.to.point.topright.scurvepath")
                         .font(.system(size: 24, weight: .black))
-                        .foregroundStyle(accent.opacity(0.85))
+                        .foregroundStyle(GameBoyPalette.mediumDark)
                 }
             }
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text(run.sourceLabel ?? "외부 러닝")
-                        .font(.subheadline.weight(.black))
-                        .foregroundStyle(.white)
+                    Text(compactSourceLabel(for: run))
+                        .font(.subheadline.monospaced().weight(.black))
+                        .foregroundStyle(GameBoyPalette.darkest)
                     Spacer()
                     TraitChip(
                         label: canUseRunCore(run) ? "사용 가능" : "사용 완료",
@@ -62,38 +66,80 @@ struct PhoneRunSyncHistoryPanel: View {
                 }
 
                 Text(run.startedAt.formatted(date: .abbreviated, time: .shortened))
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.62))
+                    .font(.caption.monospaced())
+                    .foregroundStyle(GameBoyPalette.mediumDark)
 
                 Text(summaryLine(for: run))
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.82))
+                    .font(.caption.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.mediumDark)
                     .lineLimit(1)
 
                 HStack(spacing: 8) {
                     RunimalSignalBadge(icon: "flame.fill", label: "+\(run.reward.experience) XP", accent: .green)
-                    if let cadence = run.cadence {
-                        RunimalSignalBadge(icon: "waveform.path.ecg", label: "\(cadence) spm", accent: accent)
-                    }
-                    if let usageSummary = usageSummary(run), canUseRunCore(run) == false {
-                        RunimalSignalBadge(icon: "arrow.triangle.branch", label: usageSummary.title, accent: usageSummary.accent)
-                    }
+                    TraitChip(
+                        label: canUseRunCore(run) ? "사용 가능" : compactUsageLabel(for: run),
+                        accent: canUseRunCore(run) ? .green : (usageSummary(run)?.accent ?? GameBoyPalette.mediumDark)
+                    )
                 }
+
+                Text(secondaryLine(for: run))
+                    .font(.caption2.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.mediumDark.opacity(0.9))
+                    .lineLimit(1)
+                    .multilineTextAlignment(.leading)
             }
 
             VStack(spacing: 6) {
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.black))
-                    .foregroundStyle(.white.opacity(0.36))
+                    .foregroundStyle(GameBoyPalette.mediumDark)
                 Spacer(minLength: 0)
             }
         }
         .padding(12)
-        .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(GameBoyPalette.mediumLight.opacity(0.18))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(GameBoyPalette.darkest.opacity(0.28), lineWidth: 1)
+                )
+        )
     }
 
     private func summaryLine(for run: CompletedRunRecord) -> String {
         "\(distanceLabel(run.distanceMeters)) · \(durationLabel(run.durationSeconds)) · \(paceLabel(run.averagePaceSeconds))"
+    }
+
+    private func secondaryLine(for run: CompletedRunRecord) -> String {
+        let cadenceText = run.cadence.map { "\($0) spm" } ?? "-- spm"
+        if let usage = usageSummary(run), canUseRunCore(run) == false {
+            return "\(cadenceText) · \(usage.detail)"
+        }
+        return "\(cadenceText) · 코어 대기 중"
+    }
+
+    private func compactUsageLabel(for run: CompletedRunRecord) -> String {
+        guard let usage = usageSummary(run), canUseRunCore(run) == false else {
+            return "사용 완료"
+        }
+        return usage.title
+    }
+
+    private func compactSourceLabel(for run: CompletedRunRecord) -> String {
+        if run.source == "watch-healthkit" {
+            return "Runimal"
+        }
+
+        if run.source.hasPrefix("fit:") {
+            return "FIT"
+        }
+
+        if let sourceLabel = run.sourceLabel, !sourceLabel.isEmpty {
+            return sourceLabel
+        }
+
+        return "외부"
     }
 
     private func distanceLabel(_ meters: Double) -> String {

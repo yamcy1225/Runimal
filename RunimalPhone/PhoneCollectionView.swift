@@ -41,6 +41,14 @@ struct PhoneCollectionView: View {
             }
             .padding(20)
         }
+        .background(
+            ZStack {
+                GameBoyPalette.lightest
+                    .ignoresSafeArea()
+                GameBoyLCDOverlay()
+                    .ignoresSafeArea()
+            }
+        )
         .fullScreenCover(item: $hatchResult) { payload in
             HatchCinematicView(egg: payload.egg, pet: payload.pet) {
                 hatchResult = nil
@@ -50,7 +58,7 @@ struct PhoneCollectionView: View {
 
     private var stableSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionHeader("메인 슬롯", detail: "지금 함께 들고 다닐 동행을 정합니다.")
+            sectionHeader("메인 슬롯", detail: "지금 들고 갈 주인공을 정합니다.")
             PhoneCompanionRosterPanel(
                 mainSelection: store.mainSelection,
                 mainLabel: store.mainSelectionLabel,
@@ -67,7 +75,7 @@ struct PhoneCollectionView: View {
 
     private var growthSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionHeader("성장", detail: "메인 동행의 진화와 성장만 모아 둡니다.")
+            sectionHeader("성장", detail: "진화와 성장만 빠르게 봅니다.")
             evolutionCard
             PhoneMythicApexPanel(
                 pet: store.featuredCompanion.pet,
@@ -102,7 +110,7 @@ struct PhoneCollectionView: View {
 
     private var storageSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionHeader("보관함", detail: "변이, 효과, 자원을 빠르게 읽습니다.")
+            sectionHeader("보관함", detail: "변이와 자원을 빠르게 봅니다.")
             PhoneRareVariantShowcasePanel(activeVariant: store.featuredCompanion.pet.rareVariant)
             collectionEffectStage
             resonanceCompareBoard
@@ -136,14 +144,14 @@ struct PhoneCollectionView: View {
             }
             .padding(.top, 12)
         } label: {
-            sectionHeader("연구실", detail: "고급 성장과 제작 기록을 펼쳐 봅니다.")
+            sectionHeader("연구실", detail: "고급 제작 기록을 확인합니다.")
         }
-        .tint(.white)
+        .tint(GameBoyPalette.darkest)
     }
 
     private var shareSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionHeader("공유", detail: "가장 자랑할 만한 순간만 따로 모았습니다.")
+            sectionHeader("공유", detail: "핵심 순간만 따로 모았습니다.")
             PhoneMilestoneSharePanel(
                 featuredCompanion: store.featuredCompanion,
                 collection: store.collection,
@@ -156,15 +164,15 @@ struct PhoneCollectionView: View {
     private func sectionHeader(_ title: String, detail: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.caption.weight(.black))
+                .font(.caption.monospaced().weight(.black))
                 .tracking(1.2)
-                .foregroundStyle(store.mainAccentColor.opacity(0.9))
+                .foregroundStyle(GameBoyPalette.mediumDark)
             Text(detail)
-                .font(.headline.weight(.black))
-                .foregroundStyle(.white)
-            Text(title == "메인 슬롯" ? "메인 한 칸만 먼저 고릅니다." : title == "성장" ? "먹이기와 진화만 바로 이어집니다." : title == "보관함" ? "많이 읽지 않아도 상태가 보이게 정리했습니다." : "펼쳤을 때만 세부 기능이 보입니다.")
-                .font(.footnote)
-                .foregroundStyle(.white.opacity(0.6))
+                .font(.headline.monospaced().weight(.black))
+                .foregroundStyle(GameBoyPalette.darkest)
+            Text(title == "메인 슬롯" ? "한 칸만 먼저 고릅니다." : title == "성장" ? "먹이기와 진화만 남겼습니다." : title == "보관함" ? "핵심 상태만 먼저 읽습니다." : "필요할 때만 펼쳐 봅니다.")
+                .font(.footnote.monospaced())
+                .foregroundStyle(GameBoyPalette.mediumDark)
         }
     }
 
@@ -194,11 +202,11 @@ struct PhoneCollectionView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text(store.mainSelectionLabel)
-                            .font(.title2.weight(.black))
-                            .foregroundStyle(.white)
+                            .font(.title2.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.darkest)
                         Text(store.mainSelectionDetail)
-                            .font(.footnote)
-                            .foregroundStyle(.white.opacity(0.72))
+                            .font(.footnote.monospaced())
+                            .foregroundStyle(GameBoyPalette.mediumDark)
 
                         HStack(spacing: 8) {
                             if store.mainSelection?.kind == .egg, let egg = store.mainEgg {
@@ -250,7 +258,7 @@ struct PhoneCollectionView: View {
             }
             Button("취소", role: .cancel) {}
         } message: {
-            Text("보유 펫, 알, 성장 기록, 주간 보상 상태를 초기 씨드 상태로 되돌립니다.")
+            Text("펫, 알, 성장 기록을 초기 상태로 되돌립니다.")
         }
     }
 
@@ -261,16 +269,16 @@ struct PhoneCollectionView: View {
                     withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
                         showDangerZone.toggle()
                     }
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("초기화 메뉴 열기")
-                                .font(.headline.weight(.black))
-                                .foregroundStyle(.white)
-                            Text("펼친 뒤에만 리셋 버튼이 보입니다.")
-                                .font(.footnote)
-                                .foregroundStyle(.white.opacity(0.62))
-                        }
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("초기화 메뉴 열기")
+                                    .font(.headline.monospaced().weight(.black))
+                                    .foregroundStyle(GameBoyPalette.darkest)
+                                Text("펼친 뒤에만 버튼이 보입니다.")
+                                    .font(.footnote.monospaced())
+                                    .foregroundStyle(GameBoyPalette.mediumDark)
+                            }
 
                         Spacer()
 
@@ -285,18 +293,28 @@ struct PhoneCollectionView: View {
 
                 if showDangerZone {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("모든 동행체, 알, 성장 기록을 초기 상태로 되돌립니다. 되돌리기 어렵기 때문에 마지막 구역에 분리했습니다.")
-                            .font(.footnote)
-                            .foregroundStyle(.white.opacity(0.68))
+                        Text("모든 동행체와 알, 성장 기록을 초기화합니다.")
+                            .font(.footnote.monospaced())
+                            .foregroundStyle(GameBoyPalette.mediumDark)
 
                         Button(role: .destructive) {
                             showResetAlert = true
                         } label: {
                             Label("처음부터 다시 시작", systemImage: "arrow.counterclockwise")
+                                .font(.caption.monospaced().weight(.black))
                                 .frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.red.opacity(0.9))
+                        .buttonStyle(.plain)
+                        .foregroundStyle(GameBoyPalette.lightest)
+                        .padding(.vertical, 11)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(Color.red.opacity(0.9))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .stroke(GameBoyPalette.darkest, lineWidth: 2)
+                                )
+                        )
                     }
                     .transition(.move(edge: .top).combined(with: .opacity))
                 }
@@ -309,8 +327,8 @@ struct PhoneCollectionView: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Text(store.evolutionProgress.stageLabel)
-                        .font(.headline)
-                        .foregroundStyle(.white)
+                        .font(.headline.monospaced().weight(.black))
+                        .foregroundStyle(GameBoyPalette.darkest)
                     Spacer()
                     TraitChip(label: "\(store.evolutionProgress.totalExperience) XP", accent: store.pet.accentColor)
                 }
@@ -318,8 +336,8 @@ struct PhoneCollectionView: View {
                 RunimalProgressBar(progress: store.evolutionProgress.progressRatio, accent: store.pet.accentColor, height: 10)
 
                 Text(store.evolutionProgress.headline)
-                    .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.72))
+                    .font(.footnote.monospaced())
+                    .foregroundStyle(GameBoyPalette.mediumDark)
             }
         }
     }
@@ -343,13 +361,13 @@ struct PhoneCollectionView: View {
 
                     VStack(alignment: .leading, spacing: 6) {
                         Text(store.activeWeeklyEffects.isEmpty ? "아직 활성화된 효과가 없어요" : "현재 적용 중인 효과")
-                            .font(.headline)
-                            .foregroundStyle(.white)
+                            .font(.headline.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.darkest)
                         Text(store.activeWeeklyEffects.isEmpty
-                             ? "주간 보상을 받으면 이곳에 성장 효과가 쌓입니다."
-                             : "활성 효과가 메인 동행체 성장에 직접 반영됩니다.")
-                            .font(.footnote)
-                            .foregroundStyle(.white.opacity(0.72))
+                             ? "주간 보상을 받으면 효과가 쌓입니다."
+                             : "활성 효과가 메인 성장에 바로 반영됩니다.")
+                            .font(.footnote.monospaced())
+                            .foregroundStyle(GameBoyPalette.mediumDark)
                     }
                 }
 
@@ -358,13 +376,14 @@ struct PhoneCollectionView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
                                 Text(effect.title)
-                                    .foregroundStyle(.white)
+                                    .font(.subheadline.monospaced().weight(.black))
+                                    .foregroundStyle(GameBoyPalette.darkest)
                                 Spacer()
                                 TraitChip(label: "\(effect.intensityLabel) \(effect.score)", accent: .green)
                             }
                             Text(effect.detail)
-                                .font(.caption)
-                                .foregroundStyle(.white.opacity(0.68))
+                                .font(.caption.monospaced())
+                                .foregroundStyle(GameBoyPalette.mediumDark)
                         }
                     }
                 }
@@ -375,17 +394,21 @@ struct PhoneCollectionView: View {
     private var collectionGrid: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("보유한 동행체")
-                .font(.headline)
-                .foregroundStyle(.white)
+                .font(.headline.monospaced().weight(.black))
+                .foregroundStyle(GameBoyPalette.darkest)
 
             LazyVGrid(columns: columns, spacing: 14) {
                 ForEach(store.collection) { entry in
                     GameSurface(accent: entry.pet.accentColor, eyebrow: entry.id == store.featuredCompanion.id ? "메인 슬롯" : "보유 중") {
-                        VStack(alignment: .leading, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 12) {
                             ZStack(alignment: .topTrailing) {
-                                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                    .fill(entry.pet.accentColor.opacity(0.08))
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .fill(GameBoyPalette.lightest)
                                     .frame(maxWidth: .infinity)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                            .stroke(GameBoyPalette.darkest, lineWidth: 2)
+                                    )
 
                                 PixelPetView(
                                     pet: entry.pet,
@@ -399,28 +422,32 @@ struct PhoneCollectionView: View {
                             }
                             .frame(height: 108)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
                                     .stroke(entry.pet.accentColor.opacity(0.24), lineWidth: 1)
                             )
 
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(entry.pet.displayName)
-                                    .font(.subheadline.weight(.black))
-                                    .foregroundStyle(.white)
-                                Text(entry.pet.subtitle)
-                                    .font(.caption2)
-                                    .foregroundStyle(entry.pet.accentColor.opacity(0.88))
+                                    .font(.subheadline.monospaced().weight(.black))
+                                    .foregroundStyle(GameBoyPalette.darkest)
+                                Text(primarySpeciesLabel(for: entry))
+                                    .font(.caption2.monospaced().weight(.black))
+                                    .foregroundStyle(GameBoyPalette.mediumDark)
                                     .lineLimit(1)
                             }
 
                             HStack(spacing: 6) {
                                 TraitChip(label: "Lv.\(entry.level)", accent: entry.pet.accentColor)
-                                TraitChip(label: "\(entry.totalDistanceKm.formatted(.number.precision(.fractionLength(1))))km", accent: .white.opacity(0.24))
                                 if let rareVariant = entry.pet.rareVariant {
                                     RunimalSignalBadge(
                                         icon: "sparkles",
                                         label: RareVariantMeta.badges[rareVariant] ?? "희귀",
-                                        accent: .orange.opacity(0.76)
+                                        accent: GameBoyPalette.mediumLight
+                                    )
+                                } else {
+                                    TraitChip(
+                                        label: "\(entry.totalDistanceKm.formatted(.number.precision(.fractionLength(1))))km",
+                                        accent: GameBoyPalette.mediumLight
                                     )
                                 }
                             }
@@ -431,17 +458,44 @@ struct PhoneCollectionView: View {
                                 height: 7
                             )
 
+                            Text(distanceSupportLine(for: entry))
+                                .font(.caption2.monospaced())
+                                .foregroundStyle(GameBoyPalette.mediumDark)
+
                             Button(entry.id == store.featuredCompanion.id ? "선택됨" : "메인으로") {
                                 store.activateCompanion(entry.id)
                             }
-                            .buttonStyle(.bordered)
-                            .tint(entry.pet.accentColor)
+                            .buttonStyle(.plain)
+                            .font(.caption.monospaced().weight(.black))
+                            .foregroundStyle(entry.id == store.featuredCompanion.id ? GameBoyPalette.lightest : GameBoyPalette.darkest)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(entry.id == store.featuredCompanion.id ? GameBoyPalette.mediumDark : GameBoyPalette.lightest)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                            .stroke(GameBoyPalette.darkest, lineWidth: 2)
+                                    )
+                            )
                             .disabled(entry.id == store.featuredCompanion.id)
                         }
                     }
                 }
             }
         }
+    }
+
+    private func primarySpeciesLabel(for entry: PetCollectionEntry) -> String {
+        if let rareVariant = entry.pet.rareVariant {
+            return "\(entry.pet.element.displayName.uppercased()) • \(RareVariantMeta.badges[rareVariant] ?? "희귀")"
+        }
+
+        return entry.pet.element.displayName.uppercased()
+    }
+
+    private func distanceSupportLine(for entry: PetCollectionEntry) -> String {
+        "\(entry.totalDistanceKm.formatted(.number.precision(.fractionLength(1)))) km  ·  유대 \(entry.bond)"
     }
 
     private var resonanceCompareBoard: some View {
@@ -459,15 +513,15 @@ struct PhoneCollectionView: View {
                                 accent: index == 0 ? .green.opacity(0.82) : .white.opacity(0.18)
                             )
 
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack {
-                                    Text(item.companion.pet.displayName)
-                                        .font(.subheadline.weight(.black))
-                                        .foregroundStyle(.white)
-                                    Spacer()
-                                    TraitChip(
-                                        label: "\(item.intensityLabel) \(item.totalScore)",
-                                        accent: item.companion.pet.accentColor.opacity(0.82)
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text(item.companion.pet.displayName)
+                                    .font(.subheadline.monospaced().weight(.black))
+                                    .foregroundStyle(GameBoyPalette.darkest)
+                                Spacer()
+                                TraitChip(
+                                    label: "\(item.intensityLabel) \(item.totalScore)",
+                                    accent: item.companion.pet.accentColor.opacity(0.82)
                                     )
                                 }
 
@@ -479,8 +533,8 @@ struct PhoneCollectionView: View {
 
                                 if let topEffectTitle = item.topEffectTitle {
                                     Text("가장 잘 맞는 효과 · \(topEffectTitle)")
-                                        .font(.caption2)
-                                        .foregroundStyle(.white.opacity(0.56))
+                                        .font(.caption2.monospaced())
+                                        .foregroundStyle(GameBoyPalette.mediumDark)
                                 }
                             }
                         }
@@ -496,27 +550,28 @@ struct PhoneCollectionView: View {
                 ForEach(store.variantCodex) { entry in
                     HStack(alignment: .top, spacing: 12) {
                         Circle()
-                            .fill(entry.discovered ? store.pet.accentColor : .white.opacity(0.16))
+                            .fill(entry.discovered ? GameBoyPalette.mediumDark : GameBoyPalette.mediumLight)
                             .frame(width: 10, height: 10)
                             .padding(.top, 5)
 
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
                                 Text(entry.label)
-                                    .foregroundStyle(.white)
+                                    .font(.subheadline.monospaced().weight(.black))
+                                    .foregroundStyle(GameBoyPalette.darkest)
                                 Spacer()
                                 TraitChip(
                                     label: entry.discovered ? "발견" : "잠김",
-                                    accent: entry.discovered ? .green : .white.opacity(0.2)
+                                    accent: entry.discovered ? .green : GameBoyPalette.mediumLight
                                 )
                             }
 
                             Text(entry.detail)
-                                .font(.caption)
-                                .foregroundStyle(.white.opacity(0.72))
+                                .font(.caption.monospaced())
+                                .foregroundStyle(GameBoyPalette.mediumDark)
                             Text(entry.passive)
-                                .font(.caption2)
-                                .foregroundStyle(.white.opacity(0.6))
+                                .font(.caption2.monospaced())
+                                .foregroundStyle(GameBoyPalette.mediumDark)
                         }
                     }
                 }
@@ -533,13 +588,14 @@ struct PhoneCollectionView: View {
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text("\(entry.reward.pet.displayName) · +\(entry.reward.experience) XP")
-                                .foregroundStyle(.white)
+                                .font(.subheadline.monospaced().weight(.black))
+                                .foregroundStyle(GameBoyPalette.darkest)
                             Text("\(entry.distanceKm.formatted(.number.precision(.fractionLength(1))))km · \(entry.cadence) spm")
-                                .font(.caption)
-                                .foregroundStyle(.white.opacity(0.72))
+                                .font(.caption.monospaced())
+                                .foregroundStyle(GameBoyPalette.mediumDark)
                             Text(entry.createdAt.formatted(date: .abbreviated, time: .shortened))
-                                .font(.caption2)
-                                .foregroundStyle(.white.opacity(0.56))
+                                .font(.caption2.monospaced())
+                                .foregroundStyle(GameBoyPalette.mediumDark)
                         }
                     }
                 }
