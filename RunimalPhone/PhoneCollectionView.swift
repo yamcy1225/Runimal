@@ -86,9 +86,9 @@ struct PhoneCollectionView: View {
                 mainLabel: store.mainSelectionLabel,
                 availableRuns: store.availableRunCores,
                 eggOpportunity: store.eggOpportunity(for:),
-                onFeedPet: store.feedActiveCompanion(with:),
-                onForgeEgg: store.forgeEgg(from:),
-                onIncubateEgg: store.incubateMainEgg(with:)
+                onFeedPet: { _ = store.feedActiveCompanion(with: $0) },
+                onForgeEgg: { _ = store.forgeEgg(from: $0) },
+                onIncubateEgg: { _ = store.incubateMainEgg(with: $0) }
             )
             PhonePetDetailPanel(
                 companion: store.featuredCompanion,

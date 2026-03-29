@@ -189,6 +189,34 @@ final class PhoneDashboardStore {
         progress.unassignedRuns(from: completedRuns)
     }
 
+    var importedRunArchive: [CompletedRunRecord] {
+        completedRuns.filter {
+            $0.source.hasPrefix("healthkit:") || $0.source.hasPrefix("fit:")
+        }
+    }
+
+    var runimalRunArchive: [CompletedRunRecord] {
+        completedRuns.filter {
+            $0.source == "watch-healthkit" || $0.source == "watch-demo"
+        }
+    }
+
+    var latestWatchSyncedRun: CompletedRunRecord? {
+        guard let record = connectivity.lastCompletedRun else { return nil }
+        guard record.source == "watch-healthkit" || record.source == "watch-demo" else { return nil }
+        return record
+    }
+
+    var latestWatchSyncDiagnostic: WatchRunSyncDiagnostic? {
+        guard let inbound = latestWatchSyncedRun else { return nil }
+        guard let persisted = completedRuns.first(where: { $0.id == inbound.id }) else { return nil }
+        return WatchRunSyncDiagnostic(inbound: inbound, persisted: persisted)
+    }
+
+    func canUseRunCore(_ run: CompletedRunRecord) -> Bool {
+        availableRunCores.contains(where: { $0.id == run.id })
+    }
+
     func eggOpportunity(for run: CompletedRunRecord) -> EggCreationOpportunity {
         progress.eggOpportunity(for: run)
     }
@@ -505,8 +533,9 @@ final class PhoneDashboardStore {
         telemetry.log("activate_egg", detail: eggID)
     }
 
-    func feedActiveCompanion(with runID: String) {
-        guard let run = completedRuns.first(where: { $0.id == runID }) else { return }
+    @discardableResult
+    func feedActiveCompanion(with runID: String) -> CompanionFeedOutcome? {
+        guard let run = completedRuns.first(where: { $0.id == runID }) else { return nil }
         let wasFirstStageUp = hasUnlockedNonTraceStage == false
         latestFeedOutcome = progress.feed(
             run: run,
@@ -524,11 +553,13 @@ final class PhoneDashboardStore {
             }
         }
         telemetry.log("feed_companion", detail: run.id)
+        return latestFeedOutcome
     }
 
-    func forgeEgg(from runID: String) {
-        guard let run = completedRuns.first(where: { $0.id == runID }) else { return }
-        guard progress.eggOpportunity(for: run).eligible else { return }
+    @discardableResult
+    func forgeEgg(from runID: String) -> EggInventoryEntry? {
+        guard let run = completedRuns.first(where: { $0.id == runID }) else { return nil }
+        guard progress.eggOpportunity(for: run).eligible else { return nil }
         let wasFirstEgg = eggInventory.isEmpty
         let forgedEgg = progress.forgeEgg(from: run)
         persistVault()
@@ -537,11 +568,13 @@ final class PhoneDashboardStore {
             telemetry.log("egg_created", detail: "\(forgedEgg.shell.rawValue):\(firstFlag)")
         }
         telemetry.log("forge_egg", detail: run.id)
+        return forgedEgg
     }
 
-    func incubateMainEgg(with runID: String) {
-        guard let run = completedRuns.first(where: { $0.id == runID }) else { return }
-        guard let eggBefore = mainEgg else { return }
+    @discardableResult
+    func incubateMainEgg(with runID: String) -> EggInventoryEntry? {
+        guard let run = completedRuns.first(where: { $0.id == runID }) else { return nil }
+        guard let eggBefore = mainEgg else { return nil }
         let proposedExperience = RunimalEggEngine.incubationExperienceGain(for: run, egg: eggBefore)
         let updatedEgg = progress.incubateMainEgg(with: run)
         persistVault()
@@ -549,6 +582,7 @@ final class PhoneDashboardStore {
             telemetry.log("decode_lock_applied", detail: "\(updatedEgg.id):\(updatedEgg.shell.rawValue)")
         }
         telemetry.log("incubate_egg", detail: run.id)
+        return updatedEgg
     }
 
     @discardableResult
@@ -722,6 +756,44 @@ final class PhoneDashboardStore {
     private func logRewardPulseTelemetry(for reward: RunRewardSummary) {
         guard reward.bonusLabels.isEmpty == false else { return }
         telemetry.log("reward_pulse_applied", detail: reward.bonusLabels.joined(separator: ", "))
+    }
+}
+
+struct WatchRunSyncDiagnostic {
+    let inbound: CompletedRunRecord
+    let persisted: CompletedRunRecord
+
+    var distanceDeltaMeters: Double {
+        persisted.distanceMeters - inbound.distanceMeters
+    }
+
+    var durationDeltaSeconds: Int {
+        persisted.durationSeconds - inbound.durationSeconds
+    }
+
+    var paceDeltaSeconds: Int {
+        (persisted.averagePaceSeconds ?? 0) - (inbound.averagePaceSeconds ?? 0)
+    }
+
+    var averageHeartRateDelta: Double? {
+        guard let inbound = inbound.averageHeartRate,
+              let persisted = persisted.averageHeartRate else { return nil }
+        return persisted - inbound
+    }
+
+    var cadenceDelta: Int? {
+        guard let inbound = inbound.cadence,
+              let persisted = persisted.cadence else { return nil }
+        return persisted - inbound
+    }
+
+    var hasAnyMismatch: Bool {
+        if abs(distanceDeltaMeters) >= 1 { return true }
+        if durationDeltaSeconds != 0 { return true }
+        if paceDeltaSeconds != 0 { return true }
+        if let averageHeartRateDelta, abs(averageHeartRateDelta) >= 0.5 { return true }
+        if let cadenceDelta, cadenceDelta != 0 { return true }
+        return false
     }
 }
 

@@ -2,9 +2,31 @@ import RunimalCore
 import SwiftUI
 import UniformTypeIdentifiers
 
+private struct SelectedRunRecord: Identifiable {
+    let id: String
+}
+
+private enum RunArchiveFilter: String, CaseIterable, Identifiable {
+    case all
+    case runimal
+    case imported
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .all: return "전체"
+        case .runimal: return "Runimal"
+        case .imported: return "가져온 기록"
+        }
+    }
+}
+
 struct PhoneRunDeckView: View {
     let store: PhoneDashboardStore
     @State private var isImportingFITFile = false
+    @State private var selectedRun: SelectedRunRecord?
+    @State private var archiveFilter: RunArchiveFilter = .all
 
     var body: some View {
         ZStack {
@@ -23,8 +45,42 @@ struct PhoneRunDeckView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     headerDeck
                     workoutCard
+                    if let latestWatchSync = store.latestWatchSyncedRun {
+                        watchSyncHighlightCard(for: latestWatchSync)
+                    }
+                    if let diagnostic = store.latestWatchSyncDiagnostic {
+                        watchSyncDiagnosticCard(diagnostic)
+                    }
                     summaryCard
                     syncCard
+                    archiveFilterStrip
+                    if shouldShowRunimalArchive {
+                        PhoneRunSyncHistoryPanel(
+                            title: "Runimal 러닝 기록",
+                            eyebrow: "워치 시작 기록",
+                            description: "워치에서 `러닝 시작하기`를 눌러 측정한 기록은 여기 쌓입니다.",
+                            runs: store.runimalRunArchive,
+                            accent: store.pet.accentColor,
+                            canUseRunCore: { store.canUseRunCore($0) },
+                            usageSummary: { store.runCoreUsageSummary(for: $0) },
+                            onSelectRun: { selectedRun = SelectedRunRecord(id: $0.id) }
+                        )
+                    }
+                    if shouldShowImportedArchive {
+                        PhoneRunSyncHistoryPanel(
+                            title: "가져온 러닝 기록",
+                            eyebrow: "최근 5개",
+                            description: "HealthKit 또는 FIT로 가져온 외부 러닝 기록입니다.",
+                            runs: store.importedRunArchive,
+                            accent: store.pet.accentColor,
+                            canUseRunCore: { store.canUseRunCore($0) },
+                            usageSummary: { store.runCoreUsageSummary(for: $0) },
+                            onSelectRun: { selectedRun = SelectedRunRecord(id: $0.id) }
+                        )
+                    }
+                    if shouldShowArchiveEmptyState {
+                        archiveEmptyState
+                    }
                     if let latestCompletedRun = store.latestCompletedRun {
                         PhoneRecentRunCard(
                             run: latestCompletedRun,
@@ -56,6 +112,84 @@ struct PhoneRunDeckView: View {
             case .failure(let error):
                 store.fitImport.markImportFailed(error.localizedDescription)
             }
+        }
+        .sheet(item: $selectedRun) { selectedRun in
+            PhoneRunRecordDetailSheet(store: store, runID: selectedRun.id)
+        }
+    }
+
+    private var shouldShowRunimalArchive: Bool {
+        switch archiveFilter {
+        case .all, .runimal:
+            return !store.runimalRunArchive.isEmpty
+        case .imported:
+            return false
+        }
+    }
+
+    private var shouldShowImportedArchive: Bool {
+        switch archiveFilter {
+        case .all, .imported:
+            return !store.importedRunArchive.isEmpty
+        case .runimal:
+            return false
+        }
+    }
+
+    private var shouldShowArchiveEmptyState: Bool {
+        switch archiveFilter {
+        case .all:
+            return store.runimalRunArchive.isEmpty && store.importedRunArchive.isEmpty
+        case .runimal:
+            return store.runimalRunArchive.isEmpty
+        case .imported:
+            return store.importedRunArchive.isEmpty
+        }
+    }
+
+    private var archiveFilterStrip: some View {
+        GameSurface(title: "러닝 기록 필터", accent: store.pet.accentColor, eyebrow: "탐색") {
+            HStack(spacing: 10) {
+                ForEach(RunArchiveFilter.allCases) { filter in
+                    Button {
+                        archiveFilter = filter
+                    } label: {
+                        Text(filter.label)
+                            .font(.caption.weight(.black))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(
+                                Capsule()
+                                    .fill(archiveFilter == filter ? store.pet.accentColor.opacity(0.22) : .white.opacity(0.06))
+                            )
+                            .overlay(
+                                Capsule()
+                                    .stroke(archiveFilter == filter ? store.pet.accentColor.opacity(0.5) : .white.opacity(0.08), lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(archiveFilter == filter ? .white : .white.opacity(0.68))
+                }
+            }
+        }
+    }
+
+    private var archiveEmptyState: some View {
+        GameSurface(title: "표시할 러닝 기록이 없습니다", accent: store.pet.accentColor, eyebrow: archiveFilter.label) {
+            Text(emptyStateDescription)
+                .font(.footnote)
+                .foregroundStyle(.white.opacity(0.72))
+        }
+    }
+
+    private var emptyStateDescription: String {
+        switch archiveFilter {
+        case .all:
+            return "워치에서 직접 측정한 러닝 또는 HealthKit/FIT로 가져온 기록이 아직 없습니다."
+        case .runimal:
+            return "워치에서 `러닝 시작하기`로 직접 측정한 기록이 아직 없습니다."
+        case .imported:
+            return "HealthKit 또는 FIT로 가져온 외부 러닝 기록이 아직 없습니다."
         }
     }
 
@@ -154,6 +288,176 @@ struct PhoneRunDeckView: View {
                 }
             }
         }
+    }
+
+    private func watchSyncHighlightCard(for run: CompletedRunRecord) -> some View {
+        GameSurface(title: "방금 워치 러닝을 받았습니다", accent: .cyan, eyebrow: "Live Sync") {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top, spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(.white.opacity(0.05))
+                            .frame(width: 72, height: 72)
+
+                        if !run.route.isEmpty {
+                            RoutePreviewShape(points: run.route)
+                                .stroke(.cyan, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                                .padding(12)
+                                .frame(width: 72, height: 72)
+                        } else {
+                            Image(systemName: "applewatch.radiowaves.left.and.right")
+                                .font(.system(size: 24, weight: .black))
+                                .foregroundStyle(.cyan.opacity(0.82))
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(run.startedAt.formatted(date: .abbreviated, time: .shortened))
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.cyan.opacity(0.88))
+
+                        Text("워치에서 직접 측정한 러닝이 코어로 정리됐습니다. 아래 기록에서 바로 성장, 알 생성, 인큐베이트에 쓸 수 있습니다.")
+                            .font(.footnote)
+                            .foregroundStyle(.white.opacity(0.76))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                HStack(spacing: 8) {
+                    RunimalSignalBadge(icon: "figure.run", label: distanceLabel(run.distanceMeters), accent: .cyan)
+                    RunimalSignalBadge(icon: "timer", label: durationLabel(run.durationSeconds), accent: .white.opacity(0.2))
+                    RunimalSignalBadge(icon: "gauge.with.dots.needle.33percent", label: paceLabel(run.averagePaceSeconds), accent: store.pet.accentColor)
+                }
+
+                HStack(spacing: 8) {
+                    if let heartRate = run.averageHeartRate {
+                        RunimalSignalBadge(icon: "heart.fill", label: "\(Int(heartRate.rounded())) bpm", accent: .pink)
+                    }
+                    if let cadence = run.cadence {
+                        RunimalSignalBadge(icon: "waveform.path.ecg", label: "\(cadence) spm", accent: .mint)
+                    }
+                    TraitChip(label: "Runimal 러닝 기록에서 확인", accent: .white.opacity(0.18))
+                }
+            }
+        }
+    }
+
+    private func watchSyncDiagnosticCard(_ diagnostic: WatchRunSyncDiagnostic) -> some View {
+        GameSurface(
+            title: diagnostic.hasAnyMismatch ? "워치 동기화 값 점검" : "워치 동기화 값 일치",
+            accent: diagnostic.hasAnyMismatch ? .orange : .green,
+            eyebrow: "Sync QA"
+        ) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("워치에서 막 들어온 원본값과 iPhone에 저장된 값을 나란히 비교합니다. 실기 QA 때 거리, 평균 심박, 평균 케이던스 차이를 바로 확인할 수 있습니다.")
+                    .font(.footnote)
+                    .foregroundStyle(.white.opacity(0.74))
+
+                metricDiffRow(
+                    title: "거리",
+                    inbound: distanceLabel(diagnostic.inbound.distanceMeters),
+                    persisted: distanceLabel(diagnostic.persisted.distanceMeters),
+                    delta: signedMetersLabel(diagnostic.distanceDeltaMeters)
+                )
+                metricDiffRow(
+                    title: "시간",
+                    inbound: durationLabel(diagnostic.inbound.durationSeconds),
+                    persisted: durationLabel(diagnostic.persisted.durationSeconds),
+                    delta: signedSecondsLabel(diagnostic.durationDeltaSeconds)
+                )
+                metricDiffRow(
+                    title: "평균 페이스",
+                    inbound: paceLabel(diagnostic.inbound.averagePaceSeconds),
+                    persisted: paceLabel(diagnostic.persisted.averagePaceSeconds),
+                    delta: signedPaceLabel(diagnostic.paceDeltaSeconds)
+                )
+                if let averageHeartRateDelta = diagnostic.averageHeartRateDelta {
+                    metricDiffRow(
+                        title: "평균 심박",
+                        inbound: heartRateLabel(diagnostic.inbound.averageHeartRate),
+                        persisted: heartRateLabel(diagnostic.persisted.averageHeartRate),
+                        delta: signedHeartRateLabel(averageHeartRateDelta)
+                    )
+                }
+                if let cadenceDelta = diagnostic.cadenceDelta {
+                    metricDiffRow(
+                        title: "평균 케이던스",
+                        inbound: cadenceLabel(diagnostic.inbound.cadence),
+                        persisted: cadenceLabel(diagnostic.persisted.cadence),
+                        delta: signedCadenceLabel(cadenceDelta)
+                    )
+                }
+            }
+        }
+    }
+
+    private func metricDiffRow(title: String, inbound: String, persisted: String, delta: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(title)
+                    .font(.caption.weight(.black))
+                    .foregroundStyle(.white)
+                Spacer()
+                TraitChip(label: delta, accent: delta == "일치" ? .green.opacity(0.28) : .orange.opacity(0.32))
+            }
+
+            HStack(spacing: 8) {
+                RunimalSignalBadge(icon: "applewatch", label: inbound, accent: .cyan)
+                RunimalSignalBadge(icon: "iphone", label: persisted, accent: .white.opacity(0.22))
+            }
+        }
+    }
+
+    private func distanceLabel(_ meters: Double) -> String {
+        String(format: "%.2f km", meters / 1000)
+    }
+
+    private func durationLabel(_ seconds: Int) -> String {
+        let hours = seconds / 3600
+        let minutes = (seconds % 3600) / 60
+        let remainingSeconds = seconds % 60
+
+        if hours > 0 {
+            return "\(hours):\(String(format: "%02d", minutes)):\(String(format: "%02d", remainingSeconds))"
+        }
+
+        return "\(minutes):\(String(format: "%02d", remainingSeconds))"
+    }
+
+    private func paceLabel(_ seconds: Int?) -> String {
+        guard let seconds else { return "페이스 --" }
+        let minutes = seconds / 60
+        return "\(minutes):\(String(format: "%02d", seconds % 60))/km"
+    }
+
+    private func heartRateLabel(_ value: Double?) -> String {
+        guard let value else { return "-- bpm" }
+        return "\(Int(value.rounded())) bpm"
+    }
+
+    private func cadenceLabel(_ value: Int?) -> String {
+        guard let value else { return "-- spm" }
+        return "\(value) spm"
+    }
+
+    private func signedMetersLabel(_ meters: Double) -> String {
+        abs(meters) < 1 ? "일치" : String(format: "%@%.0fm", meters > 0 ? "+" : "", meters)
+    }
+
+    private func signedSecondsLabel(_ seconds: Int) -> String {
+        seconds == 0 ? "일치" : "\(seconds > 0 ? "+" : "")\(seconds)s"
+    }
+
+    private func signedPaceLabel(_ seconds: Int) -> String {
+        seconds == 0 ? "일치" : "\(seconds > 0 ? "+" : "")\(seconds)s/km"
+    }
+
+    private func signedHeartRateLabel(_ bpm: Double) -> String {
+        abs(bpm) < 0.5 ? "일치" : String(format: "%@%.0f bpm", bpm > 0 ? "+" : "", bpm)
+    }
+
+    private func signedCadenceLabel(_ cadence: Int) -> String {
+        cadence == 0 ? "일치" : "\(cadence > 0 ? "+" : "")\(cadence) spm"
     }
 
     private var workoutCard: some View {

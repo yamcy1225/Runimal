@@ -206,9 +206,11 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         do {
             try await workoutBuilder.endCollection(at: endDate)
             let workout = try await finishWorkout(using: workoutBuilder)
+            let finalizedSnapshot = finalizedSnapshot(from: workout, builder: workoutBuilder)
+            latestSnapshot = finalizedSnapshot
             sessionStateLabel = "finished"
-            let reward = RunimalGameEngine.evaluateReward(for: latestSnapshot, claimedRewardIDs: claimedWeeklyRewardIDs)
-            let averageHeartRate = averageHeartRateAccumulator.isEmpty ? nil : averageHeartRateAccumulator.reduce(0, +) / Double(averageHeartRateAccumulator.count)
+            let reward = RunimalGameEngine.evaluateReward(for: finalizedSnapshot, claimedRewardIDs: claimedWeeklyRewardIDs)
+            let averageHeartRate = finalizedAverageHeartRate(using: workoutBuilder)
             let environmentCondition = await captureEnvironmentCondition()
 
             if let routeBuilder, !routeLocations.isEmpty {
@@ -223,7 +225,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
 
             let record = RunimalGameEngine.makeCompletedRunRecord(
                 reward: reward,
-                snapshot: latestSnapshot,
+                snapshot: finalizedSnapshot,
                 startedAt: startedAt ?? endDate,
                 endedAt: endDate,
                 averageHeartRate: averageHeartRate,
@@ -489,6 +491,82 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
               let statistics = workoutBuilder?.statistics(for: quantityType),
               let quantity = statistics.mostRecentQuantity() ?? statistics.sumQuantity() else {
             return 0
+        }
+
+        return quantity.doubleValue(for: unit)
+    }
+
+    private func finalizedSnapshot(from workout: HKWorkout, builder: HKLiveWorkoutBuilder) -> LiveRunSnapshot {
+        let durationSeconds = max(Int(workout.duration.rounded()), latestSnapshot.elapsedSeconds)
+        let distanceMeters = finalizedDistanceMeters(from: workout, builder: builder)
+        let averagePaceSeconds = distanceMeters > 0
+            ? Int((Double(durationSeconds) / distanceMeters) * 1000.0)
+            : latestSnapshot.averagePaceSeconds
+        let cadence = finalizedCadence(builder: builder, durationSeconds: durationSeconds)
+        let heartRate = statisticsAverageValue(for: .heartRate, unit: HKUnit.count().unitDivided(by: .minute()), builder: builder)
+            ?? latestSnapshot.currentHeartRate
+
+        return LiveRunSnapshot(
+            elapsedSeconds: durationSeconds,
+            distanceMeters: distanceMeters,
+            currentHeartRate: heartRate,
+            cadence: cadence,
+            elevationGainM: latestSnapshot.elevationGainM,
+            averagePaceSeconds: averagePaceSeconds
+        )
+    }
+
+    private func finalizedDistanceMeters(from workout: HKWorkout, builder: HKLiveWorkoutBuilder) -> Double {
+        if let totalDistance = workout.totalDistance?.doubleValue(for: .meter()), totalDistance > 0 {
+            return totalDistance
+        }
+
+        if let quantityType = HKObjectType.quantityType(forIdentifier: .distanceWalkingRunning),
+           let statistics = builder.statistics(for: quantityType),
+           let quantity = statistics.sumQuantity() ?? statistics.mostRecentQuantity() {
+            let distance = quantity.doubleValue(for: .meter())
+            if distance > 0 {
+                return distance
+            }
+        }
+
+        return latestSnapshot.distanceMeters
+    }
+
+    private func finalizedCadence(builder: HKLiveWorkoutBuilder, durationSeconds: Int) -> Int? {
+        guard durationSeconds > 0 else { return latestSnapshot.cadence }
+
+        if let quantityType = HKObjectType.quantityType(forIdentifier: .stepCount),
+           let statistics = builder.statistics(for: quantityType),
+           let quantity = statistics.sumQuantity() {
+            let totalSteps = quantity.doubleValue(for: .count())
+            let cadence = Int((totalSteps / Double(durationSeconds)) * 60.0)
+            if (80...240).contains(cadence) {
+                return cadence
+            }
+        }
+
+        return latestSnapshot.cadence
+    }
+
+    private func finalizedAverageHeartRate(using builder: HKLiveWorkoutBuilder) -> Double? {
+        if let average = statisticsAverageValue(for: .heartRate, unit: HKUnit.count().unitDivided(by: .minute()), builder: builder) {
+            return average
+        }
+
+        guard !averageHeartRateAccumulator.isEmpty else { return nil }
+        return averageHeartRateAccumulator.reduce(0, +) / Double(averageHeartRateAccumulator.count)
+    }
+
+    private func statisticsAverageValue(
+        for identifier: HKQuantityTypeIdentifier,
+        unit: HKUnit,
+        builder: HKLiveWorkoutBuilder
+    ) -> Double? {
+        guard let quantityType = HKObjectType.quantityType(forIdentifier: identifier),
+              let statistics = builder.statistics(for: quantityType),
+              let quantity = statistics.averageQuantity() else {
+            return nil
         }
 
         return quantity.doubleValue(for: unit)

@@ -23,6 +23,7 @@
 		13CD16C0DE92593D2D1807F7 /* HatchInterferenceBackdropView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A21D71A18796FCADC6FDA700 /* HatchInterferenceBackdropView.swift */; };
 		174E2B99B537739F137A619E /* RunimalWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD0541A9CADE432091B248E2 /* RunimalWatchApp.swift */; };
 		1CEFCD511721FC7FE3931C49 /* PhoneCloudMirrorManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E57AE99F9E3047A8E9A9A5F6 /* PhoneCloudMirrorManager.swift */; };
+		1D297C184401A1A66088C08A /* PhoneRunRecordDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38A84C0437469E1123B36475 /* PhoneRunRecordDetailSheet.swift */; };
 		1D81EDC7FCAD63B30FDC75CC /* RunimalAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 912C860D18264B7CBF111AB0 /* RunimalAssets.xcassets */; };
 		1E9074838A9AF2F694709E98 /* PhoneConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C3D26A6D761131D6B9EF6FD /* PhoneConnectivityManager.swift */; };
 		26142976B9B8634C4C67D263 /* PhoneProgressStore+Sanctuary.swift in Sources */ = {isa = PBXBuildFile; fileRef = F159FE21088CAC558D8741AA /* PhoneProgressStore+Sanctuary.swift */; };
@@ -83,6 +84,7 @@
 		837E7AFB0BD2AC92AD116EE6 /* RunimalCore in Frameworks */ = {isa = PBXBuildFile; productRef = DB1D160C34036A51CF28E910 /* RunimalCore */; };
 		852554C5EEE85AA025DC249C /* PhoneRecordDiffPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D861873D3B9F0CFC14067C7 /* PhoneRecordDiffPanel.swift */; };
 		86FB8D6BE260EDAF4A08AE48 /* PhoneRecentRunCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF235CF7D78E9EFF6FE4C815 /* PhoneRecentRunCard.swift */; };
+		872298045CB594908A11E179 /* PhoneEggForgeEffectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46F38ED4C07F0E4C9FCED787 /* PhoneEggForgeEffectView.swift */; };
 		8861EA480D18C6AE74DCB9D6 /* WatchRunStatsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD69F3C8CD719091B52680DB /* WatchRunStatsPanel.swift */; };
 		8927F4FDE2E36B3C6BFD88F0 /* GameSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2B8EE9F33FD02687ADA9AD /* GameSurface.swift */; };
 		892D72A14A53021151450CA9 /* PhoneMythicApexPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 510FCA0CEF67998BBDA50B6A /* PhoneMythicApexPanel.swift */; };
@@ -100,10 +102,12 @@
 		ACE2CE5F4EE7FCFAB684E01A /* PhoneDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E385404E47BEE9EBE310AC /* PhoneDashboardView.swift */; };
 		B066620A8371DBE033B33D36 /* PhoneConflictDiffPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D15CCEDBD7A853ABD72232F7 /* PhoneConflictDiffPanel.swift */; };
 		B0E26C49D82CAB82F8DA3058 /* PhoneCompanionRosterPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 074F2113777979B879EDAF68 /* PhoneCompanionRosterPanel.swift */; };
+		B2BF9884CE11457C50D2BEEB /* PhoneRunCoreUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A368CB6BA9FD233E59FA5A1 /* PhoneRunCoreUsage.swift */; };
 		B617C884E06D78A41DBC9F23 /* GameSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2B8EE9F33FD02687ADA9AD /* GameSurface.swift */; };
 		B9E0724E8C84CEF990AC30A5 /* WatchCompanionHeroCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51101D3283ECE3C6CB8BB816 /* WatchCompanionHeroCard.swift */; };
 		BE319FFCDE14A8F492D0A193 /* PhoneTelemetryLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E7081E582D73DB353FE156C /* PhoneTelemetryLogger.swift */; };
 		C59A2E40B311A604DE249E96 /* RunimalCore in Frameworks */ = {isa = PBXBuildFile; productRef = 4CDF8B170A2E14071FF0FF18 /* RunimalCore */; };
+		C83A88698509B715C44BC59D /* PhoneRunSyncHistoryPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFDB0F2F344B3AB6F584AFF6 /* PhoneRunSyncHistoryPanel.swift */; };
 		C90C3EE0D1FD7D50AB82092C /* PhoneVaultPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C05253ED9374F103DD2D3A46 /* PhoneVaultPanel.swift */; };
 		CCC155B3126A4FE03EB22737 /* FitDataProtocol in Frameworks */ = {isa = PBXBuildFile; productRef = DEF7B4A065E14E3B3F7F5F68 /* FitDataProtocol */; };
 		D08B8FB1CE64F3BECEC1D976 /* PhoneWeeklyBoardPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11E3E784C3CDB5962B028F5 /* PhoneWeeklyBoardPanel.swift */; };
@@ -159,12 +163,15 @@
 		30EDBDB5E19CD1E3C645BDE6 /* MacContentAuthoringPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacContentAuthoringPanel.swift; sourceTree = "<group>"; };
 		337BDF1E6CB9C97992B9D7D0 /* WatchRunSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRunSessionManager.swift; sourceTree = "<group>"; };
 		385B139873A7AFD4A86EC385 /* RunimalProgressBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunimalProgressBar.swift; sourceTree = "<group>"; };
+		38A84C0437469E1123B36475 /* PhoneRunRecordDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneRunRecordDetailSheet.swift; sourceTree = "<group>"; };
 		39076D48B89EB45273A5F0A8 /* PhoneSeasonEconomyPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSeasonEconomyPanel.swift; sourceTree = "<group>"; };
 		3A401E55FD8B55C113229F30 /* PhoneDiagnosticsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneDiagnosticsPanel.swift; sourceTree = "<group>"; };
 		3D801EA74A4B0CDD65D1AF4E /* PhoneSeasonalUnlockPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSeasonalUnlockPanel.swift; sourceTree = "<group>"; };
 		3E2914D59941AF484DDE25BC /* RunimalMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RunimalMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		40B7409DEE69B8C69D4B9F0F /* PhoneCloudVerificationPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneCloudVerificationPanel.swift; sourceTree = "<group>"; };
 		42ADA97AE2793AC137474BA0 /* PhoneChallengeBoardPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneChallengeBoardPanel.swift; sourceTree = "<group>"; };
+		46F38ED4C07F0E4C9FCED787 /* PhoneEggForgeEffectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneEggForgeEffectView.swift; sourceTree = "<group>"; };
+		4A368CB6BA9FD233E59FA5A1 /* PhoneRunCoreUsage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneRunCoreUsage.swift; sourceTree = "<group>"; };
 		4FA42B69A30577005505320D /* PhoneCloudMirrorPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneCloudMirrorPanel.swift; sourceTree = "<group>"; };
 		510FCA0CEF67998BBDA50B6A /* PhoneMythicApexPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneMythicApexPanel.swift; sourceTree = "<group>"; };
 		51101D3283ECE3C6CB8BB816 /* WatchCompanionHeroCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchCompanionHeroCard.swift; sourceTree = "<group>"; };
@@ -204,6 +211,7 @@
 		AE5C185CFBC7BCD90C4E6838 /* PhoneHealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneHealthKitManager.swift; sourceTree = "<group>"; };
 		AEA95D1D9A9F2C66C78412A2 /* PhoneHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneHomeView.swift; sourceTree = "<group>"; };
 		AF235CF7D78E9EFF6FE4C815 /* PhoneRecentRunCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneRecentRunCard.swift; sourceTree = "<group>"; };
+		AFDB0F2F344B3AB6F584AFF6 /* PhoneRunSyncHistoryPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneRunSyncHistoryPanel.swift; sourceTree = "<group>"; };
 		B1B704EA8A439E06F40FDC8D /* runimal-apple */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "runimal-apple"; path = .; sourceTree = SOURCE_ROOT; };
 		B4497E0AC7729757705585FE /* PhoneFITImportManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneFITImportManager.swift; sourceTree = "<group>"; };
 		B6E46300A234E62D872875A0 /* PhoneCollectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneCollectionView.swift; sourceTree = "<group>"; };
@@ -321,6 +329,7 @@
 				18C263EDBDA7A0547340C543 /* PhoneContentRotationPanel.swift */,
 				F1E385404E47BEE9EBE310AC /* PhoneDashboardView.swift */,
 				3A401E55FD8B55C113229F30 /* PhoneDiagnosticsPanel.swift */,
+				46F38ED4C07F0E4C9FCED787 /* PhoneEggForgeEffectView.swift */,
 				9E1D232A467F7235E20D20A4 /* PhoneEssenceForgePanel.swift */,
 				BE9124C7D8D5C626EE91D614 /* PhoneFeedCinematicPanel.swift */,
 				B4497E0AC7729757705585FE /* PhoneFITImportManager.swift */,
@@ -344,7 +353,10 @@
 				1D861873D3B9F0CFC14067C7 /* PhoneRecordDiffPanel.swift */,
 				6D52108AD744AAE198D6A811 /* PhoneRewardStagePanel.swift */,
 				13B34C27C8CA9129152E3034 /* PhoneRunCoreDecisionPanel.swift */,
+				4A368CB6BA9FD233E59FA5A1 /* PhoneRunCoreUsage.swift */,
 				9F24904A9C69E6694D216558 /* PhoneRunDeckView.swift */,
+				38A84C0437469E1123B36475 /* PhoneRunRecordDetailSheet.swift */,
+				AFDB0F2F344B3AB6F584AFF6 /* PhoneRunSyncHistoryPanel.swift */,
 				1B4E21AF89C10E061DDAC387 /* PhoneSanctuaryPanel.swift */,
 				3D801EA74A4B0CDD65D1AF4E /* PhoneSeasonalUnlockPanel.swift */,
 				39076D48B89EB45273A5F0A8 /* PhoneSeasonEconomyPanel.swift */,
@@ -593,6 +605,7 @@
 				EDD9705F22CE23A4801B2464 /* PhoneContentRotationPanel.swift in Sources */,
 				ACE2CE5F4EE7FCFAB684E01A /* PhoneDashboardView.swift in Sources */,
 				91DB87EB4DD59DC1A6282104 /* PhoneDiagnosticsPanel.swift in Sources */,
+				872298045CB594908A11E179 /* PhoneEggForgeEffectView.swift in Sources */,
 				338AC15FAD498178D66598B7 /* PhoneEssenceForgePanel.swift in Sources */,
 				384BADD25D9D04B3F07D1235 /* PhoneFITImportManager.swift in Sources */,
 				43EF6C2C7E4A34B138CAC576 /* PhoneFeedCinematicPanel.swift in Sources */,
@@ -616,7 +629,10 @@
 				852554C5EEE85AA025DC249C /* PhoneRecordDiffPanel.swift in Sources */,
 				F347F32092383E2AC1C5BF8D /* PhoneRewardStagePanel.swift in Sources */,
 				4D77182AF23663651BD37DF6 /* PhoneRunCoreDecisionPanel.swift in Sources */,
+				B2BF9884CE11457C50D2BEEB /* PhoneRunCoreUsage.swift in Sources */,
 				FF57A1B42F7E1113E60C40BF /* PhoneRunDeckView.swift in Sources */,
+				1D297C184401A1A66088C08A /* PhoneRunRecordDetailSheet.swift in Sources */,
+				C83A88698509B715C44BC59D /* PhoneRunSyncHistoryPanel.swift in Sources */,
 				E011DA1C43541CF245EB532A /* PhoneSanctuaryPanel.swift in Sources */,
 				6EA2A0C8EC1BA21A995159C4 /* PhoneSeasonEconomyPanel.swift in Sources */,
 				A2F373E931E313EAD438F3F8 /* PhoneSeasonalUnlockPanel.swift in Sources */,
