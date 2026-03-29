@@ -27,7 +27,7 @@ struct WatchRunStatsPanel: View {
             .init(title: "시간", value: elapsedText, accent: .white.opacity(0.16)),
             .init(title: "페이스", value: paceText, accent: .white.opacity(0.16)),
             .init(title: "심박", value: heartRateText, accent: .red.opacity(0.22)),
-            .init(title: "케이던스", value: cadenceText, accent: .orange.opacity(0.24)),
+            .init(title: "평균 케이던스", value: cadenceText, accent: .orange.opacity(0.24)),
         ]
     }
 
@@ -63,7 +63,7 @@ struct WatchRunStatsPanel: View {
             Text(title)
                 .font(.caption2.weight(.bold))
                 .foregroundStyle(.white.opacity(0.64))
-                .frame(width: 42, alignment: .leading)
+                .frame(width: 76, alignment: .leading)
             Text(value)
                 .font(.footnote.monospacedDigit().weight(.black))
                 .foregroundStyle(.white)

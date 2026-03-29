@@ -807,6 +807,7 @@
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Runimal reads live run data to hatch and grow your companion.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Runimal saves completed workouts and routes after each run.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Runimal needs your route during runs so your companion can learn the path you took.";
+				INFOPLIST_KEY_NSMotionUsageDescription = "Runimal reads cadence during runs so your companion can react to your real stride.";
 				INFOPLIST_KEY_WKApplication = YES;
 				INFOPLIST_KEY_WKWatchOnly = YES;
 				MARKETING_VERSION = 1.0;
@@ -834,6 +835,7 @@
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Runimal reads live run data to hatch and grow your companion.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Runimal saves completed workouts and routes after each run.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Runimal needs your route during runs so your companion can learn the path you took.";
+				INFOPLIST_KEY_NSMotionUsageDescription = "Runimal reads cadence during runs so your companion can react to your real stride.";
 				INFOPLIST_KEY_WKApplication = YES;
 				INFOPLIST_KEY_WKWatchOnly = YES;
 				MARKETING_VERSION = 1.0;

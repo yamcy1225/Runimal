@@ -94,6 +94,7 @@ targets:
         INFOPLIST_KEY_NSHealthShareUsageDescription: Runimal reads live run data to hatch and grow your companion.
         INFOPLIST_KEY_NSHealthUpdateUsageDescription: Runimal saves completed workouts and routes after each run.
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: Runimal needs your route during runs so your companion can learn the path you took.
+        INFOPLIST_KEY_NSMotionUsageDescription: Runimal reads cadence during runs so your companion can react to your real stride.
         CODE_SIGN_ENTITLEMENTS: RunimalWatch/RunimalWatch.entitlements
     dependencies:
       - package: RunimalPackage
