@@ -7,6 +7,10 @@ struct PhoneRunRecordDetailSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var actionFeedback: ActionFeedback?
+    @State private var exportDocument: ExportDocument?
+    @State private var exportTimeBasis: WorkoutExportTimeBasis = .timer
+
+    private let exportManager = PhoneWorkoutExportManager()
 
     private var run: CompletedRunRecord? {
         store.completedRuns.first(where: { $0.id == runID })
@@ -26,10 +30,19 @@ struct PhoneRunRecordDetailSheet: View {
         return store.eggOpportunity(for: run)
     }
 
+    private var workoutArchive: WorkoutSessionArchive? {
+        store.workoutArchive(for: runID)
+    }
+
     private enum ActionFeedback {
         case fed(CompanionFeedOutcome)
         case forged(EggInventoryEntry)
         case incubated(EggInventoryEntry)
+    }
+
+    private struct ExportDocument: Identifiable {
+        let id = UUID()
+        let url: URL
     }
 
     private var usageSummary: RunUsageSummary? {
@@ -65,6 +78,12 @@ struct PhoneRunRecordDetailSheet: View {
                         VStack(alignment: .leading, spacing: 18) {
                             heroCard(for: run)
                             metricCard(for: run)
+                            if let workoutArchive {
+                                PhoneWorkoutArchiveSummaryPanel(
+                                    archive: workoutArchive,
+                                    accent: accent
+                                )
+                            }
                             actionCard(for: run)
                             if let actionFeedback {
                                 feedbackCard(actionFeedback)
@@ -118,6 +137,9 @@ struct PhoneRunRecordDetailSheet: View {
             .toolbarBackground(GameBoyPalette.lightest, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .navigationBarTitleDisplayMode(.inline)
+            .sheet(item: $exportDocument) { document in
+                ShareSheet(items: [document.url])
+            }
         }
     }
 
@@ -188,6 +210,10 @@ struct PhoneRunRecordDetailSheet: View {
                     if run.rareEventCompleted {
                         TraitChip(label: "희귀 신호 달성", accent: .red.opacity(0.28))
                     }
+                }
+
+                if workoutArchive != nil {
+                    exportButtons(for: run)
                 }
             }
         }
@@ -440,6 +466,58 @@ struct PhoneRunRecordDetailSheet: View {
             )
         }
         .buttonStyle(.plain)
+    }
+
+    private func exportButtons(for run: CompletedRunRecord) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("세션 내보내기")
+                .font(.caption.monospaced().weight(.black))
+                .foregroundStyle(GameBoyPalette.darkest)
+
+            HStack(spacing: 8) {
+                ForEach(WorkoutExportTimeBasis.allCases) { basis in
+                    Button {
+                        exportTimeBasis = basis
+                    } label: {
+                        Text(basis.label)
+                            .font(.caption2.monospaced().weight(.black))
+                            .foregroundStyle(exportTimeBasis == basis ? GameBoyPalette.lightest : GameBoyPalette.darkest)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(exportTimeBasis == basis ? GameBoyPalette.mediumDark : GameBoyPalette.lightest)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .stroke(GameBoyPalette.darkest, lineWidth: 2)
+                                    )
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            HStack(spacing: 10) {
+                pixelActionButton(title: "GPX 내보내기", detail: "트랙 공유용") {
+                    export(run: run, format: .gpx)
+                }
+                pixelActionButton(title: "TCX 내보내기", detail: "랩/훈련용") {
+                    export(run: run, format: .tcx)
+                }
+            }
+
+            pixelActionButton(title: "FIT 내보내기", detail: "플랫폼 업로드용", filled: true) {
+                export(run: run, format: .fit)
+            }
+        }
+    }
+
+    private func export(run: CompletedRunRecord, format: WorkoutExportFormat) {
+        guard let archive = workoutArchive else { return }
+        let title = "\(run.reward.coreLabel)-\(sourceEyebrow(for: run))-\(exportTimeBasis.rawValue)"
+        if let url = try? exportManager.exportFileURL(for: archive, title: title, format: format, timeBasis: exportTimeBasis) {
+            exportDocument = ExportDocument(url: url)
+        }
     }
 
     private func sourceEyebrow(for run: CompletedRunRecord) -> String {

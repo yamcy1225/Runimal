@@ -4,7 +4,7 @@ import SwiftUI
 struct WatchRunStatsPanel: View {
     let snapshot: LiveRunSnapshot
     let accent: Color
-
+    let autoPauseEnabled: Bool
 
     var body: some View {
         GameSurface(
@@ -13,7 +13,24 @@ struct WatchRunStatsPanel: View {
             eyebrow: nil,
             compact: true
         ) {
-            VStack(spacing: 4) {
+            VStack(spacing: 6) {
+                HStack {
+                    Spacer()
+                    Text(autoPauseEnabled ? "AUTO PAUSE ON" : "AUTO PAUSE OFF")
+                        .font(.caption2.monospaced().weight(.black))
+                        .foregroundStyle(GameBoyPalette.darkest)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(autoPauseEnabled ? GameBoyPalette.mediumLight : GameBoyPalette.lightest)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .stroke(GameBoyPalette.darkest, lineWidth: 1)
+                                )
+                        )
+                }
+
                 ForEach(cards) { card in
                     statCard(title: card.title, value: card.value, accent: card.accent)
                 }

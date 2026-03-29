@@ -12,6 +12,9 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
     var lastSnapshot: LiveRunSnapshot?
     var lastReward: RunRewardSummary?
     var lastCompletedRun: CompletedRunRecord?
+    var lastWorkoutArchive: WorkoutSessionArchive?
+    var watchOfflineMapPacks: [OfflineMapPackSummary] = []
+    var selectedOfflineMapPackID: String?
     var lastMessage = "No watch sync yet"
     var recentEvents: [SyncDiagnosticEvent] = []
 
@@ -76,6 +79,88 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
         }
     }
 
+    func pushAutoPauseEnabled(_ enabled: Bool) {
+        guard WCSession.isSupported() else { return }
+
+        let session = WCSession.default
+        do {
+            if session.isReachable {
+                try session.updateApplicationContext(["autoPauseEnabled": enabled])
+                lastMessage = enabled ? "Auto Pause ON synced" : "Auto Pause OFF synced"
+                logEvent("push auto pause", enabled ? "on" : "off")
+            } else {
+                session.transferUserInfo(["autoPauseEnabled": enabled])
+                queuedTransferCount = session.outstandingUserInfoTransfers.count
+                lastMessage = enabled ? "Queued Auto Pause ON" : "Queued Auto Pause OFF"
+                logEvent("queue auto pause", enabled ? "on" : "off")
+            }
+        } catch {
+            lastMessage = "Auto Pause sync failed: \(error.localizedDescription)"
+            logEvent("push auto pause failed", error.localizedDescription)
+        }
+    }
+
+    func pushOfflineMapPackCatalog(_ packs: [OfflineMapPackSummary]) {
+        guard WCSession.isSupported() else { return }
+
+        do {
+            let data = try JSONEncoder().encode(packs)
+            let session = WCSession.default
+            if session.isReachable {
+                try session.updateApplicationContext(["offlineMapPackCatalog": data])
+                lastMessage = "Offline map catalog synced"
+                logEvent("push map packs", "\(packs.count)")
+            } else {
+                session.transferUserInfo(["offlineMapPackCatalog": data])
+                queuedTransferCount = session.outstandingUserInfoTransfers.count
+                lastMessage = "Queued offline map catalog"
+                logEvent("queue map packs", "\(packs.count)")
+            }
+        } catch {
+            lastMessage = "Map pack sync failed: \(error.localizedDescription)"
+            logEvent("push map packs failed", error.localizedDescription)
+        }
+    }
+
+    func pushSelectedOfflineMapPackID(_ packID: String?) {
+        guard WCSession.isSupported() else { return }
+
+        let session = WCSession.default
+        let payload: [String: Any] = ["selectedOfflineMapPackID": packID as Any]
+
+        do {
+            if session.isReachable {
+                try session.updateApplicationContext(payload)
+                lastMessage = packID == nil ? "Offline map cleared" : "Selected map synced"
+                logEvent("push selected map", packID ?? "none")
+            } else {
+                session.transferUserInfo(payload)
+                queuedTransferCount = session.outstandingUserInfoTransfers.count
+                lastMessage = packID == nil ? "Queued map clear" : "Queued selected map"
+                logEvent("queue selected map", packID ?? "none")
+            }
+        } catch {
+            lastMessage = "Selected map sync failed: \(error.localizedDescription)"
+            logEvent("push selected map failed", error.localizedDescription)
+        }
+    }
+
+    func queueOfflineMapPackFiles(packID: String, urls: [URL]) {
+        guard WCSession.isSupported(), urls.isEmpty == false else { return }
+
+        let session = WCSession.default
+        for url in urls {
+            let kind = url.lastPathComponent == "manifest.json" ? "manifest" : "tiles"
+            session.transferFile(url, metadata: [
+                "offlineMapPackID": packID,
+                "offlineMapFileKind": kind
+            ])
+        }
+        queuedTransferCount = session.outstandingUserInfoTransfers.count
+        lastMessage = "Queued offline map files"
+        logEvent("queue map files", "\(packID):\(urls.count)")
+    }
+
     nonisolated func session(
         _ session: WCSession,
         activationDidCompleteWith activationState: WCSessionActivationState,
@@ -137,6 +222,25 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
                 self.lastCompletedRun = record
                 self.lastMessage = "Completed run synced"
                 self.logEvent("completed run", record.id)
+            }
+
+            if let data = payload["workoutSessionArchive"] as? Data,
+               let archive = try? JSONDecoder().decode(WorkoutSessionArchive.self, from: data) {
+                self.lastWorkoutArchive = archive
+                self.lastMessage = "Workout archive synced"
+                self.logEvent("archive", archive.runID)
+            }
+
+            if let data = payload["offlineMapPackCatalog"] as? Data,
+               let packs = try? JSONDecoder().decode([OfflineMapPackSummary].self, from: data) {
+                self.watchOfflineMapPacks = packs
+                self.lastMessage = "Watch map catalog synced"
+                self.logEvent("map packs", "\(packs.count)")
+            }
+
+            if payload.keys.contains("selectedOfflineMapPackID") {
+                self.selectedOfflineMapPackID = payload["selectedOfflineMapPackID"] as? String
+                self.logEvent("selected map", self.selectedOfflineMapPackID ?? "none")
             }
 
             self.queuedTransferCount = WCSession.default.outstandingUserInfoTransfers.count

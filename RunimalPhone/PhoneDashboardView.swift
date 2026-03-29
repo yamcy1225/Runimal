@@ -8,6 +8,7 @@ final class PhoneDashboardStore {
     let healthKit = PhoneHealthKitManager()
     let fitImport = PhoneFITImportManager()
     let connectivity = PhoneConnectivityManager()
+    let offlineMaps = PhoneOfflineMapPackManager()
     let planner = PhoneWorkoutPlanner()
     let progress = PhoneProgressStore()
     let vault = PhoneVaultSyncManager()
@@ -213,6 +214,27 @@ final class PhoneDashboardStore {
         return WatchRunSyncDiagnostic(inbound: inbound, persisted: persisted)
     }
 
+    var offlineMapPacks: [OfflineMapPackSummary] {
+        offlineMaps.packs
+    }
+
+    var watchOfflineMapPacks: [OfflineMapPackSummary] {
+        connectivity.watchOfflineMapPacks
+    }
+
+    var selectedOfflineMapPackID: String? {
+        offlineMaps.selectedPackID
+    }
+
+    var selectedOfflineMapPack: OfflineMapPackSummary? {
+        guard let selectedOfflineMapPackID else { return offlineMapPacks.first }
+        return offlineMapPacks.first(where: { $0.id == selectedOfflineMapPackID }) ?? offlineMapPacks.first
+    }
+
+    var autoPauseEnabled: Bool {
+        progress.autoPauseEnabled
+    }
+
     func canUseRunCore(_ run: CompletedRunRecord) -> Bool {
         availableRunCores.contains(where: { $0.id == run.id })
     }
@@ -413,10 +435,14 @@ final class PhoneDashboardStore {
     func activateConnectivity() {
         connectivity.activate()
         syncCompanionEffects()
+        connectivity.pushAutoPauseEnabled(progress.autoPauseEnabled)
+        connectivity.pushOfflineMapPackCatalog(offlineMaps.packs)
+        connectivity.pushSelectedOfflineMapPackID(offlineMaps.selectedPackID)
     }
 
     func bootstrap() {
         progress.load()
+        offlineMaps.load()
         let vaultSnapshot = vault.loadSnapshot()
         let cloudSnapshot = cloudMirror.restoreIfAvailable()
 
@@ -478,6 +504,29 @@ final class PhoneDashboardStore {
         fitImport.resetImportedStatus()
         telemetry.log("external_workout_cleared", detail: "manual clear")
         persistVault()
+    }
+
+    func setAutoPauseEnabled(_ enabled: Bool) {
+        progress.setAutoPauseEnabled(enabled)
+        connectivity.pushAutoPauseEnabled(enabled)
+        telemetry.log("auto_pause_toggled", detail: enabled ? "on" : "off")
+        persistVault()
+    }
+
+    func registerOfflineMapPack(_ pack: OfflineMapPackSummary) {
+        offlineMaps.prepareLocalStorage(for: pack)
+        offlineMaps.selectPack(id: pack.id)
+        offlineMaps.markTransferredToWatch(ids: [pack.id])
+        connectivity.pushOfflineMapPackCatalog(offlineMaps.packs)
+        connectivity.pushSelectedOfflineMapPackID(offlineMaps.selectedPackID)
+        sendOfflineMapPackFiles(id: pack.id)
+        telemetry.log("offline_map_pack_registered", detail: pack.title)
+    }
+
+    func setSelectedOfflineMapPack(id: String) {
+        offlineMaps.selectPack(id: id)
+        connectivity.pushSelectedOfflineMapPackID(offlineMaps.selectedPackID)
+        telemetry.log("offline_map_pack_selected", detail: id)
     }
 
     func syncWorkoutPlan() async {
@@ -837,6 +886,9 @@ struct PhoneDashboardView: View {
         }
         .onChange(of: store.connectivity.lastCompletedRun) { _, _ in
             store.ingestCompletedRun()
+        }
+        .onChange(of: store.connectivity.lastWorkoutArchive) { _, _ in
+            store.ingestLatestWorkoutArchive()
         }
         .background(
             ZStack {

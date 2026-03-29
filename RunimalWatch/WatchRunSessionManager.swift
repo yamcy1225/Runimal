@@ -47,6 +47,8 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     private var demoTask: Task<Void, Never>?
     private var routeLocations: [CLLocation] = []
     private var routePreview: [RoutePoint] = []
+    private var archiveTrackPoints: [WorkoutTrackPoint] = []
+    private var sessionEvents: [WorkoutSessionEvent] = []
     private var liveRouteDistanceMeters: Double = 0
     private var liveElevationGainMeters: Double = 0
     private var averageHeartRateAccumulator: [Double] = []
@@ -65,6 +67,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     private var suddenEventProgressStartedAt: Date?
     private var rareEventCompleted = false
     private var environmentCondition: EnvironmentCondition = .unknown
+    var autoPauseEnabled = true
 
     var authorizationStatus = "not requested"
     var locationStatusLabel = "not requested"
@@ -79,6 +82,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     )
     var lastReward: RunRewardSummary?
     var lastCompletedRun: CompletedRunRecord?
+    var lastWorkoutArchive: WorkoutSessionArchive?
     var lastSavedWorkoutLabel = "No workout saved yet"
     var claimedWeeklyRewardIDs: Set<String> = []
     var activeWeeklyEffects: [WeeklyRewardEffect] = []
@@ -171,6 +175,8 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             lastSavedWorkoutLabel = "Saving run..."
             routeLocations = []
             routePreview = []
+            archiveTrackPoints = []
+            sessionEvents = [WorkoutSessionEvent(kind: .start, timestamp: startDate)]
             liveRouteDistanceMeters = 0
             liveElevationGainMeters = 0
             averageHeartRateAccumulator = []
@@ -246,9 +252,19 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
                 environmentCondition: environmentCondition,
                 rareEventCompleted: rareEventCompleted
             )
+            let archive = buildWorkoutArchive(
+                runID: record.id,
+                snapshot: finalizedSnapshot,
+                averageHeartRate: averageHeartRate,
+                averageCadence: finalizedSnapshot.cadence,
+                startedAt: startedAt ?? endDate,
+                endedAt: endDate,
+                source: "watch-healthkit"
+            )
 
             lastReward = reward
             lastCompletedRun = record
+            lastWorkoutArchive = archive
             emitRuntimeAlert(
                 title: "보상 확보",
                 detail: "\(reward.coreLabel) · +\(reward.experience) XP",
@@ -274,9 +290,17 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         RunimalGameEngine.generatePet(from: latestSnapshot, claimedRewardIDs: claimedWeeklyRewardIDs)
     }
 
+    var liveRoutePreview: [RoutePoint] {
+        routePreview
+    }
+
     func applyCompanionContext(_ context: CompanionEffectContext) {
         claimedWeeklyRewardIDs = Set(context.claimedRewardIDs)
         activeWeeklyEffects = context.activeEffects
+    }
+
+    func setAutoPauseEnabled(_ enabled: Bool) {
+        autoPauseEnabled = enabled
     }
 
     private func startDemoRun() {
@@ -348,9 +372,11 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             environmentCondition: environmentCondition,
             rareEventCompleted: rareEventCompleted
         )
+        let archive = buildDemoWorkoutArchive(runID: record.id, startedAt: startedAt, endedAt: endedAt)
 
         lastReward = reward
         lastCompletedRun = record
+        lastWorkoutArchive = archive
         lastSavedWorkoutLabel = "Demo workout prepared"
         logSessionEvent("demo", "demo run finished")
         emitRuntimeAlert(
@@ -370,10 +396,13 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             switch toState {
             case .running:
                 self.sessionStateLabel = "running"
+                self.recordSessionEvent(.resume, at: date, detail: "running")
             case .ended:
                 self.sessionStateLabel = "ended"
+                self.recordSessionEvent(.end, at: date, detail: "ended")
             case .paused:
                 self.sessionStateLabel = "paused"
+                self.recordSessionEvent(.pause, at: date, detail: "paused")
             default:
                 self.sessionStateLabel = "transitioning"
             }
@@ -981,6 +1010,152 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             }
 
             routeLocations.append(location)
+            archiveTrackPoints.append(
+                WorkoutTrackPoint(
+                    timestamp: location.timestamp,
+                    latitude: location.coordinate.latitude,
+                    longitude: location.coordinate.longitude,
+                    altitude: location.altitude,
+                    horizontalAccuracy: location.horizontalAccuracy,
+                    speedMetersPerSecond: location.speed >= 0 ? location.speed : nil,
+                    heartRate: latestSnapshot.currentHeartRate,
+                    cadence: latestSnapshot.cadence,
+                    gpsPoor: location.horizontalAccuracy > 30,
+                    paused: sessionStateLabel == "paused"
+                )
+            )
         }
+    }
+
+    private func buildWorkoutArchive(
+        runID: String,
+        snapshot: LiveRunSnapshot,
+        averageHeartRate: Double?,
+        averageCadence: Int?,
+        startedAt: Date,
+        endedAt: Date,
+        source: String
+    ) -> WorkoutSessionArchive {
+        let baseArchive = WorkoutSessionArchive(
+            runID: runID,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            elapsedTimeSeconds: snapshot.elapsedSeconds,
+            timerTimeSeconds: snapshot.elapsedSeconds,
+            movingTimeSeconds: inferMovingTimeSeconds(from: archiveTrackPoints),
+            distanceMeters: snapshot.distanceMeters,
+            averageHeartRate: averageHeartRate,
+            averageCadence: averageCadence,
+            averagePaceSeconds: snapshot.averagePaceSeconds,
+            elevationGainM: snapshot.elevationGainM,
+            source: source,
+            trackPoints: archiveTrackPoints,
+            laps: [WorkoutLap(
+            index: 1,
+            startTime: startedAt,
+            endTime: endedAt,
+            distanceMeters: snapshot.distanceMeters,
+            timerTimeSeconds: snapshot.elapsedSeconds,
+            averageHeartRate: averageHeartRate,
+            averageCadence: averageCadence,
+            averagePaceSeconds: snapshot.averagePaceSeconds,
+            elevationGainM: snapshot.elevationGainM
+        )],
+            events: normalizedSessionEvents(startedAt: startedAt, endedAt: endedAt)
+        )
+
+        return WorkoutArchiveAnalyzer.enrich(baseArchive, configuration: workoutAnalysisConfiguration())
+    }
+
+    private func buildDemoWorkoutArchive(runID: String, startedAt: Date, endedAt: Date) -> WorkoutSessionArchive {
+        let points = sampledDemoRoute(from: startedAt).map {
+            WorkoutTrackPoint(
+                timestamp: $0.timestamp,
+                latitude: $0.latitude,
+                longitude: $0.longitude,
+                altitude: $0.altitude,
+                horizontalAccuracy: 8,
+                speedMetersPerSecond: nil,
+                heartRate: latestSnapshot.currentHeartRate,
+                cadence: latestSnapshot.cadence,
+                gpsPoor: false,
+                paused: false
+            )
+        }
+
+        let archive = WorkoutSessionArchive(
+            runID: runID,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            elapsedTimeSeconds: latestSnapshot.elapsedSeconds,
+            timerTimeSeconds: latestSnapshot.elapsedSeconds,
+            movingTimeSeconds: latestSnapshot.elapsedSeconds,
+            distanceMeters: latestSnapshot.distanceMeters,
+            averageHeartRate: latestSnapshot.currentHeartRate,
+            averageCadence: latestSnapshot.cadence,
+            averagePaceSeconds: latestSnapshot.averagePaceSeconds,
+            elevationGainM: latestSnapshot.elevationGainM,
+            source: "watch-demo",
+            trackPoints: points,
+            laps: [WorkoutLap(
+            index: 1,
+            startTime: startedAt,
+            endTime: endedAt,
+            distanceMeters: latestSnapshot.distanceMeters,
+            timerTimeSeconds: latestSnapshot.elapsedSeconds,
+            averageHeartRate: latestSnapshot.currentHeartRate,
+            averageCadence: latestSnapshot.cadence,
+            averagePaceSeconds: latestSnapshot.averagePaceSeconds,
+            elevationGainM: latestSnapshot.elevationGainM
+        )],
+            events: normalizedSessionEvents(startedAt: startedAt, endedAt: endedAt)
+        )
+
+        return WorkoutArchiveAnalyzer.enrich(archive, configuration: workoutAnalysisConfiguration())
+    }
+
+    private func workoutAnalysisConfiguration() -> WorkoutArchiveAnalyzer.Configuration {
+        if autoPauseEnabled {
+            return .init()
+        }
+
+        return .init(
+            lapDistanceMeters: 1_000,
+            pauseSpeedThreshold: 0.5,
+            pauseHoldSeconds: .infinity,
+            resumeSpeedThreshold: 1.0,
+            resumeHoldSeconds: .infinity,
+            movingSpeedThreshold: 0.5
+        )
+    }
+
+    private func inferMovingTimeSeconds(from points: [WorkoutTrackPoint]) -> Int {
+        guard points.count > 1 else { return latestSnapshot.elapsedSeconds }
+        var total: TimeInterval = 0
+        for index in 1..<points.count {
+            let previous = points[index - 1]
+            let current = points[index]
+            let delta = current.timestamp.timeIntervalSince(previous.timestamp)
+            guard delta > 0 else { continue }
+            if current.paused == false {
+                total += delta
+            }
+        }
+        return max(Int(total.rounded()), 0)
+    }
+
+    private func recordSessionEvent(_ kind: WorkoutEventKind, at date: Date, detail: String?) {
+        sessionEvents.append(WorkoutSessionEvent(kind: kind, timestamp: date, detail: detail))
+    }
+
+    private func normalizedSessionEvents(startedAt: Date, endedAt: Date) -> [WorkoutSessionEvent] {
+        var events = sessionEvents
+        if events.contains(where: { $0.kind == .start }) == false {
+            events.insert(WorkoutSessionEvent(kind: .start, timestamp: startedAt), at: 0)
+        }
+        if events.contains(where: { $0.kind == .end }) == false {
+            events.append(WorkoutSessionEvent(kind: .end, timestamp: endedAt))
+        }
+        return events.sorted { $0.timestamp < $1.timestamp }
     }
 }

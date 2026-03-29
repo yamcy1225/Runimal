@@ -9,6 +9,7 @@ struct PhoneRunSyncHistoryPanel: View {
     let accent: Color
     let canUseRunCore: (CompletedRunRecord) -> Bool
     let usageSummary: (CompletedRunRecord) -> PhoneRunCoreUsageSummary?
+    let workoutArchive: (CompletedRunRecord) -> WorkoutSessionArchive?
     let onSelectRun: (CompletedRunRecord) -> Void
 
     var body: some View {
@@ -76,6 +77,9 @@ struct PhoneRunSyncHistoryPanel: View {
 
                 HStack(spacing: 8) {
                     RunimalSignalBadge(icon: "flame.fill", label: "+\(run.reward.experience) XP", accent: .green)
+                    if let autoPauseBadge = autoPauseBadgeLabel(for: run) {
+                        TraitChip(label: autoPauseBadge, accent: .orange.opacity(0.82))
+                    }
                     TraitChip(
                         label: canUseRunCore(run) ? "사용 가능" : compactUsageLabel(for: run),
                         accent: canUseRunCore(run) ? .green : (usageSummary(run)?.accent ?? GameBoyPalette.mediumDark)
@@ -124,6 +128,12 @@ struct PhoneRunSyncHistoryPanel: View {
             return "사용 완료"
         }
         return usage.title
+    }
+
+    private func autoPauseBadgeLabel(for run: CompletedRunRecord) -> String? {
+        guard let archive = workoutArchive(run) else { return nil }
+        let count = archive.events.filter { $0.kind == .pause && $0.detail == "auto" }.count
+        return "AUTO \(count)회"
     }
 
     private func compactSourceLabel(for run: CompletedRunRecord) -> String {

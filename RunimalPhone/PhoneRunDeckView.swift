@@ -6,6 +6,10 @@ private struct SelectedRunRecord: Identifiable {
     let id: String
 }
 
+extension UTType {
+    static let mbtilesFile = UTType(filenameExtension: "mbtiles") ?? .data
+}
+
 private enum RunArchiveFilter: String, CaseIterable, Identifiable {
     case all
     case runimal
@@ -25,6 +29,7 @@ private enum RunArchiveFilter: String, CaseIterable, Identifiable {
 struct PhoneRunDeckView: View {
     let store: PhoneDashboardStore
     @State private var isImportingFITFile = false
+    @State private var importingOfflineMapPackID: String?
     @State private var selectedRun: SelectedRunRecord?
     @State private var archiveFilter: RunArchiveFilter = .all
 
@@ -53,6 +58,21 @@ struct PhoneRunDeckView: View {
                     }
                     summaryCard
                     syncCard
+                    PhoneOfflineMapPackPanel(
+                        packs: store.offlineMapPacks,
+                        watchPacks: store.watchOfflineMapPacks,
+                        selectedPackID: store.selectedOfflineMapPackID,
+                        importStatusLabel: store.offlineMaps.importStatusLabel,
+                        lastImportError: store.offlineMaps.lastImportError,
+                        accent: store.pet.accentColor,
+                        onCreatePack: { store.registerOfflineMapPack($0) },
+                        onSelectPack: { store.setSelectedOfflineMapPack(id: $0) },
+                        onImportTiles: { importingOfflineMapPackID = $0 },
+                        onRenamePack: { id, title in
+                            store.renameOfflineMapPack(id: id, title: title)
+                        },
+                        onDeletePack: { store.deleteOfflineMapPack(id: $0) }
+                    )
                     archiveFilterStrip
                     if shouldShowRunimalArchive {
                         PhoneRunSyncHistoryPanel(
@@ -63,6 +83,7 @@ struct PhoneRunDeckView: View {
                             accent: store.pet.accentColor,
                             canUseRunCore: { store.canUseRunCore($0) },
                             usageSummary: { store.runCoreUsageSummary(for: $0) },
+                            workoutArchive: { store.workoutArchive(for: $0.id) },
                             onSelectRun: { selectedRun = SelectedRunRecord(id: $0.id) }
                         )
                     }
@@ -75,6 +96,7 @@ struct PhoneRunDeckView: View {
                             accent: store.pet.accentColor,
                             canUseRunCore: { store.canUseRunCore($0) },
                             usageSummary: { store.runCoreUsageSummary(for: $0) },
+                            workoutArchive: { store.workoutArchive(for: $0.id) },
                             onSelectRun: { selectedRun = SelectedRunRecord(id: $0.id) }
                         )
                     }
@@ -111,6 +133,32 @@ struct PhoneRunDeckView: View {
                 Task { await store.importFITRun(from: url) }
             case .failure(let error):
                 store.fitImport.markImportFailed(error.localizedDescription)
+            }
+        }
+        .fileImporter(
+            isPresented: Binding(
+                get: { importingOfflineMapPackID != nil },
+                set: { isPresented in
+                    if isPresented == false {
+                        importingOfflineMapPackID = nil
+                    }
+                }
+            ),
+            allowedContentTypes: [.mbtilesFile],
+            allowsMultipleSelection: false
+        ) { result in
+            let packID = importingOfflineMapPackID
+            importingOfflineMapPackID = nil
+
+            switch result {
+            case .success(let urls):
+                guard let packID, let url = urls.first else {
+                    store.offlineMaps.markImportFailed("MBTiles 파일을 선택하지 않았습니다.")
+                    return
+                }
+                store.importOfflineMapPackTiles(from: url, for: packID)
+            case .failure(let error):
+                store.offlineMaps.markImportFailed(error.localizedDescription)
             }
         }
         .sheet(item: $selectedRun) { selectedRun in
@@ -565,6 +613,24 @@ struct PhoneRunDeckView: View {
                         .foregroundStyle(GameBoyPalette.mediumDark)
                 }
 
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("러닝 설정")
+                        .font(.headline.monospaced().weight(.black))
+                        .foregroundStyle(GameBoyPalette.darkest)
+                    Text(store.autoPauseEnabled ? "자동 pause ON · 저속 구간을 자동으로 pause 처리합니다." : "자동 pause OFF · 정지는 수동 종료/재개만 반영합니다.")
+                        .font(.footnote.monospaced())
+                        .foregroundStyle(GameBoyPalette.mediumDark)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("오프라인 지도")
+                        .font(.headline.monospaced().weight(.black))
+                        .foregroundStyle(GameBoyPalette.darkest)
+                    Text("iPhone 팩 \(store.offlineMapPacks.count)개 · Watch 카탈로그 \(store.watchOfflineMapPacks.count)개")
+                        .font(.footnote.monospaced())
+                        .foregroundStyle(GameBoyPalette.mediumDark)
+                }
+
                 if let reward = store.connectivity.lastReward {
                     HStack(alignment: .center, spacing: 12) {
                         PixelPetView(pet: reward.pet, pixelSize: 6)
@@ -595,6 +661,14 @@ struct PhoneRunDeckView: View {
                 HStack(spacing: 10) {
                     RunimalMetricTile(icon: "waveform.path.ecg", title: "케이던스", value: "\(store.summary.cadence) spm", accent: .cyan)
                     RunimalMetricTile(icon: "timer", title: "페이스", value: "\(store.summary.averagePaceSeconds / 60):\(String(format: "%02d", store.summary.averagePaceSeconds % 60))", accent: store.pet.accentColor)
+                }
+
+                HStack(spacing: 10) {
+                    pixelDeckButton(title: store.autoPauseEnabled ? "자동 Pause ON" : "자동 Pause OFF", filled: store.autoPauseEnabled) {
+                        store.setAutoPauseEnabled(!store.autoPauseEnabled)
+                    }
+
+                    Spacer(minLength: 0)
                 }
 
                 HStack(spacing: 10) {

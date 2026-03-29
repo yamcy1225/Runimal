@@ -4,6 +4,7 @@ import SwiftUI
 struct WatchDashboardView: View {
     @State private var runSessionManager = WatchRunSessionManager()
     @State private var connectivityManager = WatchConnectivityManager()
+    @State private var offlineMapCatalog = WatchOfflineMapPackCatalog()
     @State private var hatchBurstScale: CGFloat = 0.9
     @State private var countdownValue: Int?
 
@@ -68,11 +69,17 @@ struct WatchDashboardView: View {
             heartResonance: heartResonance,
             growthRatio: growthRatio,
             latestSnapshot: runSessionManager.latestSnapshot,
+            autoPauseEnabled: connectivityManager.autoPauseEnabled,
             liveFeedback: liveFeedback,
             stageBadges: stageBadges,
             liveGoals: liveGoals,
             primaryGoalDetail: primaryGoal?.detail ?? liveFeedback.detail,
             lastSyncedWorkoutTitle: connectivityManager.lastSyncedWorkoutTitle,
+            offlineMapPacks: offlineMapCatalog.packs,
+            selectedOfflineMapPackID: offlineMapCatalog.selectedPackID,
+            storedOfflineMapPackIDs: connectivityManager.offlineMapStorage.storedPackIDs,
+            offlineMapStorage: connectivityManager.offlineMapStorage,
+            routePreview: runSessionManager.liveRoutePreview,
             reward: runSessionManager.lastReward,
             hatchBurstScale: hatchBurstScale,
             countdownValue: countdownValue,
@@ -101,6 +108,12 @@ struct WatchDashboardView: View {
         )
         .task {
             connectivityManager.activate()
+            runSessionManager.setAutoPauseEnabled(connectivityManager.autoPauseEnabled)
+            offlineMapCatalog.replace(
+                with: connectivityManager.offlineMapPacks,
+                selectedPackID: connectivityManager.selectedOfflineMapPackID
+            )
+            connectivityManager.offlineMapStorage.reloadFromDisk()
             runSessionManager.autoplayDemoIfNeeded()
         }
         .onChange(of: connectivityManager.claimedRewardIDs) { _, rewardIDs in
@@ -109,6 +122,21 @@ struct WatchDashboardView: View {
                 activeEffects: connectivityManager.activeEffects
             )
             runSessionManager.applyCompanionContext(context)
+        }
+        .onChange(of: connectivityManager.autoPauseEnabled) { _, enabled in
+            runSessionManager.setAutoPauseEnabled(enabled)
+        }
+        .onChange(of: connectivityManager.offlineMapPacks) { _, packs in
+            offlineMapCatalog.replace(
+                with: packs,
+                selectedPackID: connectivityManager.selectedOfflineMapPackID
+            )
+        }
+        .onChange(of: connectivityManager.selectedOfflineMapPackID) { _, selectedPackID in
+            offlineMapCatalog.replace(
+                with: connectivityManager.offlineMapPacks,
+                selectedPackID: selectedPackID
+            )
         }
         .onChange(of: runSessionManager.latestSnapshot) { _, snapshot in
             connectivityManager.send(snapshot: snapshot)
@@ -123,6 +151,10 @@ struct WatchDashboardView: View {
         .onChange(of: runSessionManager.lastCompletedRun) { _, record in
             guard let record else { return }
             connectivityManager.send(completedRun: record)
+        }
+        .onChange(of: runSessionManager.lastWorkoutArchive) { _, archive in
+            guard let archive else { return }
+            connectivityManager.send(workoutArchive: archive)
         }
         .onChange(of: runSessionManager.lastReward) { _, reward in
             guard reward != nil else { return }
@@ -180,11 +212,17 @@ private struct WatchDashboardPages: View {
     let heartResonance: Double
     let growthRatio: Double
     let latestSnapshot: LiveRunSnapshot
+    let autoPauseEnabled: Bool
     let liveFeedback: LiveRunFeedback
     let stageBadges: [String]
     let liveGoals: [LiveGoalTarget]
     let primaryGoalDetail: String
     let lastSyncedWorkoutTitle: String
+    let offlineMapPacks: [OfflineMapPackSummary]
+    let selectedOfflineMapPackID: String?
+    let storedOfflineMapPackIDs: Set<String>
+    let offlineMapStorage: WatchOfflineMapPackStorage
+    let routePreview: [RoutePoint]
     let reward: RunRewardSummary?
     let hatchBurstScale: CGFloat
     let countdownValue: Int?
@@ -215,7 +253,8 @@ private struct WatchDashboardPages: View {
             WatchSingleCardPage {
                 WatchRunStatsPanel(
                     snapshot: latestSnapshot,
-                    accent: stageAccent
+                    accent: stageAccent,
+                    autoPauseEnabled: autoPauseEnabled
                 )
             }
             .tag(1)
@@ -254,6 +293,26 @@ private struct WatchDashboardPages: View {
             }
             .tag(4)
 
+            WatchSingleCardPage {
+                VStack(spacing: 10) {
+                    WatchOfflineMapPreviewCard(
+                        selectedPack: selectedOfflineMapPack,
+                        isStoredLocally: selectedOfflineMapPack.map { storedOfflineMapPackIDs.contains($0.id) } ?? false,
+                        storage: offlineMapStorage,
+                        route: routePreview,
+                        accent: stageAccent
+                    )
+
+                    WatchOfflineMapPackCard(
+                        packs: offlineMapPacks,
+                        selectedPackID: selectedOfflineMapPackID,
+                        storedPackIDs: storedOfflineMapPackIDs,
+                        accent: stageAccent
+                    )
+                }
+            }
+            .tag(5)
+
             if sessionStateLabel == "running" {
                 WatchSingleCardPage {
                     WatchRunningGoalSection(
@@ -261,7 +320,7 @@ private struct WatchDashboardPages: View {
                         detail: primaryGoalDetail
                     )
                 }
-                .tag(5)
+                .tag(6)
             }
 
             if let reward {
@@ -271,10 +330,15 @@ private struct WatchDashboardPages: View {
                         hatchBurstScale: hatchBurstScale
                     )
                 }
-                .tag(6)
+                .tag(7)
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .automatic))
+    }
+
+    private var selectedOfflineMapPack: OfflineMapPackSummary? {
+        guard let selectedOfflineMapPackID else { return offlineMapPacks.first }
+        return offlineMapPacks.first(where: { $0.id == selectedOfflineMapPackID }) ?? offlineMapPacks.first
     }
 }
 

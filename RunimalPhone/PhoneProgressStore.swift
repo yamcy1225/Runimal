@@ -28,6 +28,8 @@ final class PhoneProgressStore {
         static let conflictPolicy = "runimal.phone.conflictPolicy"
         static let verificationRecords = "runimal.phone.verificationRecords"
         static let duplicatePriority = "runimal.phone.duplicatePriority"
+        static let workoutArchives = "runimal.phone.workoutArchives"
+        static let autoPauseEnabled = "runimal.phone.autoPauseEnabled"
     }
 
     private let defaults: UserDefaults
@@ -54,6 +56,8 @@ final class PhoneProgressStore {
     var verificationRecords: [DeviceVerificationRecord] = []
     var duplicatePriority: SnapshotDuplicatePriority = .newestWins
     var lastSanctuaryReward: SanctuaryRewardEvent?
+    var workoutArchives: [WorkoutSessionArchive] = []
+    var autoPauseEnabled = true
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -151,6 +155,18 @@ final class PhoneProgressStore {
             duplicatePriority = decoded
         } else {
             duplicatePriority = .newestWins
+        }
+
+        if let data = defaults.data(forKey: Keys.workoutArchives) {
+            workoutArchives = (try? JSONDecoder().decode([WorkoutSessionArchive].self, from: data)) ?? []
+        } else {
+            workoutArchives = []
+        }
+
+        if defaults.object(forKey: Keys.autoPauseEnabled) == nil {
+            autoPauseEnabled = true
+        } else {
+            autoPauseEnabled = defaults.bool(forKey: Keys.autoPauseEnabled)
         }
     }
 
@@ -342,6 +358,17 @@ final class PhoneProgressStore {
         save()
     }
 
+    func append(workoutArchive: WorkoutSessionArchive) {
+        workoutArchives.removeAll(where: { $0.runID == workoutArchive.runID })
+        workoutArchives.insert(workoutArchive, at: 0)
+        workoutArchives = Array(workoutArchives.prefix(24))
+        save()
+    }
+
+    func workoutArchive(for runID: String) -> WorkoutSessionArchive? {
+        workoutArchives.first(where: { $0.runID == runID })
+    }
+
     func removeImportedExternalRuns() {
         let importedIDs = Set(
             completedRuns
@@ -351,6 +378,7 @@ final class PhoneProgressStore {
         guard !importedIDs.isEmpty else { return }
 
         completedRuns.removeAll { importedIDs.contains($0.id) }
+        workoutArchives.removeAll { importedIDs.contains($0.runID) }
         journal.removeAll { importedIDs.contains($0.id) }
         growthRecords = growthRecords.map { record in
             CompanionGrowthRecord(
@@ -399,6 +427,11 @@ final class PhoneProgressStore {
 
     func setDuplicatePriority(_ priority: SnapshotDuplicatePriority) {
         duplicatePriority = priority
+        save()
+    }
+
+    func setAutoPauseEnabled(_ enabled: Bool) {
+        autoPauseEnabled = enabled
         save()
     }
 
@@ -649,6 +682,7 @@ final class PhoneProgressStore {
     func resetProgress(from summaries: [RunSummary]) {
         journal = []
         completedRuns = []
+        workoutArchives = []
         ownedCompanions = []
         eggInventory = []
         unlockedEggAchievementIDs = []
@@ -685,6 +719,13 @@ final class PhoneProgressStore {
             defaults.set(completedRunData, forKey: Keys.completedRuns)
         } catch {
             defaults.removeObject(forKey: Keys.completedRuns)
+        }
+
+        do {
+            let archiveData = try JSONEncoder().encode(workoutArchives)
+            defaults.set(archiveData, forKey: Keys.workoutArchives)
+        } catch {
+            defaults.removeObject(forKey: Keys.workoutArchives)
         }
 
         if let data = try? JSONEncoder().encode(ownedCompanions) {
@@ -733,6 +774,7 @@ final class PhoneProgressStore {
         defaults.set(deviceID, forKey: Keys.deviceID)
         defaults.set(conflictPolicy.rawValue, forKey: Keys.conflictPolicy)
         defaults.set(duplicatePriority.rawValue, forKey: Keys.duplicatePriority)
+        defaults.set(autoPauseEnabled, forKey: Keys.autoPauseEnabled)
         if let data = try? JSONEncoder().encode(verificationRecords) {
             defaults.set(data, forKey: Keys.verificationRecords)
         } else {

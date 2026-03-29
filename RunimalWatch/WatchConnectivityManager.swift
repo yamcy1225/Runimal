@@ -6,10 +6,14 @@ import WatchConnectivity
 @MainActor
 @Observable
 final class WatchConnectivityManager: NSObject, WCSessionDelegate {
+    let offlineMapStorage = WatchOfflineMapPackStorage()
     var activationStateLabel = "inactive"
     var lastSyncedWorkoutTitle = "No plan yet"
     var claimedRewardIDs: Set<String> = []
     var activeEffects: [WeeklyRewardEffect] = []
+    var autoPauseEnabled = true
+    var offlineMapPacks: [OfflineMapPackSummary] = []
+    var selectedOfflineMapPackID: String?
     var queuedTransferCount = 0
     var recentEvents: [SyncDiagnosticEvent] = []
 
@@ -98,6 +102,24 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
         }
     }
 
+    func send(workoutArchive: WorkoutSessionArchive) {
+        guard WCSession.isSupported() else { return }
+
+        do {
+            let data = try JSONEncoder().encode(workoutArchive)
+            let session = WCSession.default
+            if session.isReachable {
+                try session.updateApplicationContext(["workoutSessionArchive": data])
+            }
+            session.transferUserInfo(["workoutSessionArchive": data])
+            queuedTransferCount = session.outstandingUserInfoTransfers.count
+            logEvent("queue archive", workoutArchive.runID)
+        } catch {
+            lastSyncedWorkoutTitle = "Archive sync failed"
+            logEvent("push archive failed", error.localizedDescription)
+        }
+    }
+
     nonisolated func session(
         _ session: WCSession,
         activationDidCompleteWith activationState: WCSessionActivationState,
@@ -130,6 +152,20 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
         processPayload(userInfo)
     }
 
+    nonisolated func session(_ session: WCSession, didReceive file: WCSessionFile) {
+        guard let packID = file.metadata?["offlineMapPackID"] as? String,
+              let kind = file.metadata?["offlineMapFileKind"] as? String else { return }
+
+        Task { @MainActor in
+            self.offlineMapStorage.storeTransferredFile(
+                tempURL: file.fileURL,
+                packID: packID,
+                kind: kind
+            )
+            self.logEvent("map file", "\(packID):\(kind)")
+        }
+    }
+
     private nonisolated func processPayload(_ payload: [String: Any]) {
         Task { @MainActor in
             if let data = payload["workoutSuggestion"] as? Data,
@@ -143,6 +179,22 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
                 self.claimedRewardIDs = Set(context.claimedRewardIDs)
                 self.activeEffects = context.activeEffects
                 self.logEvent("effects received", "\(context.activeEffects.count) active")
+            }
+
+            if let enabled = payload["autoPauseEnabled"] as? Bool {
+                self.autoPauseEnabled = enabled
+                self.logEvent("auto pause", enabled ? "on" : "off")
+            }
+
+            if let data = payload["offlineMapPackCatalog"] as? Data,
+               let packs = try? JSONDecoder().decode([OfflineMapPackSummary].self, from: data) {
+                self.offlineMapPacks = packs
+                self.logEvent("map packs", "\(packs.count)")
+            }
+
+            if payload.keys.contains("selectedOfflineMapPackID") {
+                self.selectedOfflineMapPackID = payload["selectedOfflineMapPackID"] as? String
+                self.logEvent("selected map", self.selectedOfflineMapPackID ?? "none")
             }
 
             self.queuedTransferCount = WCSession.default.outstandingUserInfoTransfers.count
