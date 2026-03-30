@@ -118,6 +118,8 @@ public struct WorkoutSessionArchive: Codable, Equatable, Identifiable, Sendable 
     public let elevationGainM: Int
     public let source: String
     public let trackPoints: [WorkoutTrackPoint]
+    public let rawTrackPoints: [WorkoutTrackPoint]
+    public let displayTrackPoints: [RoutePoint]
     public let laps: [WorkoutLap]
     public let events: [WorkoutSessionEvent]
 
@@ -136,9 +138,12 @@ public struct WorkoutSessionArchive: Codable, Equatable, Identifiable, Sendable 
         elevationGainM: Int,
         source: String,
         trackPoints: [WorkoutTrackPoint],
+        rawTrackPoints: [WorkoutTrackPoint]? = nil,
+        displayTrackPoints: [RoutePoint] = [],
         laps: [WorkoutLap],
         events: [WorkoutSessionEvent]
     ) {
+        let resolvedRawTrackPoints = rawTrackPoints ?? trackPoints
         self.id = id
         self.runID = runID
         self.startedAt = startedAt
@@ -152,8 +157,65 @@ public struct WorkoutSessionArchive: Codable, Equatable, Identifiable, Sendable 
         self.averagePaceSeconds = averagePaceSeconds
         self.elevationGainM = elevationGainM
         self.source = source
-        self.trackPoints = trackPoints
+        self.trackPoints = trackPoints.isEmpty ? resolvedRawTrackPoints : trackPoints
+        self.rawTrackPoints = resolvedRawTrackPoints
+        self.displayTrackPoints = displayTrackPoints
         self.laps = laps
         self.events = events
+    }
+
+    public var effectiveRawTrackPoints: [WorkoutTrackPoint] {
+        rawTrackPoints.isEmpty ? trackPoints : rawTrackPoints
+    }
+
+    public var effectiveDisplayTrackPoints: [RoutePoint] {
+        displayTrackPoints.isEmpty
+            ? WorkoutArchiveCanonicalizer.displayRoute(from: effectiveRawTrackPoints)
+            : displayTrackPoints
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case runID
+        case startedAt
+        case endedAt
+        case elapsedTimeSeconds
+        case timerTimeSeconds
+        case movingTimeSeconds
+        case distanceMeters
+        case averageHeartRate
+        case averageCadence
+        case averagePaceSeconds
+        case elevationGainM
+        case source
+        case trackPoints
+        case rawTrackPoints
+        case displayTrackPoints
+        case laps
+        case events
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        runID = try container.decode(String.self, forKey: .runID)
+        startedAt = try container.decode(Date.self, forKey: .startedAt)
+        endedAt = try container.decode(Date.self, forKey: .endedAt)
+        elapsedTimeSeconds = try container.decode(Int.self, forKey: .elapsedTimeSeconds)
+        timerTimeSeconds = try container.decode(Int.self, forKey: .timerTimeSeconds)
+        movingTimeSeconds = try container.decode(Int.self, forKey: .movingTimeSeconds)
+        distanceMeters = try container.decode(Double.self, forKey: .distanceMeters)
+        averageHeartRate = try container.decodeIfPresent(Double.self, forKey: .averageHeartRate)
+        averageCadence = try container.decodeIfPresent(Int.self, forKey: .averageCadence)
+        averagePaceSeconds = try container.decodeIfPresent(Int.self, forKey: .averagePaceSeconds)
+        elevationGainM = try container.decode(Int.self, forKey: .elevationGainM)
+        source = try container.decode(String.self, forKey: .source)
+        let decodedTrackPoints = try container.decodeIfPresent([WorkoutTrackPoint].self, forKey: .trackPoints) ?? []
+        let decodedRawTrackPoints = try container.decodeIfPresent([WorkoutTrackPoint].self, forKey: .rawTrackPoints) ?? []
+        trackPoints = decodedTrackPoints.isEmpty ? decodedRawTrackPoints : decodedTrackPoints
+        rawTrackPoints = decodedRawTrackPoints.isEmpty ? trackPoints : decodedRawTrackPoints
+        displayTrackPoints = try container.decodeIfPresent([RoutePoint].self, forKey: .displayTrackPoints) ?? []
+        laps = try container.decodeIfPresent([WorkoutLap].self, forKey: .laps) ?? []
+        events = try container.decodeIfPresent([WorkoutSessionEvent].self, forKey: .events) ?? []
     }
 }

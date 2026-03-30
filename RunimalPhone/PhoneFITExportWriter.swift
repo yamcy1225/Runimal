@@ -60,13 +60,14 @@ private extension PhoneFITExportWriter {
     }
 
     static func fitRecords(from archive: WorkoutSessionArchive) -> [FitMessage] {
+        let points = archive.effectiveRawTrackPoints
         var totalDistance: Double = 0
         var records: [FitMessage] = []
 
-        for index in archive.trackPoints.indices {
-            let point = archive.trackPoints[index]
+        for index in points.indices {
+            let point = points[index]
             if index > 0 {
-                let previous = archive.trackPoints[index - 1]
+                let previous = points[index - 1]
                 let segmentDistance = workoutCoordinateDistance(from: previous, to: point)
                 let delta = point.timestamp.timeIntervalSince(previous.timestamp)
                 let speed = point.speedMetersPerSecond ?? (delta > 0 ? segmentDistance / delta : 0)
@@ -93,8 +94,9 @@ private extension PhoneFITExportWriter {
     }
 
     static func fitLaps(from archive: WorkoutSessionArchive, timeBasis: WorkoutExportTimeBasis) -> [FitMessage] {
-        archive.laps.map { lap in
-            let lapPoints = archive.trackPoints.filter { $0.timestamp >= lap.startTime && $0.timestamp <= lap.endTime }
+        let points = archive.effectiveRawTrackPoints
+        return archive.laps.map { lap in
+            let lapPoints = points.filter { $0.timestamp >= lap.startTime && $0.timestamp <= lap.endTime }
             let lapDurationSeconds = exportDurationSeconds(for: lap, points: lapPoints, timeBasis: timeBasis)
             return LapMessage(
                 timeStamp: FitTime(date: lap.endTime),
@@ -116,9 +118,10 @@ private extension PhoneFITExportWriter {
     }
 
     static func fitSession(from archive: WorkoutSessionArchive, timeBasis: WorkoutExportTimeBasis) -> FitMessage {
-        let maxHeartRate = archive.trackPoints.compactMap(\.heartRate).max().map { UInt8(clamping: Int($0.rounded())) }
-        let maxCadence = archive.trackPoints.compactMap(\.cadence).max().map { UInt8(clamping: $0) }
-        let maxSpeed = archive.trackPoints.compactMap(\.speedMetersPerSecond).max().map { Measurement(value: $0, unit: UnitSpeed.metersPerSecond) }
+        let points = archive.effectiveRawTrackPoints
+        let maxHeartRate = points.compactMap(\.heartRate).max().map { UInt8(clamping: Int($0.rounded())) }
+        let maxCadence = points.compactMap(\.cadence).max().map { UInt8(clamping: $0) }
+        let maxSpeed = points.compactMap(\.speedMetersPerSecond).max().map { Measurement(value: $0, unit: UnitSpeed.metersPerSecond) }
         let exportDuration = exportDurationSeconds(for: archive, timeBasis: timeBasis)
 
         return SessionMessage(
@@ -126,7 +129,7 @@ private extension PhoneFITExportWriter {
             event: .session,
             eventType: .stop,
             startTime: FitTime(date: archive.startedAt),
-            startPosition: archive.trackPoints.first.map(position(for:)),
+            startPosition: points.first.map(position(for:)),
             totalElapsedTime: Measurement(value: Double(archive.elapsedTimeSeconds), unit: UnitDuration.seconds),
             totalTimerTime: Measurement(value: Double(archive.timerTimeSeconds), unit: UnitDuration.seconds),
             totalDistance: Measurement(value: archive.distanceMeters, unit: UnitLength.meters),

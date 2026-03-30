@@ -27,6 +27,7 @@ public enum WorkoutExportTimeBasis: String, CaseIterable, Identifiable, Sendable
 
 public enum GPXWriter {
     public static func data(for archive: WorkoutSessionArchive, title: String, timeBasis: WorkoutExportTimeBasis = .timer) -> Data {
+        let points = archive.effectiveRawTrackPoints
         let formatter = ISO8601DateFormatter()
         var lines: [String] = []
         lines.append(#"<?xml version="1.0" encoding="UTF-8"?>"#)
@@ -34,7 +35,7 @@ public enum GPXWriter {
         lines.append("<metadata><name>\(escaped(title))</name><time>\(formatter.string(from: archive.startedAt))</time></metadata>")
         lines.append("<trk><name>\(escaped(title))</name><trkseg>")
 
-        for point in archive.trackPoints where point.gpsPoor == false {
+        for point in points where point.gpsPoor == false {
             lines.append(#"<trkpt lat="\#(point.latitude)" lon="\#(point.longitude)">"#)
             lines.append("<ele>\(point.altitude)</ele>")
             lines.append("<time>\(formatter.string(from: point.timestamp))</time>")
@@ -58,6 +59,7 @@ public enum GPXWriter {
 
 public enum TCXWriter {
     public static func data(for archive: WorkoutSessionArchive, title: String, timeBasis: WorkoutExportTimeBasis = .timer) -> Data {
+        let points = archive.effectiveRawTrackPoints
         let formatter = ISO8601DateFormatter()
         let sport = "Running"
         let laps = archive.laps.isEmpty ? [
@@ -82,7 +84,7 @@ public enum TCXWriter {
         lines.append("<Id>\(formatter.string(from: archive.startedAt))</Id>")
 
         for lap in laps {
-            let lapPoints = archive.trackPoints.filter { $0.timestamp >= lap.startTime && $0.timestamp <= lap.endTime }
+            let lapPoints = points.filter { $0.timestamp >= lap.startTime && $0.timestamp <= lap.endTime }
             let lapTimeSeconds = exportDurationSeconds(for: lap, points: lapPoints, timeBasis: timeBasis)
             lines.append(#"<Lap StartTime="\#(formatter.string(from: lap.startTime))">"#)
             lines.append("<TotalTimeSeconds>\(lapTimeSeconds)</TotalTimeSeconds>")

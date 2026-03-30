@@ -12,6 +12,7 @@
 		00F9AA4433C5D9F686C2660F /* PhoneRaidBoardPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8960CBDB8120CE7543CDF1AD /* PhoneRaidBoardPanel.swift */; };
 		025FFC270AAAFD9D3A18C5D3 /* WatchOfflineMapPackStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 249FF1A7A9F2BF92B0EFCFBC /* WatchOfflineMapPackStorage.swift */; };
 		02F2BC7C3518741679C46073 /* PhoneProgressStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 690BFF1786268BE9D5F3A29A /* PhoneProgressStore.swift */; };
+		03A6C8F12D4E5B7091AC23DE /* PhoneWorkoutArchivePersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04B7D9E23F5A6C8192BD34EF /* PhoneWorkoutArchivePersistence.swift */; };
 		0558B22A5BE369E662D7BD8E /* MacQAReplayPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 743E21851D70F82DCAFCA0AD /* MacQAReplayPanel.swift */; };
 		055D904E32E554E7B3354B17 /* RunimalProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 385B139873A7AFD4A86EC385 /* RunimalProgressBar.swift */; };
 		06082EB1FC3ACEFA2285DC8E /* PhoneWorkoutPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2785BF329A8DF8512EC6A0D6 /* PhoneWorkoutPlanner.swift */; };
@@ -186,6 +187,7 @@
 
 /* Begin PBXFileReference section */
 		0319F822B7B793FAA1B8B5C4 /* PhoneCompanionArchiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneCompanionArchiveView.swift; sourceTree = "<group>"; };
+		04B7D9E23F5A6C8192BD34EF /* PhoneWorkoutArchivePersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneWorkoutArchivePersistence.swift; sourceTree = "<group>"; };
 		074F2113777979B879EDAF68 /* PhoneCompanionRosterPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneCompanionRosterPanel.swift; sourceTree = "<group>"; };
 		0934C182AAC4C60524366DA5 /* PhoneDashboardStore+WorkoutArchive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PhoneDashboardStore+WorkoutArchive.swift"; sourceTree = "<group>"; };
 		0B42F6C58E9A452F04B16094 /* PhoneCloudRehearsalPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneCloudRehearsalPanel.swift; sourceTree = "<group>"; };
@@ -437,6 +439,7 @@
 				690BFF1786268BE9D5F3A29A /* PhoneProgressStore.swift */,
 				1F65A6E97940CBB372478941 /* PhoneProgressStore+CompanionLoop.swift */,
 				F159FE21088CAC558D8741AA /* PhoneProgressStore+Sanctuary.swift */,
+				04B7D9E23F5A6C8192BD34EF /* PhoneWorkoutArchivePersistence.swift */,
 				8960CBDB8120CE7543CDF1AD /* PhoneRaidBoardPanel.swift */,
 				8B63700EC6EFC5E75D16ECB0 /* PhoneRaidBossPatternPanel.swift */,
 				C3BF20B6F686F96E832BB931 /* PhoneRaidBranchPanel.swift */,
@@ -739,6 +742,7 @@
 				3EBDEBDC439C37BBB55CFD87 /* PhoneProgressStore+CompanionLoop.swift in Sources */,
 				26142976B9B8634C4C67D263 /* PhoneProgressStore+Sanctuary.swift in Sources */,
 				02F2BC7C3518741679C46073 /* PhoneProgressStore.swift in Sources */,
+				03A6C8F12D4E5B7091AC23DE /* PhoneWorkoutArchivePersistence.swift in Sources */,
 				00F9AA4433C5D9F686C2660F /* PhoneRaidBoardPanel.swift in Sources */,
 				EDD94C51B69EF22E1D17B339 /* PhoneRaidBossPatternPanel.swift in Sources */,
 				0E405D852C112C65E52EF19E /* PhoneRaidBranchPanel.swift in Sources */,

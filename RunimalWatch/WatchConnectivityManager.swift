@@ -38,6 +38,7 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
     private var mainCompanionPollingTask: Task<Void, Never>?
     private var outboundApplicationContext: [String: Any] = [:]
     private var hasActivatedSession = false
+    private let fileManager = FileManager.default
 
     override init() {
         super.init()
@@ -249,10 +250,50 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
             session.transferUserInfo(["workoutSessionArchive": data])
             queuedTransferCount = session.outstandingUserInfoTransfers.count
             logEvent("queue archive", workoutArchive.runID)
+            try queueWorkoutArchivePackageTransfer(for: workoutArchive)
         } catch {
             lastSyncedWorkoutTitle = "Archive sync failed"
             logEvent("push archive failed", error.localizedDescription)
         }
+    }
+
+    private func queueWorkoutArchivePackageTransfer(for archive: WorkoutSessionArchive) throws {
+        let session = WCSession.default
+        let supportURL = try fileManager.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )
+        let packageDirectoryURL = supportURL
+            .appendingPathComponent("WorkoutSessionPackages", isDirectory: true)
+            .appendingPathComponent("\(archive.runID)-\(archive.id)", isDirectory: true)
+        try fileManager.createDirectory(at: packageDirectoryURL, withIntermediateDirectories: true)
+
+        let packageFiles: [(WorkoutSessionPackageFileKind, Data)] = [
+            (.summary, try WorkoutSessionPackageCodec.summaryData(for: archive)),
+            (.rawTrack, try WorkoutSessionPackageCodec.rawTrackData(for: archive)),
+            (.events, try WorkoutSessionPackageCodec.eventsData(for: archive)),
+            (.laps, try WorkoutSessionPackageCodec.lapsData(for: archive)),
+        ]
+
+        for (kind, data) in packageFiles {
+            let fileURL = packageDirectoryURL.appendingPathComponent(kind.filename)
+            if fileManager.fileExists(atPath: fileURL.path) {
+                try fileManager.removeItem(at: fileURL)
+            }
+            try data.write(to: fileURL, options: .atomic)
+            session.transferFile(
+                fileURL,
+                metadata: [
+                    "workoutSessionPackageKind": kind.rawValue,
+                    "workoutSessionRunID": archive.runID,
+                    "workoutSessionArchiveID": archive.id,
+                ]
+            )
+        }
+
+        logEvent("queue archive package", archive.runID)
     }
 
     nonisolated func session(

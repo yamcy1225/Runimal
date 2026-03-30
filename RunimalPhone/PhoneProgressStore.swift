@@ -34,6 +34,7 @@ final class PhoneProgressStore {
     }
 
     private let defaults: UserDefaults
+    private let archivePersistence: PhoneWorkoutArchivePersistence
     var journal: [RunJournalEntry] = []
     var completedRuns: [CompletedRunRecord] = []
     var ownedCompanions: [PetCollectionEntry] = []
@@ -61,8 +62,12 @@ final class PhoneProgressStore {
     var workoutArchives: [WorkoutSessionArchive] = []
     var autoPauseEnabled = true
 
-    init(defaults: UserDefaults = .standard) {
+    init(
+        defaults: UserDefaults = .standard,
+        archivePersistence: PhoneWorkoutArchivePersistence = PhoneWorkoutArchivePersistence()
+    ) {
         self.defaults = defaults
+        self.archivePersistence = archivePersistence
     }
 
     func load() {
@@ -76,15 +81,9 @@ final class PhoneProgressStore {
             journal = []
         }
 
-        if let data = defaults.data(forKey: Keys.completedRuns) {
-            do {
-                completedRuns = try JSONDecoder().decode([CompletedRunRecord].self, from: data)
-            } catch {
-                completedRuns = []
-            }
-        } else {
-            completedRuns = []
-        }
+        completedRuns = archivePersistence.loadCompletedRuns(
+            fallbackData: defaults.data(forKey: Keys.completedRuns)
+        )
 
         if let data = defaults.data(forKey: Keys.ownedCompanions) {
             ownedCompanions = (try? JSONDecoder().decode([PetCollectionEntry].self, from: data)) ?? []
@@ -164,11 +163,9 @@ final class PhoneProgressStore {
             duplicatePriority = .newestWins
         }
 
-        if let data = defaults.data(forKey: Keys.workoutArchives) {
-            workoutArchives = (try? JSONDecoder().decode([WorkoutSessionArchive].self, from: data)) ?? []
-        } else {
-            workoutArchives = []
-        }
+        workoutArchives = archivePersistence.loadWorkoutArchives(
+            fallbackData: defaults.data(forKey: Keys.workoutArchives)
+        )
 
         if defaults.object(forKey: Keys.autoPauseEnabled) == nil {
             autoPauseEnabled = true
@@ -365,14 +362,12 @@ final class PhoneProgressStore {
     func append(completedRun: CompletedRunRecord) {
         completedRuns.removeAll(where: { $0.id == completedRun.id })
         completedRuns.insert(completedRun, at: 0)
-        completedRuns = Array(completedRuns.prefix(12))
         save()
     }
 
     func append(workoutArchive: WorkoutSessionArchive) {
         workoutArchives.removeAll(where: { $0.runID == workoutArchive.runID })
         workoutArchives.insert(workoutArchive, at: 0)
-        workoutArchives = Array(workoutArchives.prefix(24))
         save()
     }
 
@@ -730,17 +725,21 @@ final class PhoneProgressStore {
         }
 
         do {
-            let completedRunData = try JSONEncoder().encode(completedRuns)
-            defaults.set(completedRunData, forKey: Keys.completedRuns)
-        } catch {
+            try archivePersistence.saveCompletedRuns(completedRuns)
             defaults.removeObject(forKey: Keys.completedRuns)
+        } catch {
+            if let completedRunData = try? JSONEncoder().encode(completedRuns) {
+                defaults.set(completedRunData, forKey: Keys.completedRuns)
+            }
         }
 
         do {
-            let archiveData = try JSONEncoder().encode(workoutArchives)
-            defaults.set(archiveData, forKey: Keys.workoutArchives)
-        } catch {
+            try archivePersistence.saveWorkoutArchives(workoutArchives)
             defaults.removeObject(forKey: Keys.workoutArchives)
+        } catch {
+            if let archiveData = try? JSONEncoder().encode(workoutArchives) {
+                defaults.set(archiveData, forKey: Keys.workoutArchives)
+            }
         }
 
         if let data = try? JSONEncoder().encode(ownedCompanions) {

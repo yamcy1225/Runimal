@@ -251,25 +251,27 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
                 logSessionEvent("save success", "workout saved")
             }
 
-            let record = RunimalGameEngine.makeCompletedRunRecord(
-                reward: reward,
-                snapshot: finalizedSnapshot,
-                startedAt: startedAt ?? endDate,
-                endedAt: endDate,
-                averageHeartRate: averageHeartRate,
-                route: routePreview,
-                source: "watch-healthkit",
-                environmentCondition: environmentCondition,
-                rareEventCompleted: rareEventCompleted
-            )
+            let runID = UUID().uuidString
             let archive = buildWorkoutArchive(
-                runID: record.id,
+                runID: runID,
                 snapshot: finalizedSnapshot,
                 averageHeartRate: averageHeartRate,
                 averageCadence: finalizedSnapshot.cadence,
                 startedAt: startedAt ?? endDate,
                 endedAt: endDate,
                 source: "watch-healthkit"
+            )
+            let record = RunimalGameEngine.makeCompletedRunRecord(
+                reward: reward,
+                snapshot: finalizedSnapshot,
+                startedAt: startedAt ?? endDate,
+                endedAt: endDate,
+                averageHeartRate: averageHeartRate,
+                route: archive.effectiveDisplayTrackPoints,
+                source: "watch-healthkit",
+                environmentCondition: environmentCondition,
+                rareEventCompleted: rareEventCompleted,
+                id: runID
             )
 
             lastReward = reward
@@ -382,18 +384,20 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         let reward = RunimalGameEngine.evaluateReward(for: latestSnapshot, claimedRewardIDs: claimedWeeklyRewardIDs)
         let endedAt = Date()
         let startedAt = endedAt.addingTimeInterval(-Double(latestSnapshot.elapsedSeconds))
+        let runID = UUID().uuidString
+        let archive = buildDemoWorkoutArchive(runID: runID, startedAt: startedAt, endedAt: endedAt)
         let record = RunimalGameEngine.makeCompletedRunRecord(
             reward: reward,
             snapshot: latestSnapshot,
             startedAt: startedAt,
             endedAt: endedAt,
             averageHeartRate: latestSnapshot.currentHeartRate,
-            route: sampledDemoRoute(from: startedAt),
+            route: archive.effectiveDisplayTrackPoints,
             source: "watch-demo",
             environmentCondition: environmentCondition,
-            rareEventCompleted: rareEventCompleted
+            rareEventCompleted: rareEventCompleted,
+            id: runID
         )
-        let archive = buildDemoWorkoutArchive(runID: record.id, startedAt: startedAt, endedAt: endedAt)
 
         lastReward = reward
         lastCompletedRun = record
@@ -1171,7 +1175,10 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             events: normalizedSessionEvents(startedAt: startedAt, endedAt: endedAt)
         )
 
-        return WorkoutArchiveAnalyzer.enrich(baseArchive, configuration: workoutAnalysisConfiguration())
+        return WorkoutArchiveCanonicalizer.canonicalize(
+            baseArchive,
+            configuration: workoutAnalysisConfiguration()
+        )
     }
 
     private func buildDemoWorkoutArchive(runID: String, startedAt: Date, endedAt: Date) -> WorkoutSessionArchive {
@@ -1218,7 +1225,10 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             events: normalizedSessionEvents(startedAt: startedAt, endedAt: endedAt)
         )
 
-        return WorkoutArchiveAnalyzer.enrich(archive, configuration: workoutAnalysisConfiguration())
+        return WorkoutArchiveCanonicalizer.canonicalize(
+            archive,
+            configuration: workoutAnalysisConfiguration()
+        )
     }
 
     private func workoutAnalysisConfiguration() -> WorkoutArchiveAnalyzer.Configuration {

@@ -67,6 +67,8 @@ public enum WorkoutArchiveAnalyzer {
             elevationGainM: archive.elevationGainM > 0 ? archive.elevationGainM : Int(metrics.elevationGainMeters.rounded()),
             source: archive.source,
             trackPoints: enrichedPoints,
+            rawTrackPoints: archive.effectiveRawTrackPoints,
+            displayTrackPoints: archive.effectiveDisplayTrackPoints,
             laps: laps.isEmpty ? archive.laps : laps,
             events: events
         )

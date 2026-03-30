@@ -172,7 +172,7 @@ struct PhoneWorkoutArchiveSummaryPanel: View {
     }
 
     private var distanceAudit: (storedMeters: Double, routeMeters: Double, deltaMeters: Double)? {
-        let routeMeters = inferredRouteDistanceMeters(from: archive.trackPoints)
+        let routeMeters = inferredRouteDistanceMeters(from: archive.effectiveRawTrackPoints)
         guard routeMeters > 0 else { return nil }
         let deltaMeters = routeMeters - archive.distanceMeters
         guard abs(deltaMeters) >= 5 else { return nil }

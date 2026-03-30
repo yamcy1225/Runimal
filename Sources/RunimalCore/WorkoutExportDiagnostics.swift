@@ -29,22 +29,23 @@ public func workoutExportFormatSummary(
     for archive: WorkoutSessionArchive,
     format: WorkoutExportFormat
 ) -> WorkoutExportFormatSummary {
+    let points = archive.effectiveRawTrackPoints
     switch format {
     case .gpx:
         return WorkoutExportFormatSummary(
             format: format,
-            pointCount: archive.trackPoints.filter { $0.gpsPoor == false }.count,
-            segmentDistanceMeters: exportUsableSegmentDistanceMeters(from: archive.trackPoints),
+            pointCount: points.filter { $0.gpsPoor == false }.count,
+            segmentDistanceMeters: exportUsableSegmentDistanceMeters(from: points),
             includesPausedSamples: true,
             containerCount: 1,
             containerLabel: "trkseg 1개"
         )
     case .tcx:
-        let trackCount = exportTrackSegmentCount(from: archive.trackPoints)
+        let trackCount = exportTrackSegmentCount(from: points)
         return WorkoutExportFormatSummary(
             format: format,
-            pointCount: archive.trackPoints.filter { $0.paused == false && $0.gpsPoor == false }.count,
-            segmentDistanceMeters: exportUsableSegmentDistanceMeters(from: archive.trackPoints),
+            pointCount: points.filter { $0.paused == false && $0.gpsPoor == false }.count,
+            segmentDistanceMeters: exportUsableSegmentDistanceMeters(from: points),
             includesPausedSamples: false,
             containerCount: trackCount,
             containerLabel: "track \(trackCount)개"
@@ -52,8 +53,8 @@ public func workoutExportFormatSummary(
     case .fit:
         return WorkoutExportFormatSummary(
             format: format,
-            pointCount: archive.trackPoints.count,
-            segmentDistanceMeters: exportUsableSegmentDistanceMeters(from: archive.trackPoints),
+            pointCount: points.count,
+            segmentDistanceMeters: exportUsableSegmentDistanceMeters(from: points),
             includesPausedSamples: true,
             containerCount: archive.events.count + 1,
             containerLabel: "event \(archive.events.count + 1)개"

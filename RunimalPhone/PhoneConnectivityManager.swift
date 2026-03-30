@@ -22,6 +22,7 @@ struct OfflineMapPackTransferStatus: Equatable {
 @MainActor
 @Observable
 final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
+    private let archivePersistence = PhoneWorkoutArchivePersistence()
     var activationStateLabel = "inactive"
     var reachabilityLabel = "offline"
     var isPaired = false
@@ -489,6 +490,34 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
 
     nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
         processPayload(userInfo, route: "userInfo")
+    }
+
+    nonisolated func session(_ session: WCSession, didReceive file: WCSessionFile) {
+        guard let kindRaw = file.metadata?["workoutSessionPackageKind"] as? String,
+              let kind = WorkoutSessionPackageFileKind(rawValue: kindRaw),
+              let runID = file.metadata?["workoutSessionRunID"] as? String,
+              let archiveID = file.metadata?["workoutSessionArchiveID"] as? String else {
+            return
+        }
+
+        Task { @MainActor in
+            do {
+                if let archive = try self.archivePersistence.storeReceivedWorkoutPackageFile(
+                    at: file.fileURL,
+                    runID: runID,
+                    archiveID: archiveID,
+                    kind: kind
+                ) {
+                    self.lastWorkoutArchive = archive
+                    self.lastMessage = "Workout archive package synced"
+                    self.logEvent("archive package", archive.runID)
+                } else {
+                    self.logEvent("archive package part", "\(runID):\(kind.rawValue)")
+                }
+            } catch {
+                self.logEvent("archive package failed", error.localizedDescription)
+            }
+        }
     }
 
     nonisolated func session(_ session: WCSession, didFinish fileTransfer: WCSessionFileTransfer, error: (any Error)?) {
