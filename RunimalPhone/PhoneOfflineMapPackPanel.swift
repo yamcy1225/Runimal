@@ -4,18 +4,25 @@ import SwiftUI
 struct PhoneOfflineMapPackPanel: View {
     let packs: [OfflineMapPackSummary]
     let watchPacks: [OfflineMapPackSummary]
+    let watchStoredPackIDs: Set<String>
+    let transferStatus: [String: OfflineMapPackTransferStatus]
     let selectedPackID: String?
     let importStatusLabel: String
     let lastImportError: String?
+    let locationStatusLabel: String
+    let locationError: String?
     let accent: Color
     let onCreatePack: (OfflineMapPackSummary) -> Void
+    let onCreateCurrentLocationPack: () -> Void
     let onSelectPack: (String) -> Void
     let onImportTiles: (String) -> Void
+    let onSendPack: (String) -> Void
     let onRenamePack: (String, String) -> Void
     let onDeletePack: (String) -> Void
 
     @State private var isPresentingCreateSheet = false
     @State private var editingPack: OfflineMapPackSummary?
+    @State private var inspectingPack: OfflineMapPackSummary?
     @State private var draftTitle = ""
 
     private var transferredCount: Int {
@@ -25,6 +32,14 @@ struct PhoneOfflineMapPackPanel: View {
 
     private var pendingCount: Int {
         max(packs.count - transferredCount, 0)
+    }
+
+    private var healthyPackCount: Int {
+        packs.filter { $0.tilesReady && $0.byteCount > 0 }.count
+    }
+
+    private var attentionPackCount: Int {
+        packs.filter { $0.manifestReady && (!$0.tilesReady || $0.byteCount <= 0) }.count
     }
 
     var body: some View {
@@ -40,8 +55,20 @@ struct PhoneOfflineMapPackPanel: View {
                     accent: lastImportError == nil ? GameBoyPalette.mediumDark : .red
                 )
 
+                statusPill(
+                    title: "현재 위치",
+                    value: locationStatusLabel,
+                    accent: locationError == nil ? GameBoyPalette.mediumDark : .red
+                )
+
                 if let lastImportError {
                     Text(lastImportError)
+                        .font(.caption2.monospaced())
+                        .foregroundStyle(.red)
+                }
+
+                if let locationError {
+                    Text(locationError)
                         .font(.caption2.monospaced())
                         .foregroundStyle(.red)
                 }
@@ -56,6 +83,11 @@ struct PhoneOfflineMapPackPanel: View {
                     statusPill(title: "대기", value: "\(pendingCount)개", accent: .orange)
                 }
 
+                HStack(spacing: 10) {
+                    statusPill(title: "정상", value: "\(healthyPackCount)개", accent: .green)
+                    statusPill(title: "주의", value: "\(attentionPackCount)개", accent: attentionPackCount == 0 ? GameBoyPalette.mediumDark : .red)
+                }
+
                 if let latestPack = packs.first {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("최근 팩")
@@ -66,6 +98,12 @@ struct PhoneOfflineMapPackPanel: View {
                             .foregroundStyle(GameBoyPalette.darkest)
                         Text("Z\(latestPack.minZoom)-\(latestPack.maxZoom) · 타일 \(latestPack.tileCount)개 · \(byteLabel(latestPack.byteCount))")
                             .font(.footnote.monospaced())
+                            .foregroundStyle(GameBoyPalette.mediumDark)
+                        Text("\(latestPack.sourceLabel) · \(latestPack.licenseLabel)")
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(GameBoyPalette.mediumDark)
+                        Text(archiveDetailLabel(for: latestPack))
+                            .font(.caption2.monospaced())
                             .foregroundStyle(GameBoyPalette.mediumDark)
                         Text(packReadinessLabel(for: latestPack))
                             .font(.caption2.monospaced().weight(.black))
@@ -91,9 +129,18 @@ struct PhoneOfflineMapPackPanel: View {
                                         Text("Z\(pack.minZoom)-\(pack.maxZoom) · 타일 \(pack.tileCount)")
                                             .font(.caption2.monospaced())
                                             .foregroundStyle(GameBoyPalette.mediumDark)
+                                        Text("\(pack.sourceLabel) · \(pack.licenseLabel)")
+                                            .font(.caption2.monospaced())
+                                            .foregroundStyle(GameBoyPalette.mediumDark)
+                                        Text(archiveDetailLabel(for: pack))
+                                            .font(.caption2.monospaced())
+                                            .foregroundStyle(GameBoyPalette.mediumDark)
                                         Text(packReadinessLabel(for: pack))
                                             .font(.caption2.monospaced().weight(.black))
                                             .foregroundStyle(readinessColor(for: pack))
+                                        Text(transferStatusLabel(for: pack))
+                                            .font(.caption2.monospaced())
+                                            .foregroundStyle(GameBoyPalette.mediumDark)
                                     }
 
                                     Spacer(minLength: 0)
@@ -125,12 +172,18 @@ struct PhoneOfflineMapPackPanel: View {
                                 )
                                 .overlay(alignment: .bottomTrailing) {
                                     HStack(spacing: 6) {
+                                        compactActionButton(title: "상세", accent: accent) {
+                                            inspectingPack = pack
+                                        }
                                         compactActionButton(title: "이름", accent: GameBoyPalette.mediumDark) {
                                             editingPack = pack
                                             draftTitle = pack.title
                                         }
                                         compactActionButton(title: "파일", accent: .blue) {
                                             onImportTiles(pack.id)
+                                        }
+                                        compactActionButton(title: "전송", accent: .green) {
+                                            onSendPack(pack.id)
                                         }
                                         compactActionButton(title: "삭제", accent: .red) {
                                             onDeletePack(pack.id)
@@ -145,30 +198,79 @@ struct PhoneOfflineMapPackPanel: View {
                     }
                 }
 
-                Button {
-                    isPresentingCreateSheet = true
-                } label: {
-                    Text("지도 팩 만들기")
-                        .font(.caption.monospaced().weight(.black))
-                        .foregroundStyle(GameBoyPalette.lightest)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(GameBoyPalette.mediumDark)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .stroke(GameBoyPalette.darkest, lineWidth: 2)
-                                )
-                        )
+                HStack(spacing: 10) {
+                    Button {
+                        onCreateCurrentLocationPack()
+                    } label: {
+                        Text("현재 위치 팩")
+                            .font(.caption.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.darkest)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 11)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(GameBoyPalette.lightest)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                            .stroke(GameBoyPalette.darkest, lineWidth: 2)
+                                    )
+                            )
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        isPresentingCreateSheet = true
+                    } label: {
+                        Text("지도 팩 만들기")
+                            .font(.caption.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.lightest)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 11)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(GameBoyPalette.mediumDark)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                            .stroke(GameBoyPalette.darkest, lineWidth: 2)
+                                    )
+                            )
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
         }
         .sheet(isPresented: $isPresentingCreateSheet) {
             PhoneOfflineMapPackSheet { pack in
                 onCreatePack(pack)
             }
+        }
+        .sheet(item: $inspectingPack) { pack in
+            PhoneOfflineMapPackDetailSheet(
+                pack: pack,
+                isSelected: selectedPackID == pack.id,
+                isStoredOnWatch: watchStoredPackIDs.contains(pack.id),
+                isCatalogDelivered: watchPacks.contains(where: { $0.id == pack.id }),
+                transferStatusLabel: transferStatusLabel(for: pack),
+                readinessLabel: packReadinessLabel(for: pack),
+                readinessColor: readinessColor(for: pack),
+                queuedAt: transferStatus[pack.id]?.lastQueuedAt,
+                completedAt: transferStatus[pack.id]?.lastCompletedAt,
+                transferFailure: transferStatus[pack.id]?.lastError,
+                onSelect: {
+                    onSelectPack(pack.id)
+                    inspectingPack = nil
+                },
+                onImportTiles: {
+                    onImportTiles(pack.id)
+                },
+                onSend: {
+                    onSendPack(pack.id)
+                },
+                onDelete: {
+                    onDeletePack(pack.id)
+                    inspectingPack = nil
+                }
+            )
         }
         .sheet(item: $editingPack) { pack in
             NavigationStack {
@@ -224,15 +326,65 @@ struct PhoneOfflineMapPackPanel: View {
     }
 
     private func packReadinessLabel(for pack: OfflineMapPackSummary) -> String {
-        if pack.tilesReady { return "MBTiles 연결됨" }
+        let formatLabel = pack.archiveFormat == .pmtiles ? "PMTiles" : "MBTiles"
+        if pack.tilesReady, pack.byteCount <= 0 { return "\(formatLabel) 파일 비어 있음" }
+        if watchStoredPackIDs.contains(pack.id) { return "watch 저장 완료 · \(formatLabel)" }
+        if watchPacks.contains(where: { $0.id == pack.id }) { return "카탈로그 전달됨 · \(formatLabel)" }
+        if pack.tilesReady { return "\(formatLabel) 연결됨" }
         if pack.manifestReady { return "manifest만 준비됨" }
         return "로컬 저장 준비 전"
     }
 
     private func readinessColor(for pack: OfflineMapPackSummary) -> Color {
+        if pack.tilesReady, pack.byteCount <= 0 { return .red }
+        if watchStoredPackIDs.contains(pack.id) { return .green }
+        if watchPacks.contains(where: { $0.id == pack.id }) { return .cyan }
         if pack.tilesReady { return .green }
         if pack.manifestReady { return .orange }
         return .red
+    }
+
+    private func transferStatusLabel(for pack: OfflineMapPackSummary) -> String {
+        let formatLabel = pack.archiveFormat == .pmtiles ? "PMTiles" : "MBTiles"
+        if pack.tilesReady, pack.byteCount <= 0 {
+            return "\(formatLabel) 파일 다시 연결 필요"
+        }
+        guard let status = transferStatus[pack.id] else {
+            return pack.tilesReady ? "\(formatLabel) 전송 대기" : "\(formatLabel) 파일 연결 필요"
+        }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+
+        switch status.phase {
+        case .idle:
+            return pack.tilesReady ? "\(formatLabel) 전송 대기" : "\(formatLabel) 파일 연결 필요"
+        case .sending:
+            let time = status.lastQueuedAt.map(formatter.string(from:)) ?? "--:--"
+            let progress = max(status.completedFileCount, 0)
+            let total = max(status.expectedFileCount, 0)
+            return total > 0 ? "\(formatLabel) 전송 중 \(progress)/\(total) · \(time)" : "\(formatLabel) 전송 중 · \(time)"
+        case .storedOnWatch:
+            let time = status.lastCompletedAt.map(formatter.string(from:)) ?? "--:--"
+            return "watch 저장 완료 · \(time)"
+        case .failed:
+            if let lastError = status.lastError, lastError.isEmpty == false {
+                return "\(formatLabel) 전송 실패 · \(lastError)"
+            }
+            return "\(formatLabel) 전송 실패 · 재시도 필요"
+        }
+    }
+
+    private func archiveDetailLabel(for pack: OfflineMapPackSummary) -> String {
+        let formatLabel = pack.archiveFormat == .pmtiles ? "PMTiles" : "MBTiles"
+        let previewLabel: String
+        switch pack.archiveFormat {
+        case .mbtiles:
+            previewLabel = "watch 프리뷰 지원"
+        case .pmtiles:
+            previewLabel = "raster 프리뷰 지원"
+        }
+        return "\(formatLabel) · \(pack.archiveFilename) · \(byteLabel(pack.byteCount)) · \(previewLabel)"
     }
 
     private func byteLabel(_ bytes: Int64) -> String {
@@ -272,6 +424,7 @@ private struct PhoneOfflineMapPackSheet: View {
         case seoulCore
         case hanRiver
         case busanBeach
+        case gapyeongTrail
 
         var id: String { rawValue }
 
@@ -280,6 +433,7 @@ private struct PhoneOfflineMapPackSheet: View {
             case .seoulCore: return "서울 코어"
             case .hanRiver: return "한강 러닝"
             case .busanBeach: return "부산 해안"
+            case .gapyeongTrail: return "가평 러닝"
             }
         }
 
@@ -291,6 +445,8 @@ private struct PhoneOfflineMapPackSheet: View {
                 return .init(minLatitude: 37.49, minLongitude: 126.93, maxLatitude: 37.56, maxLongitude: 127.10)
             case .busanBeach:
                 return .init(minLatitude: 35.12, minLongitude: 129.10, maxLatitude: 35.18, maxLongitude: 129.18)
+            case .gapyeongTrail:
+                return .init(minLatitude: 37.70, minLongitude: 127.35, maxLatitude: 37.92, maxLongitude: 127.62)
             }
         }
 
@@ -299,6 +455,7 @@ private struct PhoneOfflineMapPackSheet: View {
             case .seoulCore: return 640
             case .hanRiver: return 520
             case .busanBeach: return 410
+            case .gapyeongTrail: return 720
             }
         }
 
@@ -348,6 +505,9 @@ private struct PhoneOfflineMapPackSheet: View {
                     Button("저장") {
                         let pack = OfflineMapPackSummary(
                             title: title.isEmpty ? selectedPreset.title : title,
+                            sourceLabel: "OpenStreetMap (self-built)",
+                            licenseLabel: "ODbL",
+                            attributionText: "© OpenStreetMap contributors",
                             boundingBox: selectedPreset.boundingBox,
                             minZoom: minZoom,
                             maxZoom: maxZoom,

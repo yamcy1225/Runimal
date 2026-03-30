@@ -8,6 +8,7 @@ struct PhoneRunRecordDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var actionFeedback: ActionFeedback?
     @State private var exportDocument: ExportDocument?
+    @State private var exportFeedback: ExportFeedback?
     @State private var exportTimeBasis: WorkoutExportTimeBasis = .timer
 
     private let exportManager = PhoneWorkoutExportManager()
@@ -43,6 +44,16 @@ struct PhoneRunRecordDetailSheet: View {
     private struct ExportDocument: Identifiable {
         let id = UUID()
         let url: URL
+    }
+
+    private struct ExportFeedback {
+        let format: WorkoutExportFormat
+        let filename: String
+        let bytes: Int
+        let timeBasis: WorkoutExportTimeBasis
+        let lapCount: Int
+        let pauseCount: Int
+        let containerLabel: String
     }
 
     private var usageSummary: RunUsageSummary? {
@@ -497,6 +508,22 @@ struct PhoneRunRecordDetailSheet: View {
                 }
             }
 
+            Text(exportTimeBasisDescription)
+                .font(.caption.monospaced())
+                .foregroundStyle(GameBoyPalette.mediumDark)
+
+            if let archive = workoutArchive {
+                PhoneWorkoutExportQAPanel(
+                    archive: archive,
+                    timeBasis: exportTimeBasis,
+                    accent: accent
+                )
+            }
+
+            if let exportFeedback {
+                exportFeedbackCard(exportFeedback)
+            }
+
             HStack(spacing: 10) {
                 pixelActionButton(title: "GPX 내보내기", detail: "트랙 공유용") {
                     export(run: run, format: .gpx)
@@ -512,10 +539,68 @@ struct PhoneRunRecordDetailSheet: View {
         }
     }
 
+    private var exportTimeBasisDescription: String {
+        switch exportTimeBasis {
+        case .elapsed:
+            return "전체 시간 기준. 정지까지 포함한 일상 기록용입니다."
+        case .timer:
+            return "운동 시간 기준. pause를 제외한 기본 훈련 기록용입니다."
+        case .moving:
+            return "이동 시간 기준. 실제 이동 구간 중심의 분석용입니다."
+        }
+    }
+
+    private func exportFeedbackCard(_ feedback: ExportFeedback) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("내보내기 완료")
+                .font(.caption.monospaced().weight(.black))
+                .foregroundStyle(GameBoyPalette.darkest)
+
+            HStack(spacing: 8) {
+                TraitChip(label: feedback.format.displayName, accent: accent.opacity(0.25))
+                TraitChip(label: "\(feedback.timeBasis.label) 기준", accent: .green.opacity(0.2))
+                TraitChip(label: byteCountLabel(feedback.bytes), accent: .blue.opacity(0.2))
+            }
+
+            HStack(spacing: 8) {
+                TraitChip(label: "랩 \(feedback.lapCount)개", accent: .orange.opacity(0.2))
+                TraitChip(label: "pause \(feedback.pauseCount)회", accent: .yellow.opacity(0.2))
+                TraitChip(label: feedback.containerLabel, accent: .mint.opacity(0.2))
+            }
+
+            Text(feedback.filename)
+                .font(.caption.monospaced().weight(.black))
+                .foregroundStyle(GameBoyPalette.mediumDark)
+                .lineLimit(2)
+
+            Text("공유 시트로 바로 이어집니다. 같은 러닝도 기준을 바꿔 다시 뽑아 비교할 수 있습니다.")
+                .font(.caption.monospaced())
+                .foregroundStyle(GameBoyPalette.mediumDark)
+        }
+        .padding(12)
+        .background(GameBoyPalette.mediumLight.opacity(0.16), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(GameBoyPalette.darkest.opacity(0.2), lineWidth: 1)
+        )
+    }
+
     private func export(run: CompletedRunRecord, format: WorkoutExportFormat) {
         guard let archive = workoutArchive else { return }
         let title = "\(run.reward.coreLabel)-\(sourceEyebrow(for: run))-\(exportTimeBasis.rawValue)"
         if let url = try? exportManager.exportFileURL(for: archive, title: title, format: format, timeBasis: exportTimeBasis) {
+            let byteCount = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+            let summary = workoutExportFormatSummary(for: archive, format: format)
+            let pauseCount = archive.events.filter { $0.kind == .pause }.count
+            exportFeedback = ExportFeedback(
+                format: format,
+                filename: url.lastPathComponent,
+                bytes: byteCount,
+                timeBasis: exportTimeBasis,
+                lapCount: archive.laps.count,
+                pauseCount: pauseCount,
+                containerLabel: summary.containerLabel
+            )
             exportDocument = ExportDocument(url: url)
         }
     }
@@ -579,5 +664,14 @@ struct PhoneRunRecordDetailSheet: View {
         }
 
         return "\(minutes):\(String(format: "%02d", remainingSeconds))"
+    }
+
+    private func byteCountLabel(_ bytes: Int) -> String {
+        guard bytes > 0 else { return "0 KB" }
+        let formatter = ByteCountFormatter()
+        formatter.allowedUnits = [.useKB, .useMB]
+        formatter.countStyle = .file
+        formatter.includesUnit = true
+        return formatter.string(fromByteCount: Int64(bytes))
     }
 }

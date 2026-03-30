@@ -2,80 +2,119 @@ import RunimalCore
 import SwiftUI
 
 struct WatchCompanionHeroCard: View {
-    let pet: GeneratedPet
-    let sessionShell: EggShellType
+    let companion: WatchMainCompanionContext
     let accent: Color
     let sessionStateLabel: String
-    let syncStatusLabel: String
     let heartResonance: Double
-    let progress: Double
+    let gpsAccuracyMeters: Double?
+    let lastGPSUpdateAt: Date?
+    let locationStatusLabel: String
+    let countdownValue: Int?
+    let onPrimaryAction: () -> Void
 
     private var statusTitle: String {
-        sessionStateLabel == "running" ? "기록 중" : "출발 대기"
+        if sessionStateLabel == "running" {
+            return companion.selection.kind == .egg ? "부화 추적 중" : "기록 중"
+        }
+        return companion.selection.kind == .egg ? "알 동기화 대기" : "출발 대기"
+    }
+
+    private var primaryButtonLabel: String {
+        sessionStateLabel == "running" ? "운동 끝내기" : "러닝 시작하기"
+    }
+
+    private var primaryButtonAccent: Color {
+        sessionStateLabel == "running" ? GameBoyPalette.darkest : GameBoyPalette.mediumDark
+    }
+
+    private var gpsSignalStrength: Double {
+        if locationStatusLabel.contains("denied") || locationStatusLabel.contains("restricted") {
+            return 0.12
+        }
+        guard let gpsAccuracyMeters else { return 0.18 }
+        if isGPSStale {
+            return 0.2
+        }
+        switch gpsAccuracyMeters {
+        case ..<12:
+            return 1.0
+        case ..<24:
+            return 0.66
+        default:
+            return 0.34
+        }
+    }
+
+    private var gpsSignalColor: Color {
+        if locationStatusLabel.contains("denied") || locationStatusLabel.contains("restricted") {
+            return Color.red.opacity(0.92)
+        }
+        guard let gpsAccuracyMeters else { return Color.orange.opacity(0.88) }
+        if isGPSStale {
+            return Color.yellow.opacity(0.9)
+        }
+        switch gpsAccuracyMeters {
+        case ..<12:
+            return Color.green.opacity(0.9)
+        case ..<24:
+            return Color.yellow.opacity(0.9)
+        default:
+            return Color.red.opacity(0.92)
+        }
+    }
+
+    private var isGPSStale: Bool {
+        guard let lastGPSUpdateAt else { return true }
+        return Date().timeIntervalSince(lastGPSUpdateAt) > 8
     }
 
     var body: some View {
-        GameSurface(title: "동행", accent: accent, compact: true) {
+        GameSurface(
+            title: "동행",
+            accent: accent,
+            eyebrow: "GPS",
+            headerGauge: .init(progress: gpsSignalStrength, fill: gpsSignalColor),
+            compact: true
+        ) {
             VStack(spacing: 8) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(GameBoyPalette.mediumLight.opacity(0.2))
-                        .frame(width: 62, height: 62)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(GameBoyPalette.darkest, lineWidth: 2)
-                        )
+                WatchCompanionActionField(
+                    companion: companion,
+                    accent: accent,
+                    heartResonance: heartResonance,
+                    isRunning: sessionStateLabel == "running"
+                )
 
-                    if sessionStateLabel == "running" {
-                        PixelPetView(pet: pet, pixelSize: 4)
-                    } else {
-                        TraceEggView(accent: accent, shell: sessionShell, pixelSize: 4, resonance: heartResonance)
-                    }
-                }
-
-                VStack(spacing: 3) {
-                    Text(pet.displayName)
-                        .font(.footnote.weight(.black))
+                VStack(spacing: 2) {
+                    Text(companion.displayName)
+                        .font(.headline.monospaced().weight(.black))
                         .foregroundStyle(GameBoyPalette.darkest)
                         .multilineTextAlignment(.center)
                         .lineLimit(1)
                         .minimumScaleFactor(0.72)
                     Text(statusTitle)
-                        .font(.caption2.monospaced().weight(.black))
+                        .font(.caption.monospaced().weight(.black))
                         .foregroundStyle(GameBoyPalette.mediumDark)
                 }
 
-                RunimalProgressBar(progress: progress, accent: accent, height: 6)
-
-                WatchStatusChip(label: syncChipLabel, accent: sessionStateLabel == "running" ? GameBoyPalette.mediumDark : GameBoyPalette.mediumLight)
+                Button(primaryButtonLabel) {
+                    onPrimaryAction()
+                }
+                .font(.subheadline.monospaced().weight(.black))
+                .frame(maxWidth: .infinity, minHeight: 38)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(primaryButtonAccent)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .stroke(GameBoyPalette.darkest, lineWidth: 2)
+                        )
+                )
+                .foregroundStyle(GameBoyPalette.lightest)
+                .buttonStyle(.plain)
+                .disabled(countdownValue != nil)
+                .opacity(countdownValue != nil ? 0.55 : 1)
             }
         }
     }
 
-    private var syncChipLabel: String {
-        sessionStateLabel == "running" ? "자동 동기화 \(syncStatusLabel)" : syncStatusLabel
-    }
-}
-
-private struct WatchStatusChip: View {
-    let label: String
-    let accent: Color
-
-    var body: some View {
-        Text(label)
-            .font(.caption2.monospaced().weight(.black))
-            .foregroundStyle(GameBoyPalette.darkest)
-            .lineLimit(1)
-            .minimumScaleFactor(0.72)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(accent)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(GameBoyPalette.darkest, lineWidth: 1)
-                    )
-            )
-    }
 }

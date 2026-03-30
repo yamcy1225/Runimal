@@ -7,6 +7,7 @@ import SwiftUI
 final class PhoneDashboardStore {
     let healthKit = PhoneHealthKitManager()
     let fitImport = PhoneFITImportManager()
+    let currentLocation = PhoneCurrentLocationManager()
     let connectivity = PhoneConnectivityManager()
     let offlineMaps = PhoneOfflineMapPackManager()
     let planner = PhoneWorkoutPlanner()
@@ -69,6 +70,11 @@ final class PhoneDashboardStore {
     }
 
     var featuredCompanion: PetCollectionEntry {
+        if let mainCompanion = progress.mainPetSelection,
+           let selectedCompanion = collection.first(where: { $0.id == mainCompanion.id }) {
+            return selectedCompanion
+        }
+
         if let activeCompanionID = progress.activeCompanionID,
            let activeCompanion = collection.first(where: { $0.id == activeCompanionID }) {
             return activeCompanion
@@ -220,6 +226,14 @@ final class PhoneDashboardStore {
 
     var watchOfflineMapPacks: [OfflineMapPackSummary] {
         connectivity.watchOfflineMapPacks
+    }
+
+    var watchStoredOfflineMapPackIDs: Set<String> {
+        connectivity.watchStoredOfflineMapPackIDs
+    }
+
+    var offlineMapTransferStatus: [String: OfflineMapPackTransferStatus] {
+        connectivity.offlineMapTransferStatus
     }
 
     var selectedOfflineMapPackID: String? {
@@ -433,8 +447,13 @@ final class PhoneDashboardStore {
     }
 
     func activateConnectivity() {
+        connectivity.currentMainCompanionContext = watchMainCompanionContext
+        connectivity.currentMainCompanionProvider = { [weak self = self] in
+            self?.watchMainCompanionContext
+        }
         connectivity.activate()
         syncCompanionEffects()
+        syncMainCompanionSelection()
         connectivity.pushAutoPauseEnabled(progress.autoPauseEnabled)
         connectivity.pushOfflineMapPackCatalog(offlineMaps.packs)
         connectivity.pushSelectedOfflineMapPackID(offlineMaps.selectedPackID)
@@ -572,12 +591,14 @@ final class PhoneDashboardStore {
 
     func activateCompanion(_ companionID: String) {
         progress.activateCompanion(id: companionID)
+        syncMainCompanionSelection()
         persistVault()
         telemetry.log("activate_companion", detail: companionID)
     }
 
     func activateEgg(_ eggID: String) {
         progress.activateEgg(id: eggID)
+        syncMainCompanionSelection()
         persistVault()
         telemetry.log("activate_egg", detail: eggID)
     }
@@ -638,6 +659,7 @@ final class PhoneDashboardStore {
     func hatchEgg(_ eggID: String) -> PetCollectionEntry? {
         let isFirstHatch = progress.ownedCompanions.contains(where: { $0.id.hasPrefix("hatched-") }) == false
         let companion = progress.hatchEgg(eggID)
+        syncMainCompanionSelection()
         persistVault()
         if let companion {
             let hatchDetail = isFirstHatch ? "first:\(companion.pet.species.rawValue)" : companion.pet.species.rawValue
@@ -656,6 +678,7 @@ final class PhoneDashboardStore {
         latestFeedOutcome = nil
         persistVault()
         syncCompanionEffects()
+        syncMainCompanionSelection()
         telemetry.log("reset_progress", detail: "seeded")
     }
 
@@ -849,7 +872,7 @@ struct WatchRunSyncDiagnostic {
 struct PhoneDashboardView: View {
     @State private var store = PhoneDashboardStore()
     @State private var selectedTab = ProcessInfo.processInfo.environment["RUNIMAL_OPEN_COLLECTION_ON_LAUNCH"] == "1" ? 2 : 0
-    private let pageTitles = ["동행", "러닝", "보관함"]
+    private let pageTitles = ["동행", "러닝", "보관함", "도감"]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -870,10 +893,16 @@ struct PhoneDashboardView: View {
                 .tag(1)
 
                 NavigationStack {
-                    PhoneCollectionView(store: store)
+                    PhoneInventoryView(store: store)
                         .navigationBarTitleDisplayMode(.inline)
                 }
                 .tag(2)
+
+                NavigationStack {
+                    PhoneCompanionArchiveView(store: store)
+                        .navigationBarTitleDisplayMode(.inline)
+                }
+                .tag(3)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
         }
@@ -927,13 +956,14 @@ struct PhoneDashboardView: View {
                 )
             }
 
-            HStack(spacing: 10) {
+            HStack(spacing: 6) {
                 pagePill(title: "동행", icon: "sparkles", tag: 0)
                 pagePill(title: "러닝", icon: "figure.run", tag: 1)
                 pagePill(title: "보관함", icon: "shippingbox.fill", tag: 2)
+                pagePill(title: "도감", icon: "book.closed.fill", tag: 3)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 10)
         .padding(.top, 12)
         .padding(.bottom, 10)
         .background(
@@ -978,15 +1008,22 @@ struct PhoneDashboardView: View {
                 selectedTab = tag
             }
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: 2) {
                 Image(systemName: icon)
+                    .font(.system(size: 10, weight: .black))
+                    .frame(width: 10)
                 Text(title)
                     .fontWeight(.black)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.45)
+                    .allowsTightening(true)
+                    .layoutPriority(1)
             }
-            .font(.subheadline.monospaced())
+            .font(.system(size: 11, weight: .black, design: .monospaced))
             .foregroundStyle(isActive ? GameBoyPalette.lightest : GameBoyPalette.darkest)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, minHeight: 36)
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)

@@ -59,7 +59,7 @@ final class PhoneOfflineMapPackManager {
     func prepareLocalStorage(for pack: OfflineMapPackSummary) {
         let packFolder = storageRootURL.appendingPathComponent(pack.id, isDirectory: true)
         let manifestURL = packFolder.appendingPathComponent("manifest.json")
-        let tilesURL = packFolder.appendingPathComponent("tiles.mbtiles")
+        let tilesURL = packFolder.appendingPathComponent(pack.archiveFilename)
 
         do {
             try fileManager.createDirectory(at: packFolder, withIntermediateDirectories: true)
@@ -67,6 +67,9 @@ final class PhoneOfflineMapPackManager {
                 id: pack.id,
                 title: pack.title,
                 createdAt: pack.createdAt,
+                sourceLabel: pack.sourceLabel,
+                licenseLabel: pack.licenseLabel,
+                attributionText: pack.attributionText,
                 boundingBox: pack.boundingBox,
                 minZoom: pack.minZoom,
                 maxZoom: pack.maxZoom,
@@ -75,7 +78,9 @@ final class PhoneOfflineMapPackManager {
                 transferredToWatch: pack.transferredToWatch,
                 localRelativePath: "OfflineMaps/\(pack.id)",
                 manifestReady: true,
-                tilesReady: false
+                tilesReady: false,
+                archiveFormat: pack.archiveFormat,
+                archiveFilename: pack.archiveFilename
             )
             if fileManager.fileExists(atPath: tilesURL.path) == false {
                 fileManager.createFile(atPath: tilesURL.path, contents: Data())
@@ -89,7 +94,7 @@ final class PhoneOfflineMapPackManager {
         }
     }
 
-    func importMBTiles(from url: URL, into packID: String) throws {
+    func importTileArchive(from url: URL, into packID: String) throws {
         guard let pack = packs.first(where: { $0.id == packID }) else { return }
 
         let accessedSecurityScope = url.startAccessingSecurityScopedResource()
@@ -101,15 +106,29 @@ final class PhoneOfflineMapPackManager {
 
         guard let localRelativePath = pack.localRelativePath else { return }
         let packURL = applicationSupportBaseURL.appendingPathComponent(localRelativePath, isDirectory: true)
-        let destinationURL = packURL.appendingPathComponent("tiles.mbtiles")
+        let archiveFormat = OfflineMapArchiveFormat(rawValue: url.pathExtension.lowercased()) ?? .mbtiles
+        let destinationURL = packURL.appendingPathComponent(archiveFormat.defaultFilename)
 
         try fileManager.createDirectory(at: packURL, withIntermediateDirectories: true)
-        if fileManager.fileExists(atPath: destinationURL.path) {
-            try fileManager.removeItem(at: destinationURL)
+        for removableURL in [
+            packURL.appendingPathComponent(OfflineMapArchiveFormat.mbtiles.defaultFilename),
+            packURL.appendingPathComponent(OfflineMapArchiveFormat.pmtiles.defaultFilename)
+        ] where fileManager.fileExists(atPath: removableURL.path) {
+            try fileManager.removeItem(at: removableURL)
         }
         try fileManager.copyItem(at: url, to: destinationURL)
 
-        let parsedMetadata = (try? PhoneMBTilesMetadataReader.read(from: destinationURL)) ?? .empty
+        let importedFileSize = (try? destinationURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        guard importedFileSize > 0 else {
+            try? fileManager.removeItem(at: destinationURL)
+            throw NSError(
+                domain: "RunimalOfflineMaps",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "선택한 지도 파일이 비어 있습니다."]
+            )
+        }
+
+        let parsedMetadata = archiveFormat == .mbtiles ? ((try? PhoneMBTilesMetadataReader.read(from: destinationURL)) ?? .empty) : .empty
         let actualByteCount = (try? destinationURL.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init)
             ?? pack.byteCount
 
@@ -117,6 +136,9 @@ final class PhoneOfflineMapPackManager {
             id: pack.id,
             title: pack.title,
             createdAt: pack.createdAt,
+            sourceLabel: parsedMetadata.sourceLabel ?? pack.sourceLabel,
+            licenseLabel: parsedMetadata.licenseLabel ?? pack.licenseLabel,
+            attributionText: parsedMetadata.attributionText ?? pack.attributionText,
             boundingBox: parsedMetadata.boundingBox ?? pack.boundingBox,
             minZoom: parsedMetadata.minZoom ?? pack.minZoom,
             maxZoom: parsedMetadata.maxZoom ?? pack.maxZoom,
@@ -125,11 +147,13 @@ final class PhoneOfflineMapPackManager {
             transferredToWatch: false,
             localRelativePath: pack.localRelativePath,
             manifestReady: true,
-            tilesReady: true
+            tilesReady: true,
+            archiveFormat: archiveFormat,
+            archiveFilename: archiveFormat.defaultFilename
         )
         try writeManifest(for: updatedPack)
         upsert(updatedPack)
-        importStatusLabel = "\(updatedPack.title) MBTiles 연결 완료 · Z\(updatedPack.minZoom)-\(updatedPack.maxZoom)"
+        importStatusLabel = "\(updatedPack.title) \(updatedPack.archiveFormat.rawValue.uppercased()) 연결 완료 · Z\(updatedPack.minZoom)-\(updatedPack.maxZoom)"
         lastImportError = nil
     }
 
@@ -154,6 +178,9 @@ final class PhoneOfflineMapPackManager {
                 id: pack.id,
                 title: trimmedTitle,
                 createdAt: pack.createdAt,
+                sourceLabel: pack.sourceLabel,
+                licenseLabel: pack.licenseLabel,
+                attributionText: pack.attributionText,
                 boundingBox: pack.boundingBox,
                 minZoom: pack.minZoom,
                 maxZoom: pack.maxZoom,
@@ -162,7 +189,9 @@ final class PhoneOfflineMapPackManager {
                 transferredToWatch: pack.transferredToWatch,
                 localRelativePath: pack.localRelativePath,
                 manifestReady: pack.manifestReady,
-                tilesReady: pack.tilesReady
+                tilesReady: pack.tilesReady,
+                archiveFormat: pack.archiveFormat,
+                archiveFilename: pack.archiveFilename
             )
         }
         if let renamedPack = packs.first(where: { $0.id == id }) {
@@ -190,9 +219,13 @@ final class PhoneOfflineMapPackManager {
 
         let packURL = applicationSupportBaseURL.appendingPathComponent(localRelativePath, isDirectory: true)
         let manifestURL = packURL.appendingPathComponent("manifest.json")
-        let tilesURL = packURL.appendingPathComponent("tiles.mbtiles")
+        let archiveURL = packURL.appendingPathComponent(pack.archiveFilename)
 
-        return [manifestURL, tilesURL].filter { fileManager.fileExists(atPath: $0.path) }
+        return [manifestURL, archiveURL].filter { url in
+            guard fileManager.fileExists(atPath: url.path) else { return false }
+            let fileSize = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+            return fileSize > 0
+        }
     }
 
     func markTransferredToWatch(ids: Set<String>) {
@@ -203,6 +236,9 @@ final class PhoneOfflineMapPackManager {
                 id: pack.id,
                 title: pack.title,
                 createdAt: pack.createdAt,
+                sourceLabel: pack.sourceLabel,
+                licenseLabel: pack.licenseLabel,
+                attributionText: pack.attributionText,
                 boundingBox: pack.boundingBox,
                 minZoom: pack.minZoom,
                 maxZoom: pack.maxZoom,
@@ -211,7 +247,9 @@ final class PhoneOfflineMapPackManager {
                 transferredToWatch: true,
                 localRelativePath: pack.localRelativePath,
                 manifestReady: pack.manifestReady,
-                tilesReady: pack.tilesReady
+                tilesReady: pack.tilesReady,
+                archiveFormat: pack.archiveFormat,
+                archiveFilename: pack.archiveFilename
             )
         }
         normalizeSelection()

@@ -57,6 +57,8 @@ Runimal의 Apple 플랫폼 구현 저장소입니다.
 - [개발자용 시스템 명세](./docs/developer-system-spec.ko.md)
 - [S급 전환 체크리스트](./docs/s-grade-transition-checklist.ko.md)
 - [보상 연구 및 시뮬레이션](./docs/reward-research-and-simulation.ko.md)
+- [오프라인 지도 오픈소스 워크플로우](./docs/offline-map-open-source-workflow.ko.md)
+- [PMTiles / Protomaps 워크플로우](./docs/protomaps-pmtiles-workflow.ko.md)
 - [실기기 배포 체크리스트](./docs/real-device-deploy-checklist.md)
 - [릴리즈 핸드오프](./docs/release-handoff.ko.md)
 

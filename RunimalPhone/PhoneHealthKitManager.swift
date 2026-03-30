@@ -72,7 +72,7 @@ final class PhoneHealthKitManager {
                 let bundleID = workout.sourceRevision.source.bundleIdentifier.lowercased()
                 let sourceLabel = workout.sourceRevision.source.name
 
-                guard bundleID != "com.jaw.runimal.watch", bundleID != "com.jaw.runimal.phone" else { continue }
+                guard bundleID != "com.jaw.runimal.phone.watch", bundleID != "com.jaw.runimal.phone" else { continue }
                 guard supportsImport(workout) else { continue }
 
                 let importedMetrics = try await importedMetrics(from: workout)

@@ -67,11 +67,11 @@ private extension PhoneFITExportWriter {
             let point = archive.trackPoints[index]
             if index > 0 {
                 let previous = archive.trackPoints[index - 1]
-                if point.paused == false, point.gpsPoor == false {
-                    let segmentDistance = coordinateDistance(from: previous, to: point)
-                    if segmentDistance >= 0, segmentDistance <= 120 {
-                        totalDistance += segmentDistance
-                    }
+                let segmentDistance = workoutCoordinateDistance(from: previous, to: point)
+                let delta = point.timestamp.timeIntervalSince(previous.timestamp)
+                let speed = point.speedMetersPerSecond ?? (delta > 0 ? segmentDistance / delta : 0)
+                if workoutExportUsableSegment(previous: previous, current: point, distance: segmentDistance, speed: speed) {
+                    totalDistance += segmentDistance
                 }
             }
 
@@ -166,19 +166,6 @@ private extension PhoneFITExportWriter {
     static func averageSpeed(distanceMeters: Double, durationSeconds: Int) -> Measurement<UnitSpeed>? {
         guard distanceMeters > 0, durationSeconds > 0 else { return nil }
         return Measurement(value: distanceMeters / Double(durationSeconds), unit: UnitSpeed.metersPerSecond)
-    }
-
-    static func coordinateDistance(from lhs: WorkoutTrackPoint, to rhs: WorkoutTrackPoint) -> Double {
-        let earthRadius = 6_371_000.0
-        let lat1 = lhs.latitude * .pi / 180
-        let lon1 = lhs.longitude * .pi / 180
-        let lat2 = rhs.latitude * .pi / 180
-        let lon2 = rhs.longitude * .pi / 180
-        let dLat = lat2 - lat1
-        let dLon = lon2 - lon1
-        let a = sin(dLat / 2) * sin(dLat / 2) + cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2)
-        let c = 2 * atan2(sqrt(a), sqrt(1 - a))
-        return earthRadius * c
     }
 
     static func fileNumber(for archive: WorkoutSessionArchive) -> UInt16 {

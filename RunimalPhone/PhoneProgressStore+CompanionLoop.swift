@@ -3,6 +3,16 @@ import RunimalCore
 
 @MainActor
 extension PhoneProgressStore {
+    var watchPetSelection: PetCollectionEntry? {
+        guard let selection = watchCompanionSelection, selection.kind == .pet else { return nil }
+        return ownedCompanions.first(where: { $0.id == selection.targetID && !retiredCompanionIDs.contains($0.id) })
+    }
+
+    var watchEggSelection: EggInventoryEntry? {
+        guard let selection = watchCompanionSelection, selection.kind == .egg else { return nil }
+        return eggInventory.first(where: { $0.id == selection.targetID })
+    }
+
     var mainPetSelection: PetCollectionEntry? {
         guard let selection = mainCompanionSelection, selection.kind == .pet else { return nil }
         return ownedCompanions.first(where: { $0.id == selection.targetID && !retiredCompanionIDs.contains($0.id) })
@@ -11,6 +21,18 @@ extension PhoneProgressStore {
     var mainEggSelection: EggInventoryEntry? {
         guard let selection = mainCompanionSelection, selection.kind == .egg else { return nil }
         return eggInventory.first(where: { $0.id == selection.targetID })
+    }
+
+    func selectWatchCompanion(id: String) {
+        guard ownedCompanions.contains(where: { $0.id == id && !retiredCompanionIDs.contains($0.id) }) else { return }
+        watchCompanionSelection = MainCompanionSelection(kind: .pet, targetID: id)
+        saveSelectionState()
+    }
+
+    func selectWatchEgg(id: String) {
+        guard eggInventory.contains(where: { $0.id == id }) else { return }
+        watchCompanionSelection = MainCompanionSelection(kind: .egg, targetID: id)
+        saveSelectionState()
     }
 
     func activateEgg(id: String) {

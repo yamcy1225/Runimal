@@ -220,14 +220,24 @@ private extension WorkoutArchiveAnalyzer {
 
             if current.paused == false {
                 timerTime += delta
-                if current.gpsPoor == false, segmentDistance >= 1, segmentDistance <= 120 {
+                if isUsableSegment(
+                    previous: previous,
+                    current: current,
+                    distance: segmentDistance,
+                    speed: segmentSpeed
+                ) {
                     distance += segmentDistance
                 }
-                if segmentSpeed >= configuration.movingSpeedThreshold {
+                if isUsableSegment(
+                    previous: previous,
+                    current: current,
+                    distance: segmentDistance,
+                    speed: segmentSpeed
+                ), segmentSpeed >= configuration.movingSpeedThreshold {
                     movingTime += delta
                 }
                 let climb = current.altitude - previous.altitude
-                if climb > 0.5 {
+                if climb > 0.5, abs(climb) <= 40 {
                     elevation += climb
                 }
             }
@@ -266,14 +276,23 @@ private extension WorkoutArchiveAnalyzer {
             let delta = current.timestamp.timeIntervalSince(previous.timestamp)
             guard delta > 0 else { continue }
 
-            let segmentDistance = current.paused ? 0 : min(max(coordinateDistance(from: previous, to: current), 0), 120)
+            let rawDistance = coordinateDistance(from: previous, to: current)
+            let segmentSpeed = resolvedSpeed(current: current, previous: previous, delta: delta)
+            let segmentDistance = current.paused ? 0 : (
+                isUsableSegment(
+                    previous: previous,
+                    current: current,
+                    distance: rawDistance,
+                    speed: segmentSpeed
+                ) ? rawDistance : 0
+            )
             totalDistance += segmentDistance
             lapDistance += segmentDistance
             if current.paused == false {
                 lapTimer += delta
             }
             let climb = current.altitude - previous.altitude
-            if climb > 0.5, current.paused == false {
+            if climb > 0.5, abs(climb) <= 40, current.paused == false {
                 lapElevation += climb
             }
 
@@ -312,8 +331,9 @@ private extension WorkoutArchiveAnalyzer {
         elevation: Double
     ) -> WorkoutLap {
         let lapPoints = Array(points[startIndex...endIndex])
-        let averageHeartRate = averageDouble(from: lapPoints.compactMap(\.heartRate))
-        let averageCadence = averageInt(from: lapPoints.compactMap(\.cadence))
+        let metricPoints = lapPoints.filter { $0.paused == false && $0.gpsPoor == false }
+        let averageHeartRate = averageDouble(from: metricPoints.compactMap(\.heartRate))
+        let averageCadence = averageInt(from: metricPoints.compactMap(\.cadence))
         let averagePaceSeconds = distance > 0 ? Int((timer / distance) * 1000.0) : nil
 
         return WorkoutLap(
@@ -328,6 +348,18 @@ private extension WorkoutArchiveAnalyzer {
             elevationGainM: Int(elevation.rounded())
         )
     }
+}
+
+private func isUsableSegment(
+    previous: WorkoutTrackPoint,
+    current: WorkoutTrackPoint,
+    distance: Double,
+    speed: Double
+) -> Bool {
+    guard previous.gpsPoor == false, current.gpsPoor == false else { return false }
+    guard distance >= 1, distance <= 120 else { return false }
+    guard speed >= 0, speed <= 8.5 else { return false }
+    return true
 }
 
 private func resolvedSpeed(current: WorkoutTrackPoint, previous: WorkoutTrackPoint?, delta: TimeInterval) -> Double {

@@ -7,12 +7,18 @@ struct PhoneMBTilesMetadata {
     let minZoom: Int?
     let maxZoom: Int?
     let boundingBox: OfflineMapBoundingBox?
+    let sourceLabel: String?
+    let licenseLabel: String?
+    let attributionText: String?
 
     static let empty = PhoneMBTilesMetadata(
         tileCount: nil,
         minZoom: nil,
         maxZoom: nil,
-        boundingBox: nil
+        boundingBox: nil,
+        sourceLabel: nil,
+        licenseLabel: nil,
+        attributionText: nil
     )
 }
 
@@ -36,7 +42,10 @@ enum PhoneMBTilesMetadataReader {
             tileCount: tileCount,
             minZoom: minZoom,
             maxZoom: maxZoom,
-            boundingBox: bounds
+            boundingBox: bounds,
+            sourceLabel: metadata["source"],
+            licenseLabel: metadata["license"],
+            attributionText: metadata["attribution"]
         )
     }
 

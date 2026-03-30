@@ -399,7 +399,10 @@ struct PhoneCollectionView: View {
 
             LazyVGrid(columns: columns, spacing: 14) {
                 ForEach(store.collection) { entry in
-                    GameSurface(accent: entry.pet.accentColor, eyebrow: entry.id == store.featuredCompanion.id ? "메인 슬롯" : "보유 중") {
+                    GameSurface(
+                        accent: entry.pet.accentColor,
+                        eyebrow: entry.id == store.mainSelection?.targetID && store.mainSelection?.kind == .pet ? "메인 슬롯" : "보유 중"
+                    ) {
                         VStack(alignment: .leading, spacing: 12) {
                             ZStack(alignment: .topTrailing) {
                                 RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -413,10 +416,10 @@ struct PhoneCollectionView: View {
                                 PixelPetView(
                                     pet: entry.pet,
                                     pixelSize: 8,
-                                    seasonalLayers: entry.id == store.featuredCompanion.id ? store.seasonalLayers : []
+                                    seasonalLayers: entry.id == store.mainSelection?.targetID && store.mainSelection?.kind == .pet ? store.seasonalLayers : []
                                 )
 
-                                if entry.id == store.featuredCompanion.id {
+                                if entry.id == store.mainSelection?.targetID && store.mainSelection?.kind == .pet {
                                     RunimalSignalBadge(icon: "star.fill", label: "메인", accent: .green)
                                 }
                             }
@@ -462,23 +465,31 @@ struct PhoneCollectionView: View {
                                 .font(.caption2.monospaced())
                                 .foregroundStyle(GameBoyPalette.mediumDark)
 
-                            Button(entry.id == store.featuredCompanion.id ? "선택됨" : "메인으로") {
+                            Button(entry.id == store.mainSelection?.targetID && store.mainSelection?.kind == .pet ? "선택됨" : "메인으로") {
                                 store.activateCompanion(entry.id)
                             }
                             .buttonStyle(.plain)
                             .font(.caption.monospaced().weight(.black))
-                            .foregroundStyle(entry.id == store.featuredCompanion.id ? GameBoyPalette.lightest : GameBoyPalette.darkest)
+                            .foregroundStyle(
+                                entry.id == store.mainSelection?.targetID && store.mainSelection?.kind == .pet
+                                ? GameBoyPalette.lightest
+                                : GameBoyPalette.darkest
+                            )
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
                             .background(
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(entry.id == store.featuredCompanion.id ? GameBoyPalette.mediumDark : GameBoyPalette.lightest)
+                                    .fill(
+                                        entry.id == store.mainSelection?.targetID && store.mainSelection?.kind == .pet
+                                        ? GameBoyPalette.mediumDark
+                                        : GameBoyPalette.lightest
+                                    )
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 10, style: .continuous)
                                             .stroke(GameBoyPalette.darkest, lineWidth: 2)
                                     )
                             )
-                            .disabled(entry.id == store.featuredCompanion.id)
+                            .disabled(entry.id == store.mainSelection?.targetID && store.mainSelection?.kind == .pet)
                         }
                     }
                 }

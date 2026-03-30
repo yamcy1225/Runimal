@@ -3,27 +3,46 @@ import SwiftUI
 
 struct WatchDashboardView: View {
     @State private var runSessionManager = WatchRunSessionManager()
-    @State private var connectivityManager = WatchConnectivityManager()
+    @State private var connectivityManager = WatchConnectivityManager.shared
+    @State private var displayedMainCompanionContext: WatchMainCompanionContext?
     @State private var offlineMapCatalog = WatchOfflineMapPackCatalog()
     @State private var hatchBurstScale: CGFloat = 0.9
     @State private var countdownValue: Int?
+
+    private var mainCompanionContext: WatchMainCompanionContext? {
+        displayedMainCompanionContext ?? connectivityManager.mainCompanionContext
+    }
 
     private var livePet: GeneratedPet {
         runSessionManager.livePet
     }
 
     private var stageAccent: Color {
+        let baseAccent = mainCompanionAccent
         switch liveFeedback.label {
         case "Rare Window":
             return .mint
         case "Surge":
             return .orange
         case "Stable":
-            return livePet.accentColor
+            return baseAccent
         case "Recover":
             return .yellow
         default:
-            return livePet.accentColor.opacity(0.82)
+            return baseAccent.opacity(0.82)
+        }
+    }
+
+    private var mainCompanionAccent: Color {
+        guard let mainCompanionContext else {
+            return livePet.accentColor
+        }
+
+        switch mainCompanionContext.selection.kind {
+        case .pet:
+            return mainCompanionContext.pet?.accentColor ?? livePet.accentColor
+        case .egg:
+            return mainCompanionContext.eggShell?.accentColor ?? runSessionManager.sessionShell.accentColor
         }
     }
 
@@ -61,15 +80,16 @@ struct WatchDashboardView: View {
     var body: some View {
         WatchDashboardPages(
             runtimeAlert: runSessionManager.runtimeAlert,
-            livePet: livePet,
-            sessionShell: runSessionManager.sessionShell,
+            mainCompanionContext: mainCompanionContext,
             stageAccent: stageAccent,
             sessionStateLabel: runSessionManager.sessionStateLabel,
             syncStatusLabel: connectivityManager.syncStatusLabel,
             heartResonance: heartResonance,
             growthRatio: growthRatio,
             latestSnapshot: runSessionManager.latestSnapshot,
-            autoPauseEnabled: connectivityManager.autoPauseEnabled,
+            latestGPSAccuracyMeters: runSessionManager.latestGPSAccuracyMeters,
+            gpsLastUpdatedAt: runSessionManager.gpsLastUpdatedAt,
+            locationStatusLabel: runSessionManager.locationStatusLabel,
             liveFeedback: liveFeedback,
             stageBadges: stageBadges,
             liveGoals: liveGoals,
@@ -83,6 +103,7 @@ struct WatchDashboardView: View {
             reward: runSessionManager.lastReward,
             hatchBurstScale: hatchBurstScale,
             countdownValue: countdownValue,
+            onRefreshCompanion: connectivityManager.refreshMainCompanionContext,
             onStartRun: startRunWithCountdown,
             onEndRun: endRun
         )
@@ -107,14 +128,20 @@ struct WatchDashboardView: View {
             .ignoresSafeArea()
         )
         .task {
-            connectivityManager.activate()
             runSessionManager.setAutoPauseEnabled(connectivityManager.autoPauseEnabled)
+            runSessionManager.prepareGPSPreview()
             offlineMapCatalog.replace(
                 with: connectivityManager.offlineMapPacks,
                 selectedPackID: connectivityManager.selectedOfflineMapPackID
             )
             connectivityManager.offlineMapStorage.reloadFromDisk()
             runSessionManager.autoplayDemoIfNeeded()
+        }
+        .task {
+            while Task.isCancelled == false {
+                displayedMainCompanionContext = connectivityManager.resolvedMainCompanionContext()
+                try? await Task.sleep(for: .seconds(1))
+            }
         }
         .onChange(of: connectivityManager.claimedRewardIDs) { _, rewardIDs in
             let context = CompanionEffectContext(
@@ -204,15 +231,16 @@ struct WatchDashboardView: View {
 
 private struct WatchDashboardPages: View {
     let runtimeAlert: WatchRuntimeAlert?
-    let livePet: GeneratedPet
-    let sessionShell: EggShellType
+    let mainCompanionContext: WatchMainCompanionContext?
     let stageAccent: Color
     let sessionStateLabel: String
     let syncStatusLabel: String
     let heartResonance: Double
     let growthRatio: Double
     let latestSnapshot: LiveRunSnapshot
-    let autoPauseEnabled: Bool
+    let latestGPSAccuracyMeters: Double?
+    let gpsLastUpdatedAt: Date?
+    let locationStatusLabel: String
     let liveFeedback: LiveRunFeedback
     let stageBadges: [String]
     let liveGoals: [LiveGoalTarget]
@@ -226,6 +254,7 @@ private struct WatchDashboardPages: View {
     let reward: RunRewardSummary?
     let hatchBurstScale: CGFloat
     let countdownValue: Int?
+    let onRefreshCompanion: () -> Void
     let onStartRun: () -> Void
     let onEndRun: () -> Void
 
@@ -237,14 +266,17 @@ private struct WatchDashboardPages: View {
                         WatchRuntimeAlertBanner(alert: runtimeAlert)
                     }
 
-                    WatchCompanionHeroCard(
-                        pet: livePet,
-                        sessionShell: sessionShell,
+                    WatchLaunchPageCard(
+                        companion: mainCompanionContext,
                         accent: stageAccent,
                         sessionStateLabel: sessionStateLabel,
-                        syncStatusLabel: syncStatusLabel,
                         heartResonance: heartResonance,
-                        progress: growthRatio
+                        gpsAccuracyMeters: latestGPSAccuracyMeters,
+                        lastGPSUpdateAt: gpsLastUpdatedAt,
+                        locationStatusLabel: locationStatusLabel,
+                        countdownValue: countdownValue,
+                        onPrimaryAction: sessionStateLabel == "running" ? onEndRun : onStartRun,
+                        onRefreshCompanion: onRefreshCompanion
                     )
                 }
             }
@@ -253,28 +285,13 @@ private struct WatchDashboardPages: View {
             WatchSingleCardPage {
                 WatchRunStatsPanel(
                     snapshot: latestSnapshot,
-                    accent: stageAccent,
-                    autoPauseEnabled: autoPauseEnabled
+                    gpsAccuracyMeters: latestGPSAccuracyMeters,
+                    lastGPSUpdateAt: gpsLastUpdatedAt,
+                    locationStatusLabel: locationStatusLabel,
+                    accent: stageAccent
                 )
             }
             .tag(1)
-
-            WatchSingleCardPage {
-                VStack(spacing: 10) {
-                    Button(sessionStateLabel == "running" ? "운동 끝내기" : "러닝 시작하기") {
-                        if sessionStateLabel == "running" {
-                            onEndRun()
-                        } else {
-                            onStartRun()
-                        }
-                    }
-                        .buttonStyle(.borderedProminent)
-                        .tint(GameBoyPalette.mediumDark)
-                        .foregroundStyle(GameBoyPalette.lightest)
-                        .disabled(countdownValue != nil)
-                }
-            }
-            .tag(2)
 
             WatchSingleCardPage {
                 WatchRunPulseCard(
@@ -283,7 +300,7 @@ private struct WatchDashboardPages: View {
                     badges: Array(stageBadges.prefix(2))
                 )
             }
-            .tag(3)
+            .tag(2)
 
             WatchSingleCardPage {
                 WatchGoalTrackCard(
@@ -291,25 +308,27 @@ private struct WatchDashboardPages: View {
                     accent: stageAccent
                 )
             }
+            .tag(3)
+
+            WatchSingleCardPage {
+                WatchOfflineMapPreviewCard(
+                    selectedPack: selectedOfflineMapPack,
+                    isStoredLocally: selectedOfflineMapPack.map { storedOfflineMapPackIDs.contains($0.id) } ?? false,
+                    storage: offlineMapStorage,
+                    route: routePreview,
+                    accent: stageAccent
+                )
+            }
             .tag(4)
 
             WatchSingleCardPage {
-                VStack(spacing: 10) {
-                    WatchOfflineMapPreviewCard(
-                        selectedPack: selectedOfflineMapPack,
-                        isStoredLocally: selectedOfflineMapPack.map { storedOfflineMapPackIDs.contains($0.id) } ?? false,
-                        storage: offlineMapStorage,
-                        route: routePreview,
-                        accent: stageAccent
-                    )
-
-                    WatchOfflineMapPackCard(
-                        packs: offlineMapPacks,
-                        selectedPackID: selectedOfflineMapPackID,
-                        storedPackIDs: storedOfflineMapPackIDs,
-                        accent: stageAccent
-                    )
-                }
+                WatchOfflineMapPackCard(
+                    packs: offlineMapPacks,
+                    selectedPackID: selectedOfflineMapPackID,
+                    storedPackIDs: storedOfflineMapPackIDs,
+                    storage: offlineMapStorage,
+                    accent: stageAccent
+                )
             }
             .tag(5)
 

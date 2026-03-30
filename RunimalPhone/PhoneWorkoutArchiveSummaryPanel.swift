@@ -1,3 +1,4 @@
+import CoreLocation
 import RunimalCore
 import SwiftUI
 
@@ -19,6 +20,20 @@ struct PhoneWorkoutArchiveSummaryPanel: View {
                     compactChip("자동 pause \(autoPauseCount)회")
                     compactChip("수동 pause \(manualPauseCount)회")
                     compactChip("랩 \(archive.laps.count)개")
+                }
+
+                if let distanceAudit {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("거리 점검")
+                            .font(.caption.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.darkest)
+
+                        HStack(spacing: 8) {
+                            compactChip("저장 \(distanceLabel(distanceAudit.storedMeters))")
+                            compactChip("경로 \(distanceLabel(distanceAudit.routeMeters))")
+                            compactChip("차이 \(distanceDeltaLabel(distanceAudit.deltaMeters))")
+                        }
+                    }
                 }
 
                 if !archive.laps.isEmpty {
@@ -156,6 +171,14 @@ struct PhoneWorkoutArchiveSummaryPanel: View {
             .map { $0 }
     }
 
+    private var distanceAudit: (storedMeters: Double, routeMeters: Double, deltaMeters: Double)? {
+        let routeMeters = inferredRouteDistanceMeters(from: archive.trackPoints)
+        guard routeMeters > 0 else { return nil }
+        let deltaMeters = routeMeters - archive.distanceMeters
+        guard abs(deltaMeters) >= 5 else { return nil }
+        return (archive.distanceMeters, routeMeters, deltaMeters)
+    }
+
     private func compactChip(_ label: String) -> some View {
         Text(label)
             .font(.caption2.monospaced().weight(.black))
@@ -201,6 +224,33 @@ struct PhoneWorkoutArchiveSummaryPanel: View {
     private func cadenceLabel(_ cadence: Int?) -> String {
         guard let cadence else { return "--" }
         return "\(cadence)"
+    }
+
+    private func distanceDeltaLabel(_ meters: Double) -> String {
+        let sign = meters >= 0 ? "+" : "-"
+        return "\(sign)\(Int(abs(meters).rounded()))m"
+    }
+
+    private func inferredRouteDistanceMeters(from points: [WorkoutTrackPoint]) -> Double {
+        guard points.count > 1 else { return 0 }
+        var total: Double = 0
+
+        for index in 1..<points.count {
+            let previous = points[index - 1]
+            let current = points[index]
+            guard current.gpsPoor == false else { continue }
+
+            let previousLocation = CLLocation(latitude: previous.latitude, longitude: previous.longitude)
+            let currentLocation = CLLocation(latitude: current.latitude, longitude: current.longitude)
+            let segmentDistance = currentLocation.distance(from: previousLocation)
+            let delta = current.timestamp.timeIntervalSince(previous.timestamp)
+
+            if delta > 0, segmentDistance >= 1, segmentDistance <= 120, (segmentDistance / delta) <= 8.5 {
+                total += segmentDistance
+            }
+        }
+
+        return total
     }
 
     private func eventLabel(_ event: WorkoutSessionEvent) -> String {

@@ -10,6 +10,7 @@ import CoreGraphics
 final class WatchMBTilesTileReader {
     var previewImage: UIImage?
     var statusLabel = "타일 대기"
+    private var lastPreviewKey: String?
 
     func loadPreviewTile(
         for pack: OfflineMapPackSummary?,
@@ -24,8 +25,16 @@ final class WatchMBTilesTileReader {
         }
 
         guard let databaseURL = storage.tilesDatabaseURL(for: pack.id) else {
-            previewImage = nil
-            statusLabel = "타일 없음"
+            if previewImage == nil {
+                previewImage = placeholderPreviewImage(label: "PACK")
+            }
+            statusLabel = "전송 필요"
+            lastPreviewKey = nil
+            return
+        }
+
+        let previewKey = previewKey(for: pack, databaseURL: databaseURL, centerPoint: centerPoint, zoomOverride: zoomOverride)
+        if lastPreviewKey == previewKey, previewImage != nil {
             return
         }
 
@@ -35,13 +44,32 @@ final class WatchMBTilesTileReader {
             centerPoint: centerPoint,
             zoomOverride: zoomOverride
         ) else {
-            previewImage = nil
-            statusLabel = "미리보기 없음"
+            if previewImage == nil {
+                previewImage = placeholderPreviewImage(label: "MAP")
+            }
+            statusLabel = "타일 대기"
+            lastPreviewKey = previewKey
             return
         }
 
         previewImage = image
         statusLabel = "3x3 타일 준비"
+        lastPreviewKey = previewKey
+    }
+
+    private func previewKey(
+        for pack: OfflineMapPackSummary,
+        databaseURL: URL,
+        centerPoint: RoutePoint?,
+        zoomOverride: Int?
+    ) -> String {
+        let fallbackLatitude = (pack.boundingBox.minLatitude + pack.boundingBox.maxLatitude) / 2
+        let fallbackLongitude = (pack.boundingBox.minLongitude + pack.boundingBox.maxLongitude) / 2
+        let centerLatitude = centerPoint?.latitude ?? fallbackLatitude
+        let centerLongitude = centerPoint?.longitude ?? fallbackLongitude
+        let zoom = min(max(zoomOverride ?? inferredZoom(for: pack, centerPoint: centerPoint), pack.minZoom), pack.maxZoom)
+        let xyz = tileXY(latitude: centerLatitude, longitude: centerLongitude, zoom: zoom)
+        return "\(databaseURL.lastPathComponent)-\(pack.id)-\(zoom)-\(xyz.x)-\(xyz.y)"
     }
 
     private func loadTileImage(
@@ -141,6 +169,53 @@ final class WatchMBTilesTileReader {
             return nil
         }
 
+        return UIImage(cgImage: cgImage)
+    }
+
+    private func placeholderPreviewImage(label: String) -> UIImage? {
+        let size = 192
+        let bytesPerRow = size * 4
+        let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
+
+        guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
+              let context = CGContext(
+                data: nil,
+                width: size,
+                height: size,
+                bitsPerComponent: 8,
+                bytesPerRow: bytesPerRow,
+                space: colorSpace,
+                bitmapInfo: bitmapInfo
+              ) else {
+            return nil
+        }
+
+        context.setFillColor(UIColor(GameBoyPalette.lightest).cgColor)
+        context.fill(CGRect(x: 0, y: 0, width: size, height: size))
+
+        context.setStrokeColor(UIColor(GameBoyPalette.mediumLight).cgColor)
+        context.setLineWidth(2)
+        stride(from: 32, to: size, by: 32).forEach { offset in
+            context.move(to: CGPoint(x: offset, y: 0))
+            context.addLine(to: CGPoint(x: offset, y: size))
+            context.move(to: CGPoint(x: 0, y: offset))
+            context.addLine(to: CGPoint(x: size, y: offset))
+        }
+        context.strokePath()
+
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.monospacedSystemFont(ofSize: 28, weight: .black),
+            .foregroundColor: UIColor(GameBoyPalette.mediumDark),
+            .paragraphStyle: paragraph,
+        ]
+        let textRect = CGRect(x: 0, y: CGFloat(size / 2 - 18), width: CGFloat(size), height: 36)
+        UIGraphicsPushContext(context)
+        NSAttributedString(string: label, attributes: attributes).draw(in: textRect)
+        UIGraphicsPopContext()
+
+        guard let cgImage = context.makeImage() else { return nil }
         return UIImage(cgImage: cgImage)
     }
 

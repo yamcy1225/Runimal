@@ -8,6 +8,7 @@ private struct SelectedRunRecord: Identifiable {
 
 extension UTType {
     static let mbtilesFile = UTType(filenameExtension: "mbtiles") ?? .data
+    static let pmtilesFile = UTType(filenameExtension: "pmtiles") ?? .data
 }
 
 private enum RunArchiveFilter: String, CaseIterable, Identifiable {
@@ -31,6 +32,7 @@ struct PhoneRunDeckView: View {
     @State private var isImportingFITFile = false
     @State private var importingOfflineMapPackID: String?
     @State private var selectedRun: SelectedRunRecord?
+    @State private var selectedOfflineMapPackDetail: OfflineMapPackSummary?
     @State private var archiveFilter: RunArchiveFilter = .all
 
     var body: some View {
@@ -61,17 +63,58 @@ struct PhoneRunDeckView: View {
                     PhoneOfflineMapPackPanel(
                         packs: store.offlineMapPacks,
                         watchPacks: store.watchOfflineMapPacks,
+                        watchStoredPackIDs: store.watchStoredOfflineMapPackIDs,
+                        transferStatus: store.offlineMapTransferStatus,
                         selectedPackID: store.selectedOfflineMapPackID,
                         importStatusLabel: store.offlineMaps.importStatusLabel,
                         lastImportError: store.offlineMaps.lastImportError,
+                        locationStatusLabel: store.currentLocation.statusLabel,
+                        locationError: store.currentLocation.lastError,
                         accent: store.pet.accentColor,
                         onCreatePack: { store.registerOfflineMapPack($0) },
+                        onCreateCurrentLocationPack: { store.createOfflineMapPackNearCurrentLocation() },
                         onSelectPack: { store.setSelectedOfflineMapPack(id: $0) },
                         onImportTiles: { importingOfflineMapPackID = $0 },
+                        onSendPack: { store.sendOfflineMapPackFiles(id: $0) },
                         onRenamePack: { id, title in
                             store.renameOfflineMapPack(id: id, title: title)
                         },
                         onDeletePack: { store.deleteOfflineMapPack(id: $0) }
+                    )
+                    PhoneOfflineMapValidationPanel(
+                        selectedPack: store.selectedOfflineMapPack,
+                        isStoredOnWatch: {
+                            guard let pack = store.selectedOfflineMapPack else { return false }
+                            return store.watchStoredOfflineMapPackIDs.contains(pack.id)
+                        }(),
+                        transferStatusLabel: {
+                            guard let pack = store.selectedOfflineMapPack else { return "팩 없음" }
+                            if let status = store.offlineMapTransferStatus[pack.id] {
+                                switch status.phase {
+                                case .idle:
+                                    return pack.tilesReady ? "전송 대기" : "파일 연결 필요"
+                                case .sending:
+                                    return "전송 중"
+                                case .storedOnWatch:
+                                    return "watch 저장 완료"
+                                case .failed:
+                                    return status.lastError.map { "전송 실패 · \($0)" } ?? "전송 실패"
+                                }
+                            }
+                            return pack.tilesReady ? "전송 대기" : "파일 연결 필요"
+                        }(),
+                        accent: store.pet.accentColor,
+                        onOpenDetail: {
+                            selectedOfflineMapPackDetail = store.selectedOfflineMapPack
+                        },
+                        onImportTiles: {
+                            guard let pack = store.selectedOfflineMapPack else { return }
+                            importingOfflineMapPackID = pack.id
+                        },
+                        onSend: {
+                            guard let pack = store.selectedOfflineMapPack else { return }
+                            store.sendOfflineMapPackFiles(id: pack.id)
+                        }
                     )
                     archiveFilterStrip
                     if shouldShowRunimalArchive {
@@ -144,7 +187,7 @@ struct PhoneRunDeckView: View {
                     }
                 }
             ),
-            allowedContentTypes: [.mbtilesFile],
+            allowedContentTypes: [.mbtilesFile, .pmtilesFile],
             allowsMultipleSelection: false
         ) { result in
             let packID = importingOfflineMapPackID
@@ -163,6 +206,62 @@ struct PhoneRunDeckView: View {
         }
         .sheet(item: $selectedRun) { selectedRun in
             PhoneRunRecordDetailSheet(store: store, runID: selectedRun.id)
+        }
+        .sheet(item: $selectedOfflineMapPackDetail) { pack in
+            PhoneOfflineMapPackDetailSheet(
+                pack: pack,
+                isSelected: store.selectedOfflineMapPackID == pack.id,
+                isStoredOnWatch: store.watchStoredOfflineMapPackIDs.contains(pack.id),
+                isCatalogDelivered: store.watchOfflineMapPacks.contains(where: { $0.id == pack.id }),
+                transferStatusLabel: {
+                    if let status = store.offlineMapTransferStatus[pack.id] {
+                        switch status.phase {
+                        case .idle:
+                            return pack.tilesReady ? "전송 대기" : "파일 연결 필요"
+                        case .sending:
+                            return "전송 중"
+                        case .storedOnWatch:
+                            return "watch 저장 완료"
+                        case .failed:
+                            return status.lastError.map { "전송 실패 · \($0)" } ?? "전송 실패"
+                        }
+                    }
+                    return pack.tilesReady ? "전송 대기" : "파일 연결 필요"
+                }(),
+                readinessLabel: {
+                    if pack.tilesReady && pack.byteCount <= 0 { return "\(pack.archiveFormat.rawValue.uppercased()) 파일 비어 있음" }
+                    if store.watchStoredOfflineMapPackIDs.contains(pack.id) { return "watch 저장 완료 · \(pack.archiveFormat.rawValue.uppercased())" }
+                    if store.watchOfflineMapPacks.contains(where: { $0.id == pack.id }) { return "카탈로그 전달됨 · \(pack.archiveFormat.rawValue.uppercased())" }
+                    if pack.tilesReady { return "\(pack.archiveFormat.rawValue.uppercased()) 연결됨" }
+                    if pack.manifestReady { return "manifest만 준비됨" }
+                    return "로컬 저장 준비 전"
+                }(),
+                readinessColor: {
+                    if pack.tilesReady && pack.byteCount <= 0 { return .red }
+                    if store.watchStoredOfflineMapPackIDs.contains(pack.id) { return .green }
+                    if store.watchOfflineMapPacks.contains(where: { $0.id == pack.id }) { return .cyan }
+                    if pack.tilesReady { return .green }
+                    if pack.manifestReady { return .orange }
+                    return .red
+                }(),
+                queuedAt: store.offlineMapTransferStatus[pack.id]?.lastQueuedAt,
+                completedAt: store.offlineMapTransferStatus[pack.id]?.lastCompletedAt,
+                transferFailure: store.offlineMapTransferStatus[pack.id]?.lastError,
+                onSelect: {
+                    store.setSelectedOfflineMapPack(id: pack.id)
+                    selectedOfflineMapPackDetail = nil
+                },
+                onImportTiles: {
+                    importingOfflineMapPackID = pack.id
+                },
+                onSend: {
+                    store.sendOfflineMapPackFiles(id: pack.id)
+                },
+                onDelete: {
+                    store.deleteOfflineMapPack(id: pack.id)
+                    selectedOfflineMapPackDetail = nil
+                }
+            )
         }
     }
 

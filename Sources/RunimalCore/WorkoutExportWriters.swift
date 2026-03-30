@@ -34,7 +34,7 @@ public enum GPXWriter {
         lines.append("<metadata><name>\(escaped(title))</name><time>\(formatter.string(from: archive.startedAt))</time></metadata>")
         lines.append("<trk><name>\(escaped(title))</name><trkseg>")
 
-        for point in archive.trackPoints {
+        for point in archive.trackPoints where point.gpsPoor == false {
             lines.append(#"<trkpt lat="\#(point.latitude)" lon="\#(point.longitude)">"#)
             lines.append("<ele>\(point.altitude)</ele>")
             lines.append("<time>\(formatter.string(from: point.timestamp))</time>")
@@ -147,7 +147,7 @@ private func trackLines(for points: [WorkoutTrackPoint], formatter: ISO8601DateF
     var didOpenTrack = false
 
     for point in points {
-        if point.paused {
+        if point.paused || point.gpsPoor {
             if didOpenTrack {
                 lines.append("</Track>")
                 didOpenTrack = false
@@ -181,33 +181,5 @@ private func trackLines(for points: [WorkoutTrackPoint], formatter: ISO8601DateF
 }
 
 private func movingTimeSeconds(for points: [WorkoutTrackPoint]) -> Int {
-    guard points.count > 1 else { return 0 }
-
-    var moving: TimeInterval = 0
-    for index in 1..<points.count {
-        let previous = points[index - 1]
-        let current = points[index]
-        let delta = current.timestamp.timeIntervalSince(previous.timestamp)
-        guard delta > 0, current.paused == false else { continue }
-
-        let speed = current.speedMetersPerSecond ?? segmentDistance(from: previous, to: current) / delta
-        if speed >= 0.5 {
-            moving += delta
-        }
-    }
-
-    return Int(moving.rounded())
-}
-
-private func segmentDistance(from lhs: WorkoutTrackPoint, to rhs: WorkoutTrackPoint) -> Double {
-    let earthRadius = 6_371_000.0
-    let lat1 = lhs.latitude * .pi / 180
-    let lon1 = lhs.longitude * .pi / 180
-    let lat2 = rhs.latitude * .pi / 180
-    let lon2 = rhs.longitude * .pi / 180
-    let dLat = lat2 - lat1
-    let dLon = lon2 - lon1
-    let a = sin(dLat / 2) * sin(dLat / 2) + cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2)
-    let c = 2 * atan2(sqrt(a), sqrt(1 - a))
-    return earthRadius * c
+    workoutMovingTimeSeconds(from: points)
 }

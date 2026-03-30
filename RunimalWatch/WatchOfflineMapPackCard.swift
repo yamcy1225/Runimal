@@ -5,6 +5,7 @@ struct WatchOfflineMapPackCard: View {
     let packs: [OfflineMapPackSummary]
     let selectedPackID: String?
     let storedPackIDs: Set<String>
+    let storage: WatchOfflineMapPackStorage
     let accent: Color
 
     var body: some View {
@@ -44,9 +45,12 @@ struct WatchOfflineMapPackCard: View {
                             Text(selectedPack.title)
                                 .font(.caption.monospaced().weight(.black))
                                 .foregroundStyle(GameBoyPalette.darkest)
-                            Text("Z\(selectedPack.minZoom)-\(selectedPack.maxZoom)")
+                            Text("\(selectedPack.archiveFormat.rawValue.uppercased()) · Z\(selectedPack.minZoom)-\(selectedPack.maxZoom)")
                                 .font(.caption2.monospaced())
                                 .foregroundStyle(GameBoyPalette.mediumDark)
+                            Text(statusLabel(for: selectedPack))
+                                .font(.caption2.monospaced().weight(.black))
+                                .foregroundStyle(statusColor(for: selectedPack))
                         }
                         .padding(.bottom, 4)
                     }
@@ -80,9 +84,12 @@ struct WatchOfflineMapPackCard: View {
                             }
                             .font(.caption.monospaced().weight(.black))
                             .foregroundStyle(GameBoyPalette.darkest)
-                            Text("Z\(pack.minZoom)-\(pack.maxZoom) · 타일 \(pack.tileCount)")
+                            Text("\(pack.archiveFormat.rawValue.uppercased()) · Z\(pack.minZoom)-\(pack.maxZoom) · 타일 \(pack.tileCount)")
                                 .font(.caption2.monospaced())
                                 .foregroundStyle(GameBoyPalette.mediumDark)
+                            Text(statusLabel(for: pack))
+                                .font(.caption2.monospaced().weight(.black))
+                                .foregroundStyle(statusColor(for: pack))
                         }
                         .padding(.vertical, 4)
                     }
@@ -94,5 +101,35 @@ struct WatchOfflineMapPackCard: View {
     private var selectedPack: OfflineMapPackSummary? {
         guard let selectedPackID else { return packs.first }
         return packs.first(where: { $0.id == selectedPackID }) ?? packs.first
+    }
+
+    private func statusLabel(for pack: OfflineMapPackSummary) -> String {
+        switch availabilityStatus(for: pack) {
+        case .ready:
+            return "미리보기 가능"
+        case .missingManifest:
+            return "manifest 없음"
+        case .invalidManifest:
+            return "manifest 오류"
+        case .missingArchive:
+            return "지도 파일 없음"
+        case .emptyArchive:
+            return "지도 파일 비어 있음"
+        }
+    }
+
+    private func statusColor(for pack: OfflineMapPackSummary) -> Color {
+        switch availabilityStatus(for: pack) {
+        case .ready:
+            return .green
+        case .missingArchive:
+            return .orange
+        case .missingManifest, .invalidManifest, .emptyArchive:
+            return .red
+        }
+    }
+
+    private func availabilityStatus(for pack: OfflineMapPackSummary) -> WatchOfflineMapPackStorage.PackAvailabilityStatus {
+        storage.availabilityStatus(for: pack.id)
     }
 }

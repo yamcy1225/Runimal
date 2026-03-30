@@ -8,7 +8,8 @@ struct WatchOfflineMapPreviewCard: View {
     let route: [RoutePoint]
     let accent: Color
 
-    @State private var tileReader = WatchMBTilesTileReader()
+    @State private var mbtilesReader = WatchMBTilesTileReader()
+    @State private var pmtilesReader = WatchPMTilesTileReader()
     @State private var zoomLevel: Int?
     @State private var followsHeading = false
     @State private var autoZoomEnabled = true
@@ -17,10 +18,11 @@ struct WatchOfflineMapPreviewCard: View {
         GameSurface(title: "지도", accent: accent, compact: true) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 6) {
-                    Text(selectedPack?.title ?? "팩 없음")
-                        .font(.caption.monospaced().weight(.black))
+                    Text(compactPackTitle)
+                        .font(.footnote.monospaced().weight(.black))
                         .foregroundStyle(GameBoyPalette.darkest)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.75)
 
                     Spacer(minLength: 4)
 
@@ -74,7 +76,7 @@ struct WatchOfflineMapPreviewCard: View {
                             )
 
                         ZStack {
-                            if let previewImage = tileReader.previewImage {
+                            if let previewImage = currentPreviewImage {
                                 Image(uiImage: previewImage)
                                     .resizable()
                                     .interpolation(.none)
@@ -103,13 +105,13 @@ struct WatchOfflineMapPreviewCard: View {
                                 }
                                 .stroke(accent, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
 
-                                if let last = normalizedPoint(for: displayRoute.last, in: domain, frame: frame) {
+                                if let last = normalizedPoint(for: currentMarkerPoint, in: domain, frame: frame) {
                                     mapHeadingMarker
                                         .rotationEffect(.degrees(followsHeading ? 0 : routeHeadingDegrees))
                                         .position(last)
                                 }
                             } else {
-                                Text(isStoredLocally ? tileReader.statusLabel : "팩 필요")
+                                Text(previewFallbackLabel)
                                     .font(.caption2.monospaced().weight(.black))
                                     .foregroundStyle(GameBoyPalette.mediumDark)
                             }
@@ -120,12 +122,14 @@ struct WatchOfflineMapPreviewCard: View {
                     .frame(width: side, height: side)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 }
-                .frame(height: 108)
+                .frame(height: 122)
 
                 if let selectedPack {
-                    Text("Z\(selectedPack.minZoom)-\(selectedPack.maxZoom) · 타일 \(selectedPack.tileCount)")
-                        .font(.caption2.monospaced())
-                        .foregroundStyle(GameBoyPalette.mediumDark)
+                    HStack(spacing: 6) {
+                        statusBadge(selectedPack.archiveFormat == .pmtiles ? "PMT" : "MBT", fill: GameBoyPalette.lightest)
+                        statusBadge("Z\(selectedPack.minZoom)-\(selectedPack.maxZoom)", fill: GameBoyPalette.lightest)
+                        statusBadge(compactStatusLabel, fill: GameBoyPalette.mediumLight)
+                    }
                 } else {
                     Text("iPhone에서 지도 팩을 선택하면 이 필드가 활성화됩니다.")
                         .font(.caption2.monospaced())
@@ -135,18 +139,92 @@ struct WatchOfflineMapPreviewCard: View {
         }
         .task(id: tileReloadToken) {
             syncZoomLevel()
-            tileReader.loadPreviewTile(
-                for: selectedPack,
-                storage: storage,
-                centerPoint: cameraCenterPoint,
-                zoomOverride: autoZoomEnabled ? nil : zoomLevel
-            )
+            switch selectedPack?.archiveFormat {
+            case .pmtiles:
+                pmtilesReader.loadPreviewTile(
+                    for: selectedPack,
+                    storage: storage,
+                    centerPoint: cameraCenterPoint,
+                    zoomOverride: autoZoomEnabled ? nil : zoomLevel
+                )
+            default:
+                mbtilesReader.loadPreviewTile(
+                    for: selectedPack,
+                    storage: storage,
+                    centerPoint: cameraCenterPoint,
+                    zoomOverride: autoZoomEnabled ? nil : zoomLevel
+                )
+            }
+        }
+    }
+
+    private var currentPreviewImage: UIImage? {
+        switch selectedPack?.archiveFormat {
+        case .pmtiles:
+            return pmtilesReader.previewImage
+        default:
+            return mbtilesReader.previewImage
+        }
+    }
+
+    private var currentStatusLabel: String {
+        switch selectedPack?.archiveFormat {
+        case .pmtiles:
+            return pmtilesReader.statusLabel
+        default:
+            return mbtilesReader.statusLabel
+        }
+    }
+
+    private var compactStatusLabel: String {
+        switch currentStatusLabel {
+        case "PMTiles 전송 필요", "전송 필요":
+            return "전송 필요"
+        case "PMTiles 프리뷰 준비", "3x3 타일 준비":
+            return "지도 준비"
+        case "벡터 PMTiles 미지원":
+            return "벡터 미지원"
+        case "현재 줌 타일 없음":
+            return "타일 없음"
+        case "manifest 필요":
+            return "manifest 필요"
+        case "manifest 오류":
+            return "manifest 오류"
+        case "지도 파일 없음":
+            return "파일 없음"
+        case "지도 파일 비어 있음":
+            return "파일 비어 있음"
+        default:
+            return currentStatusLabel
+        }
+    }
+
+    private var compactPackTitle: String {
+        let rawTitle = selectedPack?.title ?? "팩 없음"
+        guard rawTitle.count > 14 else { return rawTitle }
+        return String(rawTitle.prefix(13)) + "…"
+    }
+
+    private var previewFallbackLabel: String {
+        guard let selectedPack else { return "팩 필요" }
+        guard isStoredLocally else { return "\(selectedPack.archiveFormat.rawValue.uppercased()) 전송 필요" }
+        switch storage.availabilityStatus(for: selectedPack.id) {
+        case .ready:
+            return currentStatusLabel
+        case .missingManifest:
+            return "manifest 필요"
+        case .invalidManifest:
+            return "manifest 오류"
+        case .missingArchive:
+            return "지도 파일 없음"
+        case .emptyArchive:
+            return "지도 파일 비어 있음"
         }
     }
 
     private var tileReloadToken: String {
-        let centerToken = cameraCenterPoint.map { "\($0.latitude)-\($0.longitude)" } ?? "none"
-        return "\(selectedPack?.id ?? "none")-\(isStoredLocally)-\(centerToken)-\(effectiveZoomLevel)-\(autoZoomEnabled)-\(followsHeading)"
+        let tileToken = currentTileCoordinate.map { "\($0.zoom)-\($0.x)-\($0.y)" } ?? "none"
+        return "\(selectedPack?.id ?? "none")-\(isStoredLocally)-\(tileToken)-\(effectiveZoomLevel)-\(autoZoomEnabled)"
     }
 
     private var effectiveZoomLevel: Int {
@@ -158,22 +236,55 @@ struct WatchOfflineMapPreviewCard: View {
     }
 
     private var displayRoute: [RoutePoint] {
-        guard route.count >= 3 else { return route }
-
-        return route.enumerated().map { index, point in
-            let start = max(index - 1, 0)
-            let end = min(index + 1, route.count - 1)
-            let window = route[start...end]
-            let latitude = window.map(\.latitude).reduce(0, +) / Double(window.count)
-            let longitude = window.map(\.longitude).reduce(0, +) / Double(window.count)
-            let altitude = window.map(\.altitude).reduce(0, +) / Double(window.count)
-            return RoutePoint(
-                latitude: latitude,
-                longitude: longitude,
-                altitude: altitude,
-                timestamp: point.timestamp
-            )
+        let smoothedRoute: [RoutePoint]
+        if route.count >= 3 {
+            smoothedRoute = route.enumerated().map { index, point in
+                let start = max(index - 1, 0)
+                let end = min(index + 1, route.count - 1)
+                let window = route[start...end]
+                let latitude = window.map(\.latitude).reduce(0, +) / Double(window.count)
+                let longitude = window.map(\.longitude).reduce(0, +) / Double(window.count)
+                let altitude = window.map(\.altitude).reduce(0, +) / Double(window.count)
+                return RoutePoint(
+                    latitude: latitude,
+                    longitude: longitude,
+                    altitude: altitude,
+                    timestamp: point.timestamp
+                )
+            }
+        } else {
+            smoothedRoute = route
         }
+
+        let maxPoints = 72
+        guard smoothedRoute.count > maxPoints else { return smoothedRoute }
+
+        let strideStep = max(Int(ceil(Double(smoothedRoute.count) / Double(maxPoints))), 1)
+        var thinned: [RoutePoint] = stride(from: 0, to: smoothedRoute.count, by: strideStep).map { smoothedRoute[$0] }
+        if let last = smoothedRoute.last, thinned.last?.timestamp != last.timestamp {
+            thinned.append(last)
+        }
+        return thinned
+    }
+
+    private var currentMarkerPoint: RoutePoint? {
+        let tail = Array(route.suffix(3))
+        guard tail.isEmpty == false else { return displayRoute.last }
+        let latitude = tail.map(\.latitude).reduce(0, +) / Double(tail.count)
+        let longitude = tail.map(\.longitude).reduce(0, +) / Double(tail.count)
+        let altitude = tail.map(\.altitude).reduce(0, +) / Double(tail.count)
+        return RoutePoint(
+            latitude: latitude,
+            longitude: longitude,
+            altitude: altitude,
+            timestamp: tail.last?.timestamp ?? Date()
+        )
+    }
+
+    private var currentTileCoordinate: (zoom: Int, x: Int, y: Int)? {
+        guard let center = cameraCenterPoint else { return nil }
+        let tile = tileXY(latitude: center.latitude, longitude: center.longitude, zoom: effectiveZoomLevel)
+        return (effectiveZoomLevel, tile.x, tile.y)
     }
 
     private var cameraCenterPoint: RoutePoint? {
@@ -322,12 +433,17 @@ struct WatchOfflineMapPreviewCard: View {
     }
 
     private var routeHeadingDegrees: Double {
-        guard route.count >= 2 else { return 0 }
-        let previous = route[route.count - 2]
-        let current = route[route.count - 1]
-        let deltaLongitude = current.longitude - previous.longitude
-        let deltaLatitude = current.latitude - previous.latitude
-        return atan2(deltaLongitude, deltaLatitude) * 180 / .pi
+        guard let current = currentMarkerPoint else { return 0 }
+        let reversedHistory = route.dropLast().reversed()
+        for previous in reversedHistory {
+            let deltaLongitude = current.longitude - previous.longitude
+            let deltaLatitude = current.latitude - previous.latitude
+            let distance = hypot(deltaLongitude, deltaLatitude)
+            if distance >= 0.00003 {
+                return atan2(deltaLongitude, deltaLatitude) * 180 / .pi
+            }
+        }
+        return 0
     }
 
     private func tileXY(latitude: Double, longitude: Double, zoom: Int) -> (x: Int, y: Int) {
@@ -373,10 +489,12 @@ struct WatchOfflineMapPreviewCard: View {
 
     private func statusBadge(_ text: String, fill: Color, foreground: Color = GameBoyPalette.darkest) -> some View {
         Text(text)
-            .font(.caption2.monospaced().weight(.black))
+            .font(.caption.monospaced().weight(.black))
             .foregroundStyle(foreground)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 2)
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 4)
             .background(
                 RoundedRectangle(cornerRadius: 5, style: .continuous)
                     .fill(fill)
@@ -386,10 +504,10 @@ struct WatchOfflineMapPreviewCard: View {
     private func mapButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.caption2.monospaced().weight(.black))
+                .font(.caption.monospaced().weight(.black))
                 .foregroundStyle(GameBoyPalette.lightest)
-                .frame(minWidth: 24, minHeight: 20)
-                .padding(.horizontal, title.count > 2 ? 5 : 0)
+                .frame(minWidth: 28, minHeight: 24)
+                .padding(.horizontal, title.count > 2 ? 6 : 0)
                 .background(
                     RoundedRectangle(cornerRadius: 5, style: .continuous)
                         .fill(GameBoyPalette.mediumDark)

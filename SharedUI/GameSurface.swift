@@ -9,16 +9,30 @@ enum GameBoyPalette {
 }
 
 struct GameSurface<Content: View>: View {
+    struct HeaderGauge {
+        let progress: Double
+        let fill: Color
+    }
+
     let title: String?
     let accent: Color?
     let eyebrow: String?
+    let headerGauge: HeaderGauge?
     let compact: Bool
     @ViewBuilder var content: Content
 
-    init(title: String? = nil, accent: Color? = nil, eyebrow: String? = nil, compact: Bool = false, @ViewBuilder content: () -> Content) {
+    init(
+        title: String? = nil,
+        accent: Color? = nil,
+        eyebrow: String? = nil,
+        headerGauge: HeaderGauge? = nil,
+        compact: Bool = false,
+        @ViewBuilder content: () -> Content
+    ) {
         self.title = title
         self.accent = accent
         self.eyebrow = eyebrow
+        self.headerGauge = headerGauge
         self.compact = compact
         self.content = content()
     }
@@ -47,19 +61,27 @@ struct GameSurface<Content: View>: View {
 
                     Spacer()
 
-                    Rectangle()
-                        .fill(GameBoyPalette.mediumLight)
-                        .frame(width: compact ? 34 : 42, height: compact ? 10 : 12)
-                        .overlay(alignment: .leading) {
-                            Rectangle()
-                                .fill(headerAccent)
-                                .frame(width: compact ? 14 : 18, height: compact ? 4 : 5)
-                                .padding(.horizontal, 3)
-                        }
-                        .overlay(
-                            Rectangle()
-                                .stroke(GameBoyPalette.darkest, lineWidth: 1)
-                        )
+                    if let headerGauge {
+                        Rectangle()
+                            .fill(GameBoyPalette.mediumLight)
+                            .frame(width: compact ? 34 : 42, height: compact ? 10 : 12)
+                            .overlay(alignment: .leading) {
+                                Rectangle()
+                                    .fill(headerGauge.fill)
+                                    .frame(
+                                        width: headerGaugeWidth(
+                                            progress: headerGauge.progress,
+                                            compact: compact
+                                        ),
+                                        height: compact ? 4 : 5
+                                    )
+                                    .padding(.horizontal, 3)
+                            }
+                            .overlay(
+                                Rectangle()
+                                    .stroke(GameBoyPalette.darkest, lineWidth: 1)
+                            )
+                    }
                 }
             }
 
@@ -89,6 +111,12 @@ struct GameSurface<Content: View>: View {
                 .strokeBorder(GameBoyPalette.darkest, lineWidth: 2)
         )
         .shadow(color: GameBoyPalette.darkest.opacity(0.12), radius: 0, x: 1, y: 2)
+    }
+
+    private func headerGaugeWidth(progress: Double, compact: Bool) -> CGFloat {
+        let totalWidth: CGFloat = compact ? 28 : 36
+        let clampedProgress = min(max(progress, 0.08), 1)
+        return totalWidth * clampedProgress
     }
 }
 

@@ -13,7 +13,7 @@ final class PhoneWorkoutExportManager {
             .replacingOccurrences(of: " ", with: "-")
             .replacingOccurrences(of: "/", with: "-")
             .lowercased()
-        let filename = "\(safeTitle)-\(archive.startedAt.timeIntervalSince1970.rounded()).\(format.fileExtension)"
+        let filename = "\(safeTitle)-\(timeBasis.rawValue)-\(archive.startedAt.timeIntervalSince1970.rounded()).\(format.fileExtension)"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         let data: Data
 

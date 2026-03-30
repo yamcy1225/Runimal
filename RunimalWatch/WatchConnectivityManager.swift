@@ -6,16 +6,128 @@ import WatchConnectivity
 @MainActor
 @Observable
 final class WatchConnectivityManager: NSObject, WCSessionDelegate {
+    static let shared = WatchConnectivityManager()
+
+    private enum Keys {
+        static let mainCompanionContext = "runimal.watch.mainCompanionContext"
+    }
+
     let offlineMapStorage = WatchOfflineMapPackStorage()
     var activationStateLabel = "inactive"
+    var reachabilityLabel = "offline"
+    var isCompanionAppInstalled = false
     var lastSyncedWorkoutTitle = "No plan yet"
     var claimedRewardIDs: Set<String> = []
     var activeEffects: [WeeklyRewardEffect] = []
     var autoPauseEnabled = true
+    var mainCompanionContext: WatchMainCompanionContext?
+    var lastRawMainCompanionTargetID: String?
+    var lastRawMainCompanionName: String?
+    var lastFileMainCompanionTargetID: String?
     var offlineMapPacks: [OfflineMapPackSummary] = []
     var selectedOfflineMapPackID: String?
     var queuedTransferCount = 0
     var recentEvents: [SyncDiagnosticEvent] = []
+    var lastInboundRoute = "none"
+    var receivedApplicationContextCount = 0
+    var receivedMessageCount = 0
+    var receivedUserInfoCount = 0
+    var receivedFileCount = 0
+    var lastInboundPayloadKeys: [String] = []
+    private var mainCompanionRetryTask: Task<Void, Never>?
+    private var mainCompanionPollingTask: Task<Void, Never>?
+    private var outboundApplicationContext: [String: Any] = [:]
+    private var hasActivatedSession = false
+
+    override init() {
+        super.init()
+    }
+
+    private func refreshSessionState(_ session: WCSession) {
+        reachabilityLabel = session.isReachable ? "reachable" : "paired"
+        queuedTransferCount = session.outstandingUserInfoTransfers.count
+        isCompanionAppInstalled = session.isCompanionAppInstalled
+    }
+
+    private func updatePhoneApplicationContext(adding values: [String: Any]) throws {
+        for (key, value) in values {
+            outboundApplicationContext[key] = value
+        }
+        try WCSession.default.updateApplicationContext(outboundApplicationContext)
+    }
+
+    private func loadPersistedMainCompanionContext() {
+        guard let data = UserDefaults.standard.data(forKey: Keys.mainCompanionContext),
+              let context = try? JSONDecoder().decode(WatchMainCompanionContext.self, from: data) else {
+            return
+        }
+
+        if let current = mainCompanionContext, current.updatedAt >= context.updatedAt {
+            return
+        }
+
+        mainCompanionContext = context
+        logEvent("main companion restored", context.displayName)
+    }
+
+    private func applyMainCompanionContextIfNewer(_ context: WatchMainCompanionContext) {
+        if let current = mainCompanionContext, current.updatedAt > context.updatedAt {
+            logEvent("main companion ignored", context.displayName)
+            return
+        }
+
+        mainCompanionContext = context
+        if let data = try? JSONEncoder().encode(context) {
+            UserDefaults.standard.set(data, forKey: Keys.mainCompanionContext)
+        }
+        logEvent("main companion", context.displayName)
+    }
+
+    private func minimalMainCompanionContext(from payload: [String: Any]) -> WatchMainCompanionContext? {
+        guard let kindRaw = payload["mainCompanion_kind"] as? String,
+              let kind = MainCompanionKind(rawValue: kindRaw),
+              let targetID = payload["mainCompanion_targetID"] as? String else {
+            return nil
+        }
+
+        let updatedAt = Date(timeIntervalSince1970: payload["mainCompanion_updatedAt"] as? Double ?? Date().timeIntervalSince1970)
+        let selection = MainCompanionSelection(kind: kind, targetID: targetID)
+
+        switch kind {
+        case .pet:
+            return WatchMainCompanionContext(
+                selection: selection,
+                petName: payload["mainCompanion_petName"] as? String,
+                petHeadline: payload["mainCompanion_petHeadline"] as? String,
+                updatedAt: updatedAt
+            )
+        case .egg:
+            return WatchMainCompanionContext(
+                selection: selection,
+                eggShell: (payload["mainCompanion_eggShell"] as? String).flatMap(EggShellType.init(rawValue:)),
+                eggTitle: payload["mainCompanion_eggTitle"] as? String,
+                eggProgressRatio: payload["mainCompanion_eggProgressRatio"] as? Double,
+                eggReadyToHatch: payload["mainCompanion_eggReadyToHatch"] as? Bool ?? false,
+                updatedAt: updatedAt
+            )
+        }
+    }
+
+    private func acknowledgeMainCompanionContext(token: String?, targetID: String) {
+        guard WCSession.isSupported(), let token else { return }
+        let payload: [String: Any] = [
+            "mainCompanionAckToken": token,
+            "mainCompanionAckTargetID": targetID,
+        ]
+        let session = WCSession.default
+        if session.isReachable {
+            session.sendMessage(payload, replyHandler: nil)
+        } else {
+            session.transferUserInfo(payload)
+            queuedTransferCount = session.outstandingUserInfoTransfers.count
+        }
+        logEvent("main companion ack", targetID)
+    }
 
     var syncStatusLabel: String {
         if queuedTransferCount > 0 {
@@ -41,9 +153,32 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
 
         let session = WCSession.default
         session.delegate = self
+        offlineMapStorage.reloadFromDisk()
+        refreshSessionState(session)
+        loadPersistedMainCompanionContext()
+        if session.receivedApplicationContext.isEmpty == false {
+            processPayload(session.receivedApplicationContext, route: "cachedAppContext")
+        }
+        guard hasActivatedSession == false else {
+            logEvent("activation", "WCSession already active")
+            bootstrapMainCompanionSync(reason: "activate-repeat")
+            return
+        }
+
+        hasActivatedSession = true
         session.activate()
-        queuedTransferCount = session.outstandingUserInfoTransfers.count
         logEvent("activation", "WCSession activate requested")
+        bootstrapMainCompanionSync(reason: "activate")
+    }
+
+    func refreshMainCompanionContext() {
+        loadPersistedMainCompanionContext()
+        bootstrapMainCompanionSync(reason: "refresh")
+    }
+
+    func resolvedMainCompanionContext() -> WatchMainCompanionContext? {
+        loadPersistedMainCompanionContext()
+        return mainCompanionContext
     }
 
     func send(snapshot: LiveRunSnapshot) {
@@ -53,7 +188,7 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
             let data = try JSONEncoder().encode(snapshot)
             let session = WCSession.default
             if session.isReachable {
-                try session.updateApplicationContext(["liveRunSnapshot": data])
+                try updatePhoneApplicationContext(adding: ["liveRunSnapshot": data])
                 logEvent("push snapshot", "\(Int(snapshot.distanceMeters))m")
             } else {
                 session.transferUserInfo(["liveRunSnapshot": data])
@@ -73,7 +208,7 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
             let data = try JSONEncoder().encode(reward)
             let session = WCSession.default
             if session.isReachable {
-                try session.updateApplicationContext(["runRewardSummary": data])
+                try updatePhoneApplicationContext(adding: ["runRewardSummary": data])
             }
             session.transferUserInfo(["runRewardSummary": data])
             queuedTransferCount = session.outstandingUserInfoTransfers.count
@@ -91,7 +226,7 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
             let data = try JSONEncoder().encode(completedRun)
             let session = WCSession.default
             if session.isReachable {
-                try session.updateApplicationContext(["completedRunRecord": data])
+                try updatePhoneApplicationContext(adding: ["completedRunRecord": data])
             }
             session.transferUserInfo(["completedRunRecord": data])
             queuedTransferCount = session.outstandingUserInfoTransfers.count
@@ -109,7 +244,7 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
             let data = try JSONEncoder().encode(workoutArchive)
             let session = WCSession.default
             if session.isReachable {
-                try session.updateApplicationContext(["workoutSessionArchive": data])
+                try updatePhoneApplicationContext(adding: ["workoutSessionArchive": data])
             }
             session.transferUserInfo(["workoutSessionArchive": data])
             queuedTransferCount = session.outstandingUserInfoTransfers.count
@@ -127,7 +262,7 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
     ) {
         Task { @MainActor in
             self.activationStateLabel = activationState.description
-            self.queuedTransferCount = session.outstandingUserInfoTransfers.count
+            self.refreshSessionState(session)
             if let error {
                 self.lastSyncedWorkoutTitle = error.localizedDescription
                 self.logEvent("activation failed", error.localizedDescription)
@@ -139,20 +274,105 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
 
     nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
         Task { @MainActor in
-            self.queuedTransferCount = session.outstandingUserInfoTransfers.count
-            self.logEvent("reachability", session.isReachable ? "reachable" : "paired")
+            self.refreshSessionState(session)
+            if session.receivedApplicationContext.isEmpty == false {
+                self.processPayload(session.receivedApplicationContext, route: "cachedAppContext")
+            }
+            self.bootstrapMainCompanionSync(reason: "reachability")
+            self.logEvent("reachability", self.reachabilityLabel)
+        }
+    }
+
+    nonisolated func sessionCompanionAppInstalledDidChange(_ session: WCSession) {
+        Task { @MainActor in
+            self.refreshSessionState(session)
+            self.logEvent("phone app state", session.isCompanionAppInstalled ? "installed" : "missing")
+            self.bootstrapMainCompanionSync(reason: "companion-state")
         }
     }
 
     nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
-        processPayload(applicationContext)
+        processPayload(applicationContext, route: "appContext")
+    }
+
+    nonisolated func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
+        processPayload(message, route: "message")
+    }
+
+    nonisolated func session(
+        _ session: WCSession,
+        didReceiveMessage message: [String : Any],
+        replyHandler: @escaping ([String : Any]) -> Void
+    ) {
+        if message["requestMainCompanionContext"] as? Bool == true {
+            Task { @MainActor in
+                let payload = self.mainCompanionContext?.watchSelectionTransportPayload ?? [:]
+                replyHandler(payload)
+            }
+            return
+        }
+
+        processPayload(message, route: "message+reply")
+
+        Task { @MainActor in
+            var reply: [String: Any] = [:]
+            if let token = message["mainCompanionSyncToken"] as? String {
+                reply["mainCompanionAckToken"] = token
+            }
+            if let targetID = self.lastRawMainCompanionTargetID {
+                reply["mainCompanionAckTargetID"] = targetID
+                reply["watchSelected_targetID"] = targetID
+            }
+            if let selectionID = self.mainCompanionContext?.selection.id {
+                reply["watchSelected_contextID"] = selectionID
+            }
+            if let name = self.lastRawMainCompanionName {
+                reply["watchSelected_displayName"] = name
+            }
+            replyHandler(reply)
+        }
     }
 
     nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
-        processPayload(userInfo)
+        processPayload(userInfo, route: "userInfo")
     }
 
     nonisolated func session(_ session: WCSession, didReceive file: WCSessionFile) {
+        let isWatchSelectionFile =
+            (file.metadata?["watchSelectionSync"] as? Bool == true) ||
+            file.fileURL.lastPathComponent.hasPrefix("runimal-watch-selection-")
+
+        if isWatchSelectionFile {
+            Task { @MainActor in
+                do {
+                    let data = try Data(contentsOf: file.fileURL)
+                    let json = try JSONSerialization.jsonObject(with: data, options: [])
+                    guard var payload = json as? [String: Any] else {
+                        self.logEvent("watch selection file failed", "invalid payload")
+                        return
+                    }
+
+                    if payload["mainCompanionSyncToken"] == nil,
+                       let token = file.metadata?["mainCompanionSyncToken"] as? String {
+                        payload["mainCompanionSyncToken"] = token
+                    }
+
+                    self.lastFileMainCompanionTargetID =
+                        (payload["watchSelected_targetID"] as? String) ??
+                        (payload["mainCompanion_targetID"] as? String)
+                    self.receivedFileCount += 1
+                    self.logEvent(
+                        "watch selection file",
+                        self.lastFileMainCompanionTargetID ?? "unknown"
+                    )
+                    self.processPayload(payload, route: "file")
+                } catch {
+                    self.logEvent("watch selection file failed", error.localizedDescription)
+                }
+            }
+            return
+        }
+
         guard let packID = file.metadata?["offlineMapPackID"] as? String,
               let kind = file.metadata?["offlineMapFileKind"] as? String else { return }
 
@@ -162,12 +382,26 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
                 packID: packID,
                 kind: kind
             )
+            self.pushOfflineMapStoredPackIDs()
             self.logEvent("map file", "\(packID):\(kind)")
         }
     }
 
-    private nonisolated func processPayload(_ payload: [String: Any]) {
+    private nonisolated func processPayload(_ payload: [String: Any], route: String) {
         Task { @MainActor in
+            self.lastInboundRoute = route
+            self.lastInboundPayloadKeys = payload.keys.sorted()
+            switch route {
+            case "appContext", "cachedAppContext":
+                self.receivedApplicationContextCount += 1
+            case "message", "message+reply":
+                self.receivedMessageCount += 1
+            case "userInfo":
+                self.receivedUserInfoCount += 1
+            default:
+                break
+            }
+
             if let data = payload["workoutSuggestion"] as? Data,
                let suggestion = try? JSONDecoder().decode(WorkoutPlanSuggestion.self, from: data) {
                 self.lastSyncedWorkoutTitle = suggestion.title
@@ -186,6 +420,51 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
                 self.logEvent("auto pause", enabled ? "on" : "off")
             }
 
+            if let rawTargetID = payload["watchSelected_targetID"] as? String {
+                self.lastRawMainCompanionTargetID = rawTargetID
+                self.lastRawMainCompanionName =
+                    payload["watchSelected_petName"] as? String ??
+                    payload["watchSelected_eggTitle"] as? String ??
+                    payload["watchSelected_displayName"] as? String
+            } else if let rawTargetID = payload["mainCompanion_targetID"] as? String {
+                self.lastRawMainCompanionTargetID = rawTargetID
+                self.lastRawMainCompanionName = payload["mainCompanion_petName"] as? String ?? payload["mainCompanion_eggTitle"] as? String
+            }
+
+            if let data = payload["mainCompanionContext"] as? Data,
+               let context = try? JSONDecoder().decode(WatchMainCompanionContext.self, from: data) {
+                self.applyMainCompanionContextIfNewer(context)
+                self.acknowledgeMainCompanionContext(
+                    token: payload["mainCompanionSyncToken"] as? String,
+                    targetID: context.selection.targetID
+                )
+            } else if let context = WatchMainCompanionContext(flattenedWCPayload: payload) {
+                self.applyMainCompanionContextIfNewer(context)
+                self.acknowledgeMainCompanionContext(
+                    token: payload["mainCompanionSyncToken"] as? String,
+                    targetID: context.selection.targetID
+                )
+            } else if let rawPayload = payload["mainCompanionContextPayload"] as? [String: Any],
+                      let context = WatchMainCompanionContext(wcPayload: rawPayload) {
+                self.applyMainCompanionContextIfNewer(context)
+                self.acknowledgeMainCompanionContext(
+                    token: payload["mainCompanionSyncToken"] as? String,
+                    targetID: context.selection.targetID
+                )
+            } else if let context = WatchMainCompanionContext(watchSelectionTransportPayload: payload) {
+                self.applyMainCompanionContextIfNewer(context)
+                self.acknowledgeMainCompanionContext(
+                    token: payload["mainCompanionSyncToken"] as? String,
+                    targetID: context.selection.targetID
+                )
+            } else if let context = minimalMainCompanionContext(from: payload) {
+                self.applyMainCompanionContextIfNewer(context)
+                self.acknowledgeMainCompanionContext(
+                    token: payload["mainCompanionSyncToken"] as? String,
+                    targetID: context.selection.targetID
+                )
+            }
+
             if let data = payload["offlineMapPackCatalog"] as? Data,
                let packs = try? JSONDecoder().decode([OfflineMapPackSummary].self, from: data) {
                 self.offlineMapPacks = packs
@@ -197,7 +476,101 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
                 self.logEvent("selected map", self.selectedOfflineMapPackID ?? "none")
             }
 
-            self.queuedTransferCount = WCSession.default.outstandingUserInfoTransfers.count
+            self.refreshSessionState(WCSession.default)
+        }
+    }
+
+    private func pushOfflineMapStoredPackIDs() {
+        guard WCSession.isSupported() else { return }
+        let ids = Array(offlineMapStorage.storedPackIDs).sorted()
+        let payload: [String: Any] = ["offlineMapStoredPackIDs": ids]
+        let session = WCSession.default
+        do {
+            if session.isReachable {
+                try updatePhoneApplicationContext(adding: payload)
+            } else {
+                session.transferUserInfo(payload)
+                refreshSessionState(session)
+            }
+        } catch {
+            logEvent("push stored map ids failed", error.localizedDescription)
+        }
+    }
+
+    private func bootstrapMainCompanionSync(reason: String) {
+        pushOfflineMapStoredPackIDs()
+        sendWatchCompanionPing(reason: reason)
+        requestMainCompanionContextIfPossible()
+        scheduleMainCompanionRetry()
+        startMainCompanionPolling()
+    }
+
+    private func sendWatchCompanionPing(reason: String) {
+        guard WCSession.isSupported() else { return }
+        let payload: [String: Any] = [
+            "watchCompanionPing": Date().timeIntervalSince1970,
+            "requestMainCompanionContext": true,
+        ]
+        let session = WCSession.default
+        do {
+            try updatePhoneApplicationContext(adding: payload)
+        } catch {
+            logEvent("watch ping context failed", error.localizedDescription)
+        }
+        if session.isReachable {
+            session.sendMessage(payload, replyHandler: nil) { error in
+                Task { @MainActor in
+                    self.logEvent("watch ping failed", error.localizedDescription)
+                }
+            }
+        } else {
+            session.transferUserInfo(payload)
+            refreshSessionState(session)
+        }
+        logEvent("watch ping", "\(reason):\(session.isReachable ? "live" : "queued")")
+    }
+
+    private func requestMainCompanionContextIfPossible() {
+        guard WCSession.isSupported() else { return }
+        let session = WCSession.default
+        guard session.isReachable else { return }
+
+        session.sendMessage(["requestMainCompanionContext": true], replyHandler: { payload in
+            self.processPayload(payload, route: "messageReply")
+        }, errorHandler: { error in
+            Task { @MainActor in
+                self.logEvent("request main companion failed", error.localizedDescription)
+            }
+        })
+    }
+
+    private func startMainCompanionPolling() {
+        mainCompanionPollingTask?.cancel()
+        mainCompanionPollingTask = Task { @MainActor in
+            for _ in 0..<5 {
+                guard Task.isCancelled == false else { return }
+                let session = WCSession.default
+                self.loadPersistedMainCompanionContext()
+                guard self.mainCompanionContext == nil else { return }
+                if session.receivedApplicationContext.isEmpty == false {
+                    self.processPayload(session.receivedApplicationContext, route: "cachedAppContext")
+                }
+                self.sendWatchCompanionPing(reason: "poll")
+                self.requestMainCompanionContextIfPossible()
+                try? await Task.sleep(for: .seconds(2))
+            }
+        }
+    }
+
+    private func scheduleMainCompanionRetry() {
+        mainCompanionRetryTask?.cancel()
+        mainCompanionRetryTask = Task { @MainActor in
+            for delay in [0.5, 1.5, 3.0, 5.0] {
+                try? await Task.sleep(for: .seconds(delay))
+                guard Task.isCancelled == false else { return }
+                guard self.mainCompanionContext == nil else { return }
+                self.requestMainCompanionContextIfPossible()
+            }
         }
     }
 

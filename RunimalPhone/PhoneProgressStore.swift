@@ -14,6 +14,7 @@ final class PhoneProgressStore {
         static let claimedWeeklyRewards = "runimal.phone.claimedWeeklyRewards"
         static let activeCompanionID = "runimal.phone.activeCompanionID"
         static let mainCompanionSelection = "runimal.phone.mainCompanionSelection"
+        static let watchCompanionSelection = "runimal.phone.watchCompanionSelection"
         static let growthRecords = "runimal.phone.growthRecords"
         static let retiredCompanionIDs = "runimal.phone.retiredCompanionIDs"
         static let essenceBalance = "runimal.phone.essenceBalance"
@@ -41,6 +42,7 @@ final class PhoneProgressStore {
     var claimedWeeklyRewards: [String] = []
     var activeCompanionID: String?
     var mainCompanionSelection: MainCompanionSelection?
+    var watchCompanionSelection: MainCompanionSelection?
     var growthRecords: [CompanionGrowthRecord] = []
     var retiredCompanionIDs: [String] = []
     var essenceBalance = 0
@@ -103,6 +105,11 @@ final class PhoneProgressStore {
             mainCompanionSelection = try? JSONDecoder().decode(MainCompanionSelection.self, from: data)
         } else {
             mainCompanionSelection = nil
+        }
+        if let data = defaults.data(forKey: Keys.watchCompanionSelection) {
+            watchCompanionSelection = try? JSONDecoder().decode(MainCompanionSelection.self, from: data)
+        } else {
+            watchCompanionSelection = nil
         }
 
         if let data = defaults.data(forKey: Keys.growthRecords) {
@@ -221,6 +228,10 @@ final class PhoneProgressStore {
         if mainCompanionSelection == nil, let firstCompanion = ownedCompanions.first {
             mainCompanionSelection = MainCompanionSelection(kind: .pet, targetID: firstCompanion.id)
             activeCompanionID = activeCompanionID ?? firstCompanion.id
+        }
+
+        if watchCompanionSelection == nil {
+            watchCompanionSelection = mainCompanionSelection
         }
 
         save()
@@ -606,6 +617,9 @@ final class PhoneProgressStore {
         claimedWeeklyRewards = snapshot.claimedWeeklyRewards
         activeCompanionID = snapshot.activeCompanionID
         mainCompanionSelection = snapshot.mainCompanionSelection
+        if watchCompanionSelection == nil {
+            watchCompanionSelection = snapshot.mainCompanionSelection
+        }
         growthRecords = snapshot.growthRecords
         retiredCompanionIDs = snapshot.retiredCompanionIDs
         essenceBalance = snapshot.essenceBalance
@@ -689,6 +703,7 @@ final class PhoneProgressStore {
         claimedWeeklyRewards = []
         activeCompanionID = nil
         mainCompanionSelection = nil
+        watchCompanionSelection = nil
         growthRecords = []
         retiredCompanionIDs = []
         essenceBalance = 0
@@ -747,6 +762,11 @@ final class PhoneProgressStore {
             defaults.set(data, forKey: Keys.mainCompanionSelection)
         } else {
             defaults.removeObject(forKey: Keys.mainCompanionSelection)
+        }
+        if let data = try? JSONEncoder().encode(watchCompanionSelection) {
+            defaults.set(data, forKey: Keys.watchCompanionSelection)
+        } else {
+            defaults.removeObject(forKey: Keys.watchCompanionSelection)
         }
 
         do {

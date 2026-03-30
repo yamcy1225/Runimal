@@ -57,6 +57,8 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     private var lastStepCountTotal: Double?
     private var lastStepCountDate: Date?
     private var lastResolvedCadence: Int?
+    private var lastAcceptedRouteTimestamp: Date?
+    private var lastGPSUpdateAt: Date?
     private var didTriggerCadenceHaptic = false
     private var dispatchedGoalIDs: Set<String> = []
     private var dispatchedSignalIDs: Set<String> = []
@@ -72,6 +74,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     var authorizationStatus = "not requested"
     var locationStatusLabel = "not requested"
     var sessionStateLabel = "idle"
+    var latestGPSAccuracyMeters: Double?
     var latestSnapshot = LiveRunSnapshot(
         elapsedSeconds: 0,
         distanceMeters: 0,
@@ -98,6 +101,10 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
 
     var cadenceGuideLabel: String {
         "\(targetCadence) spm 메트로놈"
+    }
+
+    var gpsLastUpdatedAt: Date? {
+        lastGPSUpdateAt
     }
 
     override init() {
@@ -185,6 +192,9 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             lastStepCountTotal = nil
             lastStepCountDate = nil
             lastResolvedCadence = nil
+            lastAcceptedRouteTimestamp = nil
+            lastGPSUpdateAt = nil
+            latestGPSAccuracyMeters = nil
             didTriggerCadenceHaptic = false
             dispatchedGoalIDs = []
             dispatchedSignalIDs = []
@@ -303,6 +313,15 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         autoPauseEnabled = enabled
     }
 
+    func prepareGPSPreview() {
+        switch locationManager.authorizationStatus {
+        case .authorizedAlways, .authorizedWhenInUse:
+            startLocationCaptureIfAuthorized(isPreview: true)
+        default:
+            updateLocationStatus(locationManager.authorizationStatus)
+        }
+    }
+
     private func startDemoRun() {
         authorizationStatus = "demo"
         locationStatusLabel = "demo"
@@ -319,6 +338,8 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             elevationGainM: 0,
             averagePaceSeconds: 350
         )
+        latestGPSAccuracyMeters = 8
+        lastGPSUpdateAt = Date()
         didTriggerCadenceHaptic = false
         dispatchedGoalIDs = []
         dispatchedSignalIDs = []
@@ -427,7 +448,8 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         Task { @MainActor in
             let distance = statisticsValue(for: .distanceWalkingRunning, unit: .meter())
             let liveDistance = max(distance, self.liveRouteDistanceMeters)
-            let heartRate = discreteStatisticsValue(for: .heartRate, unit: HKUnit(from: "count/min"))
+            let heartRateUnit = HKUnit.count().unitDivided(by: .minute())
+            let heartRate = discreteStatisticsValue(for: .heartRate, unit: heartRateUnit)
             let speed = discreteStatisticsValue(for: .runningSpeed, unit: HKUnit.meter().unitDivided(by: .second()))
             let stepCount = cumulativeStatisticsValue(for: .stepCount, unit: .count())
             let elapsed = Int(Date().timeIntervalSince(self.startedAt ?? Date()))
@@ -441,15 +463,17 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             }
             let cadence = self.resolvedCadence(speed: speed, stepCountTotal: stepCount, at: Date())
             let averagedCadence = self.averagedCadence(fallback: cadence)
+            let resolvedHeartRate = heartRate > 0 ? heartRate : self.latestSnapshot.currentHeartRate
 
             if heartRate > 0 {
                 self.averageHeartRateAccumulator.append(heartRate)
+                self.averageHeartRateAccumulator = Array(self.averageHeartRateAccumulator.suffix(180))
             }
 
             self.latestSnapshot = LiveRunSnapshot(
                 elapsedSeconds: max(elapsed, 0),
                 distanceMeters: liveDistance,
-                currentHeartRate: heartRate > 0 ? heartRate : nil,
+                currentHeartRate: resolvedHeartRate,
                 cadence: averagedCadence,
                 elevationGainM: Int(self.liveElevationGainMeters.rounded()),
                 averagePaceSeconds: derivedPace
@@ -572,8 +596,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             ? Int((Double(durationSeconds) / distanceMeters) * 1000.0)
             : latestSnapshot.averagePaceSeconds
         let cadence = finalizedCadence(builder: builder, durationSeconds: durationSeconds)
-        let heartRate = statisticsAverageValue(for: .heartRate, unit: HKUnit.count().unitDivided(by: .minute()), builder: builder)
-            ?? latestSnapshot.currentHeartRate
+        let heartRate = finalizedAverageHeartRate(using: builder) ?? latestSnapshot.currentHeartRate
 
         return LiveRunSnapshot(
             elapsedSeconds: durationSeconds,
@@ -605,33 +628,58 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     private func finalizedCadence(builder: HKLiveWorkoutBuilder, durationSeconds: Int) -> Int? {
         guard durationSeconds > 0 else { return latestSnapshot.cadence }
 
-        if !averageCadenceAccumulator.isEmpty {
-            let averagedCadence = Int((averageCadenceAccumulator.reduce(0, +) / Double(averageCadenceAccumulator.count)).rounded())
-            if (80...240).contains(averagedCadence) {
-                return averagedCadence
+        let trustedAverageCadence = trustedAverageCadenceSample()
+        let stepCountCadence = finalizedCadenceFromStepCount(builder: builder, durationSeconds: durationSeconds)
+
+        if let trustedAverageCadence, let stepCountCadence {
+            if abs(trustedAverageCadence - stepCountCadence) <= 12 {
+                return Int(((Double(trustedAverageCadence) + Double(stepCountCadence)) / 2.0).rounded())
             }
+
+            if stepCountCadence < 120, trustedAverageCadence >= 145 {
+                return trustedAverageCadence
+            }
+
+            if trustedAverageCadence >= 170, stepCountCadence <= 160 {
+                return stepCountCadence
+            }
+
+            return trustedAverageCadence
         }
 
-        if let quantityType = HKObjectType.quantityType(forIdentifier: .stepCount),
-           let statistics = builder.statistics(for: quantityType),
-           let quantity = statistics.sumQuantity() {
-            let totalSteps = quantity.doubleValue(for: .count())
-            let cadence = Int((totalSteps / Double(durationSeconds)) * 60.0)
-            if (80...240).contains(cadence) {
-                return cadence
-            }
+        if let stepCountCadence {
+            return stepCountCadence
+        }
+
+        if let trustedAverageCadence {
+            return trustedAverageCadence
         }
 
         return latestSnapshot.cadence
     }
 
+    private func finalizedCadenceFromStepCount(builder: HKLiveWorkoutBuilder, durationSeconds: Int) -> Int? {
+        guard durationSeconds > 0,
+              let quantityType = HKObjectType.quantityType(forIdentifier: .stepCount),
+              let statistics = builder.statistics(for: quantityType),
+              let quantity = statistics.sumQuantity() else {
+            return nil
+        }
+
+        let totalSteps = quantity.doubleValue(for: .count())
+        let cadence = Int((totalSteps / Double(durationSeconds)) * 60.0)
+        return (80...240).contains(cadence) ? cadence : nil
+    }
+
     private func finalizedAverageHeartRate(using builder: HKLiveWorkoutBuilder) -> Double? {
-        if let average = statisticsAverageValue(for: .heartRate, unit: HKUnit.count().unitDivided(by: .minute()), builder: builder) {
+        if let average = statisticsAverageValue(for: .heartRate, unit: HKUnit.count().unitDivided(by: .minute()), builder: builder),
+           average > 0 {
             return average
         }
 
         guard !averageHeartRateAccumulator.isEmpty else { return nil }
-        return averageHeartRateAccumulator.reduce(0, +) / Double(averageHeartRateAccumulator.count)
+        let average = averageHeartRateAccumulator.reduce(0, +) / Double(averageHeartRateAccumulator.count)
+        return average > 0 ? average : nil
     }
 
     private func statisticsAverageValue(
@@ -655,6 +703,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         }
 
         if let stepCadence = cadenceFromSteps(total: stepCountTotal, at: date) {
+            appendTrustedCadenceSample(stepCadence)
             lastResolvedCadence = stepCadence
             return stepCadence
         }
@@ -670,7 +719,8 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     private func averagedCadence(fallback: Int?) -> Int? {
         guard !averageCadenceAccumulator.isEmpty else { return fallback }
 
-        let average = Int((averageCadenceAccumulator.reduce(0, +) / Double(averageCadenceAccumulator.count)).rounded())
+        let average = trustedAverageCadenceSample()
+            ?? Int((averageCadenceAccumulator.reduce(0, +) / Double(averageCadenceAccumulator.count)).rounded())
         if (80...240).contains(average) {
             return average
         }
@@ -709,6 +759,36 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         case ..<390: return 164
         default: return 158
         }
+    }
+
+    private func appendTrustedCadenceSample(_ cadence: Int) {
+        guard sessionStateLabel == "running",
+              latestSnapshot.elapsedSeconds >= 15,
+              (80...240).contains(cadence) else {
+            return
+        }
+
+        averageCadenceAccumulator.append(Double(cadence))
+        averageCadenceAccumulator = Array(averageCadenceAccumulator.suffix(180))
+    }
+
+    private func trustedAverageCadenceSample() -> Int? {
+        let sorted = averageCadenceAccumulator.sorted()
+        guard sorted.isEmpty == false else { return nil }
+
+        if sorted.count < 6 {
+            let average = sorted.reduce(0, +) / Double(sorted.count)
+            let cadence = Int(average.rounded())
+            return (80...240).contains(cadence) ? cadence : nil
+        }
+
+        let trimCount = max(1, Int(Double(sorted.count) * 0.1))
+        let trimmed = Array(sorted.dropFirst(trimCount).dropLast(trimCount))
+        guard trimmed.isEmpty == false else { return nil }
+
+        let average = trimmed.reduce(0, +) / Double(trimmed.count)
+        let cadence = Int(average.rounded())
+        return (80...240).contains(cadence) ? cadence : nil
     }
 
     private func tickCadenceMetronomeIfNeeded() {
@@ -819,6 +899,8 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             self.updateLocationStatus(manager.authorizationStatus)
             if self.sessionStateLabel == "running" {
                 self.startLocationCaptureIfAuthorized()
+            } else if manager.authorizationStatus == .authorizedAlways || manager.authorizationStatus == .authorizedWhenInUse {
+                self.startLocationCaptureIfAuthorized(isPreview: true)
             }
         }
     }
@@ -830,6 +912,15 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             }
             guard !validLocations.isEmpty else { return }
 
+            if let bestLocation = validLocations.min(by: { $0.horizontalAccuracy < $1.horizontalAccuracy }) {
+                self.latestGPSAccuracyMeters = bestLocation.horizontalAccuracy
+                self.lastGPSUpdateAt = bestLocation.timestamp
+                if self.sessionStateLabel != "running" {
+                    self.locationStatusLabel = "gps ready"
+                }
+            }
+
+            guard self.sessionStateLabel == "running" else { return }
             self.absorbRouteLocations(validLocations)
             self.routePreview = self.sampleRoutePreview(from: self.routeLocations)
         }
@@ -838,6 +929,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         Task { @MainActor in
             self.locationStatusLabel = "location failed: \(error.localizedDescription)"
+            self.latestGPSAccuracyMeters = nil
         }
     }
 
@@ -850,11 +942,11 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         }
     }
 
-    private func startLocationCaptureIfAuthorized() {
+    private func startLocationCaptureIfAuthorized(isPreview: Bool = false) {
         switch locationManager.authorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse:
             locationManager.startUpdatingLocation()
-            locationStatusLabel = "tracking route"
+            locationStatusLabel = isPreview ? "gps ready" : "tracking route"
         case .notDetermined:
             requestLocationAuthorizationIfNeeded()
         case .denied, .restricted:
@@ -882,8 +974,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
 
             Task { @MainActor in
                 self.livePedometerCadence = cadence
-                self.averageCadenceAccumulator.append(Double(cadence))
-                self.averageCadenceAccumulator = Array(self.averageCadenceAccumulator.suffix(180))
+                self.appendTrustedCadenceSample(cadence)
             }
         }
     }
@@ -996,31 +1087,41 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     private func absorbRouteLocations(_ locations: [CLLocation]) {
         for location in locations {
             guard location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 65 else { continue }
+            guard let acceptedLocation = validatedRouteLocation(location) else { continue }
 
             if let previous = routeLocations.last {
-                let segment = location.distance(from: previous)
-                if segment >= 1, segment <= 120 {
+                let segment = acceptedLocation.distance(from: previous)
+                let delta = acceptedLocation.timestamp.timeIntervalSince(previous.timestamp)
+                if isUsableDistanceSegment(
+                    distance: segment,
+                    delta: delta,
+                    current: acceptedLocation,
+                    previous: previous
+                ) {
                     liveRouteDistanceMeters += segment
                 }
 
-                let climb = location.altitude - previous.altitude
-                if climb > 0.5 {
+                let climb = acceptedLocation.altitude - previous.altitude
+                if climb > 0.5, abs(climb) <= 40 {
                     liveElevationGainMeters += climb
                 }
             }
 
-            routeLocations.append(location)
+            routeLocations.append(acceptedLocation)
+            lastAcceptedRouteTimestamp = acceptedLocation.timestamp
+            lastGPSUpdateAt = acceptedLocation.timestamp
+            latestGPSAccuracyMeters = acceptedLocation.horizontalAccuracy
             archiveTrackPoints.append(
                 WorkoutTrackPoint(
-                    timestamp: location.timestamp,
-                    latitude: location.coordinate.latitude,
-                    longitude: location.coordinate.longitude,
-                    altitude: location.altitude,
-                    horizontalAccuracy: location.horizontalAccuracy,
-                    speedMetersPerSecond: location.speed >= 0 ? location.speed : nil,
+                    timestamp: acceptedLocation.timestamp,
+                    latitude: acceptedLocation.coordinate.latitude,
+                    longitude: acceptedLocation.coordinate.longitude,
+                    altitude: acceptedLocation.altitude,
+                    horizontalAccuracy: acceptedLocation.horizontalAccuracy,
+                    speedMetersPerSecond: acceptedLocation.speed >= 0 ? acceptedLocation.speed : nil,
                     heartRate: latestSnapshot.currentHeartRate,
                     cadence: latestSnapshot.cadence,
-                    gpsPoor: location.horizontalAccuracy > 30,
+                    gpsPoor: acceptedLocation.horizontalAccuracy > 30,
                     paused: sessionStateLabel == "paused"
                 )
             )
@@ -1036,17 +1137,23 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         endedAt: Date,
         source: String
     ) -> WorkoutSessionArchive {
+        let reconciledDistanceMeters = reconciledArchiveDistanceMeters(snapshotDistance: snapshot.distanceMeters)
+        let inferredMovingTime = inferMovingTimeSeconds(from: archiveTrackPoints)
+        let inferredPace = averagePaceSeconds(
+            distanceMeters: reconciledDistanceMeters,
+            durationSeconds: snapshot.elapsedSeconds
+        ) ?? snapshot.averagePaceSeconds
         let baseArchive = WorkoutSessionArchive(
             runID: runID,
             startedAt: startedAt,
             endedAt: endedAt,
             elapsedTimeSeconds: snapshot.elapsedSeconds,
             timerTimeSeconds: snapshot.elapsedSeconds,
-            movingTimeSeconds: inferMovingTimeSeconds(from: archiveTrackPoints),
-            distanceMeters: snapshot.distanceMeters,
+            movingTimeSeconds: inferredMovingTime,
+            distanceMeters: reconciledDistanceMeters,
             averageHeartRate: averageHeartRate,
             averageCadence: averageCadence,
-            averagePaceSeconds: snapshot.averagePaceSeconds,
+            averagePaceSeconds: inferredPace,
             elevationGainM: snapshot.elevationGainM,
             source: source,
             trackPoints: archiveTrackPoints,
@@ -1054,11 +1161,11 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             index: 1,
             startTime: startedAt,
             endTime: endedAt,
-            distanceMeters: snapshot.distanceMeters,
+            distanceMeters: reconciledDistanceMeters,
             timerTimeSeconds: snapshot.elapsedSeconds,
             averageHeartRate: averageHeartRate,
             averageCadence: averageCadence,
-            averagePaceSeconds: snapshot.averagePaceSeconds,
+            averagePaceSeconds: inferredPace,
             elevationGainM: snapshot.elevationGainM
         )],
             events: normalizedSessionEvents(startedAt: startedAt, endedAt: endedAt)
@@ -1137,11 +1244,103 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             let current = points[index]
             let delta = current.timestamp.timeIntervalSince(previous.timestamp)
             guard delta > 0 else { continue }
-            if current.paused == false {
+            let segmentDistance = CLLocation(latitude: current.latitude, longitude: current.longitude)
+                .distance(from: CLLocation(latitude: previous.latitude, longitude: previous.longitude))
+            let resolvedSpeed = current.speedMetersPerSecond
+                ?? previous.speedMetersPerSecond
+                ?? (segmentDistance / delta)
+
+            if current.paused == false,
+               current.gpsPoor == false,
+               segmentDistance >= 1,
+               segmentDistance <= 120,
+               resolvedSpeed >= 0.5,
+               resolvedSpeed <= 8.5 {
                 total += delta
             }
         }
         return max(Int(total.rounded()), 0)
+    }
+
+    private func validatedRouteLocation(_ location: CLLocation) -> CLLocation? {
+        if let lastAcceptedRouteTimestamp, location.timestamp <= lastAcceptedRouteTimestamp {
+            return nil
+        }
+
+        guard let previous = routeLocations.last else { return location }
+
+        let delta = location.timestamp.timeIntervalSince(previous.timestamp)
+        guard delta > 0 else { return nil }
+
+        let segment = location.distance(from: previous)
+        if segment < 0.8, delta < 1.2 {
+            return nil
+        }
+
+        let impliedSpeed = segment / delta
+        if impliedSpeed > 8.5, location.horizontalAccuracy > 18 {
+            return nil
+        }
+
+        if segment > 120 {
+            return nil
+        }
+
+        return location
+    }
+
+    private func isUsableDistanceSegment(distance: Double, delta: TimeInterval, current: CLLocation, previous: CLLocation) -> Bool {
+        guard delta > 0 else { return false }
+        guard distance >= 1, distance <= 120 else { return false }
+
+        let speed = current.speed >= 0 ? current.speed : (distance / delta)
+        guard speed <= 8.5 else { return false }
+
+        if current.horizontalAccuracy > 30 || previous.horizontalAccuracy > 30 {
+            return distance >= 3
+        }
+
+        return true
+    }
+
+    private func reconciledArchiveDistanceMeters(snapshotDistance: Double) -> Double {
+        let routeDistance = inferredRouteDistanceMeters(from: archiveTrackPoints)
+        guard routeDistance > 0 else { return snapshotDistance }
+        guard snapshotDistance > 0 else { return routeDistance }
+
+        let deltaRatio = abs(routeDistance - snapshotDistance) / snapshotDistance
+        if deltaRatio <= 0.08 {
+            return routeDistance
+        }
+
+        return snapshotDistance
+    }
+
+    private func inferredRouteDistanceMeters(from points: [WorkoutTrackPoint]) -> Double {
+        guard points.count > 1 else { return 0 }
+        var total: Double = 0
+
+        for index in 1..<points.count {
+            let previous = points[index - 1]
+            let current = points[index]
+            guard current.gpsPoor == false else { continue }
+
+            let previousLocation = CLLocation(latitude: previous.latitude, longitude: previous.longitude)
+            let currentLocation = CLLocation(latitude: current.latitude, longitude: current.longitude)
+            let distance = currentLocation.distance(from: previousLocation)
+            let delta = current.timestamp.timeIntervalSince(previous.timestamp)
+
+            if delta > 0, distance >= 1, distance <= 120, (distance / delta) <= 8.5 {
+                total += distance
+            }
+        }
+
+        return total
+    }
+
+    private func averagePaceSeconds(distanceMeters: Double, durationSeconds: Int) -> Int? {
+        guard distanceMeters > 0, durationSeconds > 0 else { return nil }
+        return Int((Double(durationSeconds) / distanceMeters * 1000.0).rounded())
     }
 
     private func recordSessionEvent(_ kind: WorkoutEventKind, at date: Date, detail: String?) {

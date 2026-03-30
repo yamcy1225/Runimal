@@ -28,5 +28,9 @@ let package = Package(
             name: "RunimalRewardSimulation",
             dependencies: ["RunimalCore"]
         ),
+        .testTarget(
+            name: "RunimalCoreTests",
+            dependencies: ["RunimalCore"]
+        ),
     ]
 )

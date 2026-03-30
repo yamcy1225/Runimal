@@ -3,49 +3,32 @@ import SwiftUI
 
 struct WatchRunStatsPanel: View {
     let snapshot: LiveRunSnapshot
+    let gpsAccuracyMeters: Double?
+    let lastGPSUpdateAt: Date?
+    let locationStatusLabel: String
     let accent: Color
-    let autoPauseEnabled: Bool
 
     var body: some View {
         GameSurface(
-            title: "러닝 신호",
+            title: nil,
             accent: accent,
-            eyebrow: nil,
             compact: true
         ) {
-            VStack(spacing: 6) {
-                HStack {
-                    Spacer()
-                    Text(autoPauseEnabled ? "AUTO PAUSE ON" : "AUTO PAUSE OFF")
-                        .font(.caption2.monospaced().weight(.black))
-                        .foregroundStyle(GameBoyPalette.darkest)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(autoPauseEnabled ? GameBoyPalette.mediumLight : GameBoyPalette.lightest)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                        .stroke(GameBoyPalette.darkest, lineWidth: 1)
-                                )
-                        )
+            VStack(spacing: 5) {
+                VStack(spacing: 4) {
+                    distanceStatCard
+                    HStack(spacing: 5) {
+                        primaryStatCard(title: "페이스", value: paceText, accent: GameBoyPalette.lightest)
+                        primaryStatCard(title: "시간", value: elapsedText, accent: GameBoyPalette.lightest)
+                    }
                 }
 
-                ForEach(cards) { card in
-                    statCard(title: card.title, value: card.value, accent: card.accent)
+                HStack(spacing: 5) {
+                    secondaryStatCard(title: "심박", value: heartRateText)
+                    secondaryStatCard(title: "케이던스", value: cadenceText)
                 }
             }
         }
-    }
-
-    private var cards: [WatchStatCardModel] {
-        [
-            .init(title: "거리", value: distanceText, accent: GameBoyPalette.mediumLight),
-            .init(title: "시간", value: elapsedText, accent: GameBoyPalette.lightest),
-            .init(title: "페이스", value: paceText, accent: GameBoyPalette.lightest),
-            .init(title: "심박", value: heartRateText, accent: GameBoyPalette.mediumLight),
-            .init(title: "평균 케이던스", value: cadenceText, accent: GameBoyPalette.mediumLight),
-        ]
     }
 
     private var distanceText: String {
@@ -67,29 +50,54 @@ struct WatchRunStatsPanel: View {
 
     private var heartRateText: String {
         guard let bpm = snapshot.currentHeartRate else { return "--" }
-        return "\(Int(bpm)) bpm"
+        return "\(Int(bpm))"
     }
 
     private var cadenceText: String {
         guard let cadence = snapshot.cadence else { return "--" }
-        return "\(cadence) spm"
+        return "\(cadence)"
     }
 
-    private func statCard(title: String, value: String, accent: Color) -> some View {
-        HStack(spacing: 8) {
-            Text(title)
+    private var distanceStatCard: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text("거리")
                 .font(.caption2.monospaced().weight(.black))
                 .foregroundStyle(GameBoyPalette.mediumDark)
-                .frame(width: 76, alignment: .leading)
-            Text(value)
-                .font(.footnote.monospacedDigit().weight(.black))
+            Text(distanceText)
+                .font(.title2.monospacedDigit().weight(.black))
                 .foregroundStyle(GameBoyPalette.darkest)
                 .lineLimit(1)
-                .minimumScaleFactor(0.75)
-                .frame(maxWidth: .infinity, alignment: .trailing)
+                .minimumScaleFactor(0.76)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, minHeight: 50, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(GameBoyPalette.mediumLight)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(GameBoyPalette.darkest, lineWidth: 1)
+                )
+        )
+    }
+
+    private func primaryStatCard(title: String, value: String, accent: Color) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title)
+                .font(.caption2.monospaced().weight(.black))
+                .foregroundStyle(GameBoyPalette.mediumDark)
+            Text(value)
+                .font(.headline.monospacedDigit().weight(.black))
+                .foregroundStyle(GameBoyPalette.darkest)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(accent)
@@ -99,11 +107,28 @@ struct WatchRunStatsPanel: View {
                 )
         )
     }
-}
 
-private struct WatchStatCardModel: Identifiable {
-    let id = UUID()
-    let title: String
-    let value: String
-    let accent: Color
+    private func secondaryStatCard(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.caption2.monospaced().weight(.black))
+                .foregroundStyle(GameBoyPalette.mediumDark)
+            Text(value)
+                .font(.caption2.monospacedDigit().weight(.black))
+                .foregroundStyle(GameBoyPalette.darkest)
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(GameBoyPalette.mediumLight.opacity(0.72))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(GameBoyPalette.darkest, lineWidth: 1)
+                )
+        )
+    }
 }
