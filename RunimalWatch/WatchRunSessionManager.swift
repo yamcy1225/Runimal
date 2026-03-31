@@ -69,6 +69,9 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     private var suddenEventProgressStartedAt: Date?
     private var rareEventCompleted = false
     private var environmentCondition: EnvironmentCondition = .unknown
+    private var companionVisualState: MutationVisualState = .none
+    private var lastMutationReactionID: String?
+    private var lastMutationReactionAt: Date?
     var autoPauseEnabled = true
 
     var authorizationStatus = "not requested"
@@ -91,6 +94,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     var activeWeeklyEffects: [WeeklyRewardEffect] = []
     var recentSessionEvents: [SyncDiagnosticEvent] = []
     var runtimeAlert: WatchRuntimeAlert?
+    var mutationReaction: MutationRuntimeReactionSnapshot?
     var isDemoMode: Bool {
         ProcessInfo.processInfo.environment["RUNIMAL_AUTOPLAY_DEMO"] == "1"
     }
@@ -205,6 +209,9 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             rareEventCompleted = false
             environmentCondition = .unknown
             runtimeAlert = nil
+            mutationReaction = nil
+            lastMutationReactionID = nil
+            lastMutationReactionAt = nil
             logSessionEvent("run start", "HealthKit session started")
 
             startLocationCaptureIfAuthorized()
@@ -291,6 +298,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         self.workoutSession = nil
         self.workoutBuilder = nil
         self.routeBuilder = nil
+        mutationReaction = nil
     }
 
     func autoplayDemoIfNeeded() {
@@ -309,6 +317,20 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     func applyCompanionContext(_ context: CompanionEffectContext) {
         claimedWeeklyRewardIDs = Set(context.claimedRewardIDs)
         activeWeeklyEffects = context.activeEffects
+    }
+
+    func applyMainCompanionContext(_ context: WatchMainCompanionContext?) {
+        companionVisualState = MutationVisualState(
+            bodyStage: context?.mutationBodyStage ?? 0,
+            ecologyStage: context?.mutationEcologyStage ?? 0,
+            rhythmStage: context?.mutationRhythmStage ?? 0
+        )
+
+        if companionVisualState == .none {
+            mutationReaction = nil
+            lastMutationReactionID = nil
+            lastMutationReactionAt = nil
+        }
     }
 
     func setAutoPauseEnabled(_ enabled: Bool) {
@@ -352,6 +374,9 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         rareEventCompleted = false
         environmentCondition = .clear
         runtimeAlert = nil
+        mutationReaction = nil
+        lastMutationReactionID = nil
+        lastMutationReactionAt = nil
 
         demoTask?.cancel()
         demoTask = Task { @MainActor in
@@ -541,7 +566,49 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             )
         }
 
+        evaluateMutationReaction()
         evaluateSuddenEventProgress()
+    }
+
+    private func evaluateMutationReaction() {
+        guard sessionStateLabel == "running" else {
+            mutationReaction = nil
+            return
+        }
+
+        let reaction = MutationRuntimeReactionEngine.reaction(
+            for: companionVisualState,
+            snapshot: latestSnapshot,
+            gpsAccuracyMeters: latestGPSAccuracyMeters,
+            isGPSFresh: gpsLastUpdatedAt.map { Date().timeIntervalSince($0) <= 8 } ?? false
+        )
+
+        guard let reaction else {
+            mutationReaction = nil
+            return
+        }
+
+        mutationReaction = reaction
+        let now = Date()
+        let lastAt = lastMutationReactionAt ?? .distantPast
+        let isCooldownComplete = now.timeIntervalSince(lastAt) >= 18
+        guard lastMutationReactionID != reaction.id || isCooldownComplete else { return }
+
+        lastMutationReactionID = reaction.id
+        lastMutationReactionAt = now
+        WKInterfaceDevice.current().play(mutationReactionHaptic(for: reaction.axis))
+        logSessionEvent("mutation reaction", reaction.id)
+    }
+
+    private func mutationReactionHaptic(for axis: MutationRuntimeReactionSnapshot.Axis) -> WKHapticType {
+        switch axis {
+        case .body:
+            return .directionUp
+        case .ecology:
+            return .success
+        case .rhythm:
+            return .click
+        }
     }
 
     private func emitRuntimeAlert(title: String, detail: String, kind: WatchRuntimeAlert.Kind) {

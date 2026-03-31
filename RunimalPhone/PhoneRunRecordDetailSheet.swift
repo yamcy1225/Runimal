@@ -10,6 +10,7 @@ struct PhoneRunRecordDetailSheet: View {
     @State private var exportDocument: ExportDocument?
     @State private var exportFeedback: ExportFeedback?
     @State private var exportTimeBasis: WorkoutExportTimeBasis = .timer
+    @State private var showDeleteConfirmation = false
 
     private let exportManager = PhoneWorkoutExportManager()
 
@@ -144,12 +145,36 @@ struct PhoneRunRecordDetailSheet: View {
                         .font(.headline.monospaced().weight(.black))
                         .foregroundStyle(GameBoyPalette.darkest)
                 }
+
+                if let run {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            showDeleteConfirmation = true
+                        } label: {
+                            Text("삭제")
+                                .font(.caption.monospaced().weight(.black))
+                                .foregroundStyle(store.canDeleteRunRecord(run) ? .red : GameBoyPalette.mediumDark)
+                        }
+                        .disabled(store.canDeleteRunRecord(run) == false)
+                    }
+                }
             }
             .toolbarBackground(GameBoyPalette.lightest, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .navigationBarTitleDisplayMode(.inline)
             .sheet(item: $exportDocument) { document in
                 ShareSheet(items: [document.url])
+            }
+            .alert("이 러닝 기록을 삭제할까요?", isPresented: $showDeleteConfirmation) {
+                Button("삭제", role: .destructive) {
+                    guard let run else { return }
+                    if store.deleteRunRecord(id: run.id) {
+                        dismiss()
+                    }
+                }
+                Button("취소", role: .cancel) {}
+            } message: {
+                Text("아직 성장이나 알 생성에 쓰이지 않은 기록만 삭제할 수 있습니다.")
             }
         }
     }
@@ -197,6 +222,26 @@ struct PhoneRunRecordDetailSheet: View {
                     .font(.headline.monospaced().weight(.black))
                     .foregroundStyle(GameBoyPalette.darkest)
 
+                if let form = store.mutationForm(for: run) {
+                    Text(form.displayTitle)
+                        .font(.footnote.monospaced().weight(.black))
+                        .foregroundStyle(GameBoyPalette.mediumDark)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                }
+
+                if let worldProfile = store.contentCatalog.runWorldProfile(for: run) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("\(worldProfile.regionTitle)\(worldProfile.seasonTitle.map { " · \($0)" } ?? "")")
+                            .font(.footnote.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.darkest)
+                        Text(worldProfile.episodeLine ?? worldProfile.summaryLine)
+                            .font(.caption.monospaced())
+                            .foregroundStyle(GameBoyPalette.mediumDark)
+                            .lineLimit(3)
+                    }
+                }
+
                 Text(run.startedAt.formatted(date: .abbreviated, time: .shortened))
                     .font(.subheadline.monospaced())
                     .foregroundStyle(GameBoyPalette.mediumDark)
@@ -220,6 +265,40 @@ struct PhoneRunRecordDetailSheet: View {
                     TraitChip(label: environmentLabel(run.environmentCondition), accent: .blue.opacity(0.28))
                     if run.rareEventCompleted {
                         TraitChip(label: "희귀 신호 달성", accent: .red.opacity(0.28))
+                    }
+                    if store.mutationForm(for: run) != nil {
+                        TraitChip(label: "변이 기록", accent: accent.opacity(0.18))
+                    }
+                }
+
+                if let worldProfile = store.contentCatalog.runWorldProfile(for: run) {
+                    Text(worldProfile.summaryLine)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(GameBoyPalette.mediumDark)
+                }
+
+                if let contribution = run.mutationContribution {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("이번 러닝 기여")
+                            .font(.caption.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.darkest)
+
+                        ForEach(contribution.axes) { axis in
+                            HStack(spacing: 8) {
+                                Text(axisLabel(axis.axis))
+                                    .font(.caption2.monospaced().weight(.black))
+                                    .foregroundStyle(GameBoyPalette.mediumDark)
+                                    .frame(width: 22, alignment: .leading)
+                                Text(axis.branchTitle)
+                                    .font(.caption.monospaced())
+                                    .foregroundStyle(GameBoyPalette.darkest)
+                                    .lineLimit(1)
+                                Spacer()
+                                Text("\(Int((axis.progress * 100).rounded()))%")
+                                    .font(.caption2.monospacedDigit().weight(.black))
+                                    .foregroundStyle(GameBoyPalette.mediumDark)
+                            }
+                        }
                     }
                 }
 
@@ -512,14 +591,6 @@ struct PhoneRunRecordDetailSheet: View {
                 .font(.caption.monospaced())
                 .foregroundStyle(GameBoyPalette.mediumDark)
 
-            if let archive = workoutArchive {
-                PhoneWorkoutExportQAPanel(
-                    archive: archive,
-                    timeBasis: exportTimeBasis,
-                    accent: accent
-                )
-            }
-
             if let exportFeedback {
                 exportFeedbackCard(exportFeedback)
             }
@@ -627,6 +698,17 @@ struct PhoneRunRecordDetailSheet: View {
         case .cold: return "저온"
         case .overcast: return "흐림"
         case .unknown: return "미확인"
+        }
+    }
+
+    private func axisLabel(_ axis: SpeciesLineageAxis) -> String {
+        switch axis {
+        case .body:
+            return "체형"
+        case .ecology:
+            return "생태"
+        case .rhythm:
+            return "리듬"
         }
     }
 

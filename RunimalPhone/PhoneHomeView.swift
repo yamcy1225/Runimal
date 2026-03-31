@@ -4,6 +4,14 @@ import SwiftUI
 struct PhoneHomeView: View {
     let store: PhoneDashboardStore
 
+    private var worldPack: WorldContentPack {
+        store.contentCatalog.worldContentPack()
+    }
+
+    private var worldPackSummaries: [ContentPackSummary] {
+        store.contentCatalog.worldContentPackSummaries()
+    }
+
     var body: some View {
         ZStack {
             LinearGradient(
@@ -21,6 +29,7 @@ struct PhoneHomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     headerDeck
+                    worldFrontierCard
                     heroCard
                     if let sanctuary = store.sanctuaryReward {
                         PhoneSanctuaryPanel(reward: sanctuary)
@@ -36,6 +45,42 @@ struct PhoneHomeView: View {
                     questCard
                 }
                 .padding(20)
+            }
+        }
+    }
+
+    private var worldFrontierCard: some View {
+        GameSurface(title: "활성 세계", accent: store.mainAccentColor, eyebrow: "WORLD PACKS") {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(worldPack.contentPack.playerFacingTheme)
+                    .font(.headline.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.darkest)
+                    .lineLimit(1)
+
+                HStack(spacing: 8) {
+                    TraitChip(label: "팩 \(worldPackSummaries.count)", accent: store.mainAccentColor)
+                    TraitChip(label: "구역 \(worldPack.regions.count)", accent: .cyan.opacity(0.28))
+                    TraitChip(label: "시즌 \(worldPack.seasons.count)", accent: .mint.opacity(0.28))
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(worldPackSummaries.prefix(3), id: \.packID) { summary in
+                        HStack(spacing: 8) {
+                            Image(systemName: store.activeWorldPackIDs.contains(summary.packID) ? "checkmark.circle.fill" : "circle")
+                                .font(.caption.weight(.black))
+                                .foregroundStyle(store.activeWorldPackIDs.contains(summary.packID) ? store.mainAccentColor : GameBoyPalette.mediumDark)
+                            Text(summary.title)
+                                .font(.subheadline.monospaced().weight(.black))
+                                .foregroundStyle(GameBoyPalette.darkest)
+                                .lineLimit(1)
+                            Spacer(minLength: 8)
+                            Text(summary.type.uppercased())
+                                .font(.caption2.monospaced().weight(.black))
+                                .foregroundStyle(GameBoyPalette.mediumDark)
+                                .lineLimit(1)
+                        }
+                    }
+                }
             }
         }
     }
@@ -81,13 +126,25 @@ struct PhoneHomeView: View {
                             resonance: store.mainEggResonance
                         )
                     } else {
-                        PixelPetView(pet: store.pet, pixelSize: 12, seasonalLayers: store.seasonalLayers)
+                        PixelPetView(
+                            pet: store.pet,
+                            pixelSize: 12,
+                            mutationForm: store.mutationForm(for: store.featuredCompanion),
+                            mutationHistory: store.mutationHistory(for: store.featuredCompanion),
+                            seasonalLayers: store.seasonalLayers
+                        )
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            TraitChip(label: "\(store.summary.distanceKm.formatted(.number.precision(.fractionLength(1)))) km", accent: store.mainAccentColor)
-                            TraitChip(label: "\(store.summary.cadence) spm", accent: GameBoyPalette.mediumLight)
+                            TraitChip(
+                                label: "\(store.featuredCompanionDistanceKm.formatted(.number.precision(.fractionLength(1)))) km",
+                                accent: store.mainAccentColor
+                            )
+                            TraitChip(
+                                label: store.featuredCompanionCadence.map { "\($0) spm" } ?? "-- spm",
+                                accent: GameBoyPalette.mediumLight
+                            )
                             TraitChip(
                                 label: store.mainSelection?.kind == .egg ? (store.mainEgg?.shell.displayLabel ?? "숨김 알") : store.evolutionProgress.stageLabel,
                                 accent: GameBoyPalette.mediumLight
@@ -102,9 +159,18 @@ struct PhoneHomeView: View {
 
                         RunimalSignalBadge(
                             icon: "sparkles",
-                            label: store.mainSelection?.kind == .egg ? (store.mainEgg?.shell.scanHeadline ?? "DIGITAL GAP SCAN ACTIVE") : "\(store.summary.distanceKm.formatted(.number.precision(.fractionLength(1))))km 각인",
+                            label: store.featuredCompanionSignalLabel,
                             accent: store.mainAccentColor
                         )
+
+                        if let form = store.mutationForm(for: store.featuredCompanion),
+                           store.mainSelection?.kind != .egg {
+                            Text(form.displayTitle)
+                                .font(.caption.monospaced().weight(.black))
+                                .foregroundStyle(GameBoyPalette.mediumDark)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.82)
+                        }
                     }
                 }
 

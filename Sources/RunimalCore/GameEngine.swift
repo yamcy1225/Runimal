@@ -303,7 +303,7 @@ public enum RunimalGameEngine {
         id: String = UUID().uuidString
     ) -> CompletedRunRecord {
         let raidContribution = max((reward.experience / 12) + reward.completedQuestCount, 1)
-        return CompletedRunRecord(
+        let baseRecord = CompletedRunRecord(
             id: id,
             startedAt: startedAt,
             endedAt: endedAt,
@@ -321,30 +321,37 @@ public enum RunimalGameEngine {
             environmentCondition: environmentCondition,
             rareEventCompleted: rareEventCompleted
         )
+
+        return CompletedRunRecord(
+            id: baseRecord.id,
+            startedAt: baseRecord.startedAt,
+            endedAt: baseRecord.endedAt,
+            distanceMeters: baseRecord.distanceMeters,
+            durationSeconds: baseRecord.durationSeconds,
+            averageHeartRate: baseRecord.averageHeartRate,
+            averagePaceSeconds: baseRecord.averagePaceSeconds,
+            cadence: baseRecord.cadence,
+            elevationGainM: baseRecord.elevationGainM,
+            reward: baseRecord.reward,
+            route: baseRecord.route,
+            source: baseRecord.source,
+            sourceLabel: baseRecord.sourceLabel,
+            raidContribution: baseRecord.raidContribution,
+            environmentCondition: baseRecord.environmentCondition,
+            rareEventCompleted: baseRecord.rareEventCompleted,
+            mutationForm: SpeciesMutationUnlockEngine.resolveForm(
+                for: [baseRecord],
+                preferredSpecies: reward.pet.species
+            )?.snapshot,
+            mutationContribution: SpeciesMutationContributionEngine.runContribution(
+                for: baseRecord,
+                preferredSpecies: reward.pet.species
+            )
+        )
     }
 
     private static func determineSpecies(from summary: RunSummary) -> PetSpecies {
-        if summary.distanceKm >= 8 && summary.variability <= 1.6 {
-            return .windrunner
-        }
-
-        if summary.distanceKm >= 6 && summary.elevationGainM >= 90 {
-            return .stoneback
-        }
-
-        if summary.distanceKm < 4 && summary.averagePaceSeconds < 310 {
-            return .sparkfang
-        }
-
-        if summary.variability > 2.4 && summary.aura == .night {
-            return .shadebit
-        }
-
-        if summary.distanceKm >= 4 && summary.variability <= 2.0 {
-            return .mosshop
-        }
-
-        return .seedle
+        RunimalSpeciesRuleEngine.dominantSpecies(for: summary)
     }
 
     private static func determineElement(from summary: RunSummary) -> PetElement {

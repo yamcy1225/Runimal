@@ -83,7 +83,6 @@ struct WatchDashboardView: View {
             mainCompanionContext: mainCompanionContext,
             stageAccent: stageAccent,
             sessionStateLabel: runSessionManager.sessionStateLabel,
-            syncStatusLabel: connectivityManager.syncStatusLabel,
             heartResonance: heartResonance,
             growthRatio: growthRatio,
             latestSnapshot: runSessionManager.latestSnapshot,
@@ -91,10 +90,10 @@ struct WatchDashboardView: View {
             gpsLastUpdatedAt: runSessionManager.gpsLastUpdatedAt,
             locationStatusLabel: runSessionManager.locationStatusLabel,
             liveFeedback: liveFeedback,
+            mutationReaction: runSessionManager.mutationReaction,
             stageBadges: stageBadges,
             liveGoals: liveGoals,
             primaryGoalDetail: primaryGoal?.detail ?? liveFeedback.detail,
-            lastSyncedWorkoutTitle: connectivityManager.lastSyncedWorkoutTitle,
             offlineMapPacks: offlineMapCatalog.packs,
             selectedOfflineMapPackID: offlineMapCatalog.selectedPackID,
             storedOfflineMapPackIDs: connectivityManager.offlineMapStorage.storedPackIDs,
@@ -130,6 +129,7 @@ struct WatchDashboardView: View {
         .task {
             runSessionManager.setAutoPauseEnabled(connectivityManager.autoPauseEnabled)
             runSessionManager.prepareGPSPreview()
+            runSessionManager.applyMainCompanionContext(mainCompanionContext)
             offlineMapCatalog.replace(
                 with: connectivityManager.offlineMapPacks,
                 selectedPackID: connectivityManager.selectedOfflineMapPackID
@@ -149,6 +149,9 @@ struct WatchDashboardView: View {
                 activeEffects: connectivityManager.activeEffects
             )
             runSessionManager.applyCompanionContext(context)
+        }
+        .onChange(of: mainCompanionContext) { _, context in
+            runSessionManager.applyMainCompanionContext(context)
         }
         .onChange(of: connectivityManager.autoPauseEnabled) { _, enabled in
             runSessionManager.setAutoPauseEnabled(enabled)
@@ -234,7 +237,6 @@ private struct WatchDashboardPages: View {
     let mainCompanionContext: WatchMainCompanionContext?
     let stageAccent: Color
     let sessionStateLabel: String
-    let syncStatusLabel: String
     let heartResonance: Double
     let growthRatio: Double
     let latestSnapshot: LiveRunSnapshot
@@ -242,10 +244,10 @@ private struct WatchDashboardPages: View {
     let gpsLastUpdatedAt: Date?
     let locationStatusLabel: String
     let liveFeedback: LiveRunFeedback
+    let mutationReaction: MutationRuntimeReactionSnapshot?
     let stageBadges: [String]
     let liveGoals: [LiveGoalTarget]
     let primaryGoalDetail: String
-    let lastSyncedWorkoutTitle: String
     let offlineMapPacks: [OfflineMapPackSummary]
     let selectedOfflineMapPackID: String?
     let storedOfflineMapPackIDs: Set<String>
@@ -297,49 +299,38 @@ private struct WatchDashboardPages: View {
                 WatchRunPulseCard(
                     feedback: liveFeedback,
                     accent: stageAccent,
-                    badges: Array(stageBadges.prefix(2))
+                    reaction: mutationReaction,
+                    badges: Array(stageBadges.prefix(2)),
+                    goalTitle: liveGoals.first?.title,
+                    goalDetail: primaryGoalDetail
                 )
             }
             .tag(2)
 
-            WatchSingleCardPage {
-                WatchGoalTrackCard(
-                    goals: liveGoals,
-                    accent: stageAccent
-                )
-            }
-            .tag(3)
-
-            WatchSingleCardPage {
-                WatchOfflineMapPreviewCard(
-                    selectedPack: selectedOfflineMapPack,
-                    isStoredLocally: selectedOfflineMapPack.map { storedOfflineMapPackIDs.contains($0.id) } ?? false,
-                    storage: offlineMapStorage,
-                    route: routePreview,
-                    accent: stageAccent
-                )
-            }
-            .tag(4)
-
-            WatchSingleCardPage {
-                WatchOfflineMapPackCard(
-                    packs: offlineMapPacks,
-                    selectedPackID: selectedOfflineMapPackID,
-                    storedPackIDs: storedOfflineMapPackIDs,
-                    storage: offlineMapStorage,
-                    accent: stageAccent
-                )
-            }
-            .tag(5)
-
-            if sessionStateLabel == "running" {
+            if offlineMapPacks.isEmpty == false || routePreview.isEmpty == false {
                 WatchSingleCardPage {
-                    WatchRunningGoalSection(
-                        lastSyncedWorkoutTitle: lastSyncedWorkoutTitle,
-                        detail: primaryGoalDetail
+                    WatchOfflineMapPreviewCard(
+                        selectedPack: selectedOfflineMapPack,
+                        isStoredLocally: selectedOfflineMapPack.map { storedOfflineMapPackIDs.contains($0.id) } ?? false,
+                        storage: offlineMapStorage,
+                        route: routePreview,
+                        accent: stageAccent
                     )
                 }
-                .tag(6)
+                .tag(3)
+            }
+
+            if offlineMapPacks.count > 1 {
+                WatchSingleCardPage {
+                    WatchOfflineMapPackCard(
+                        packs: offlineMapPacks,
+                        selectedPackID: selectedOfflineMapPackID,
+                        storedPackIDs: storedOfflineMapPackIDs,
+                        storage: offlineMapStorage,
+                        accent: stageAccent
+                    )
+                }
+                .tag(4)
             }
 
             if let reward {
@@ -349,7 +340,7 @@ private struct WatchDashboardPages: View {
                         hatchBurstScale: hatchBurstScale
                     )
                 }
-                .tag(7)
+                .tag(5)
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .automatic))
@@ -408,24 +399,6 @@ private struct WatchSingleCardPage<Content: View>: View {
         .padding(.horizontal, 2)
         .padding(.top, 6)
         .padding(.bottom, 14)
-    }
-}
-
-private struct WatchRunningGoalSection: View {
-    let lastSyncedWorkoutTitle: String
-    let detail: String
-
-    var body: some View {
-        GameSurface(title: "러닝 목표") {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(lastSyncedWorkoutTitle)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(GameBoyPalette.darkest)
-                Text(detail)
-                    .font(.caption2.monospaced())
-                    .foregroundStyle(GameBoyPalette.mediumDark)
-            }
-        }
     }
 }
 

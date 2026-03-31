@@ -63,6 +63,8 @@ struct PhoneInventoryView: View {
                             PixelPetView(
                                 pet: store.watchPet?.pet ?? store.featuredCompanion.pet,
                                 pixelSize: 9,
+                                mutationForm: store.watchPet.flatMap { store.mutationForm(for: $0) },
+                                mutationHistory: store.watchPet.flatMap { store.mutationHistory(for: $0) },
                                 seasonalLayers: store.watchSelection?.kind == .pet ? store.seasonalLayers : []
                             )
                         }
@@ -73,10 +75,28 @@ struct PhoneInventoryView: View {
                         Text(store.watchSelectionLabel)
                             .font(.title3.monospaced().weight(.black))
                             .foregroundStyle(GameBoyPalette.darkest)
-                        Text(store.watchSelectionDetail)
-                            .font(.footnote.monospaced())
-                            .foregroundStyle(GameBoyPalette.mediumDark)
-                            .lineLimit(3)
+                        if let formLabel = store.watchSelectionFormLabel {
+                            Text(formLabel)
+                                .font(.caption.monospaced().weight(.black))
+                                .foregroundStyle(GameBoyPalette.mediumDark)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.72)
+                        }
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(store.watchSelectionDetail)
+                                .font(.footnote.monospaced().weight(.black))
+                                .foregroundStyle(GameBoyPalette.mediumDark)
+                                .lineSpacing(3)
+                                .lineLimit(1)
+
+                            if let secondaryDetail = store.watchSelectionSecondaryDetail {
+                                Text(secondaryDetail)
+                                    .font(.caption.monospaced())
+                                    .foregroundStyle(GameBoyPalette.mediumDark.opacity(0.9))
+                                    .lineSpacing(4)
+                                    .lineLimit(2)
+                            }
+                        }
 
                         HStack(spacing: 8) {
                             TraitChip(
@@ -222,6 +242,8 @@ struct PhoneInventoryView: View {
                                     PixelPetView(
                                         pet: entry.pet,
                                         pixelSize: 8,
+                                        mutationForm: store.mutationForm(for: entry),
+                                        mutationHistory: store.mutationHistory(for: entry),
                                         seasonalLayers: store.watchSelection?.kind == .pet && store.watchSelection?.targetID == entry.id ? store.seasonalLayers : []
                                     )
 
@@ -235,15 +257,44 @@ struct PhoneInventoryView: View {
                                     .font(.subheadline.monospaced().weight(.black))
                                     .foregroundStyle(GameBoyPalette.darkest)
 
-                                HStack(spacing: 6) {
-                                    TraitChip(label: "Lv.\(entry.level)", accent: entry.pet.accentColor)
-                                    TraitChip(label: "\(entry.totalDistanceKm.formatted(.number.precision(.fractionLength(1))))km", accent: GameBoyPalette.mediumLight)
+                                if let form = store.mutationForm(for: entry) {
+                                    Text(form.displayTitle)
+                                        .font(.caption2.monospaced().weight(.black))
+                                        .foregroundStyle(GameBoyPalette.mediumDark)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.72)
                                 }
 
-                                Text(entry.headline)
-                                    .font(.caption2.monospaced())
-                                    .foregroundStyle(GameBoyPalette.mediumDark)
-                                    .lineLimit(2)
+                                companionMetricRow(
+                                    levelLabel: "Lv.\(entry.level)",
+                                    distanceLabel: "\(store.metricSummary(for: entry)?.totalDistanceKm.formatted(.number.precision(.fractionLength(1))) ?? "0.0")km",
+                                    accent: entry.pet.accentColor
+                                )
+
+                                VStack(alignment: .leading, spacing: 5) {
+                                    Text(store.metricSummary(for: entry)?.primaryLine ?? entry.headline)
+                                        .font(.caption2.monospaced().weight(.black))
+                                        .foregroundStyle(GameBoyPalette.mediumDark)
+                                        .lineSpacing(3)
+                                        .lineLimit(1)
+
+                                    if let secondaryLine = store.metricSummary(for: entry)?.secondaryLine {
+                                        Text(secondaryLine)
+                                            .font(.caption2.monospaced())
+                                            .foregroundStyle(GameBoyPalette.mediumDark.opacity(0.88))
+                                            .lineSpacing(3)
+                                            .lineLimit(1)
+                                    }
+
+                                    if let tertiaryLine = store.metricSummary(for: entry)?.tertiaryLine {
+                                        Text(tertiaryLine)
+                                            .font(.caption2.monospaced())
+                                            .foregroundStyle(GameBoyPalette.mediumDark.opacity(0.88))
+                                            .lineSpacing(3)
+                                            .lineLimit(1)
+                                    }
+
+                                }
 
                                 inventoryButton(
                                     title: store.watchSelection?.kind == .pet && store.watchSelection?.targetID == entry.id ? "선택됨" : "워치로",
@@ -309,6 +360,49 @@ struct PhoneInventoryView: View {
         .buttonStyle(.plain)
         .disabled(disabled)
         .opacity(disabled ? 0.78 : 1)
+    }
+
+    private func inventoryMetricChip(label: String, accent: Color) -> some View {
+        Text(label.uppercased())
+            .font(.system(size: 10, weight: .black, design: .monospaced))
+            .tracking(0.2)
+            .lineLimit(1)
+            .minimumScaleFactor(0.42)
+            .allowsTightening(true)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(GameBoyPalette.lightest)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(GameBoyPalette.darkest, lineWidth: 1)
+                    )
+            )
+            .foregroundStyle(GameBoyPalette.darkest)
+            .overlay(alignment: .topLeading) {
+                Rectangle()
+                    .fill(accent.opacity(0.72))
+                    .frame(width: 8, height: 3)
+                    .padding(4)
+            }
+    }
+
+    private func companionMetricRow(levelLabel: String, distanceLabel: String, accent: Color) -> some View {
+        GeometryReader { proxy in
+            let totalWidth = max(proxy.size.width, 0)
+            let spacing: CGFloat = 4
+            let levelWidth = max(52, floor((totalWidth - spacing) * 0.34))
+            let distanceWidth = max(72, totalWidth - levelWidth - spacing)
+
+            HStack(spacing: spacing) {
+                inventoryMetricChip(label: levelLabel, accent: accent)
+                    .frame(width: levelWidth)
+                inventoryMetricChip(label: distanceLabel, accent: GameBoyPalette.mediumLight)
+                    .frame(width: distanceWidth)
+            }
+        }
+        .frame(height: 30)
     }
 
     private func handleHatch(_ eggID: String) {

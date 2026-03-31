@@ -361,7 +361,8 @@ final class PhoneProgressStore {
 
     func append(completedRun: CompletedRunRecord) {
         completedRuns.removeAll(where: { $0.id == completedRun.id })
-        completedRuns.insert(completedRun, at: 0)
+        let recalculatedRun = completedRunWithMutationForm(completedRun)
+        completedRuns.insert(recalculatedRun, at: 0)
         save()
     }
 
@@ -369,6 +370,56 @@ final class PhoneProgressStore {
         workoutArchives.removeAll(where: { $0.runID == workoutArchive.runID })
         workoutArchives.insert(workoutArchive, at: 0)
         save()
+    }
+
+    private func completedRunWithMutationForm(_ run: CompletedRunRecord) -> CompletedRunRecord {
+        let speciesRuns = runsForMutationProgress(species: run.reward.pet.species, including: run)
+        guard let mutationForm = SpeciesMutationUnlockEngine.resolveForm(
+            for: speciesRuns,
+            preferredSpecies: run.reward.pet.species
+        )?.snapshot else {
+            return run
+        }
+
+        return CompletedRunRecord(
+            id: run.id,
+            startedAt: run.startedAt,
+            endedAt: run.endedAt,
+            distanceMeters: run.distanceMeters,
+            durationSeconds: run.durationSeconds,
+            averageHeartRate: run.averageHeartRate,
+            averagePaceSeconds: run.averagePaceSeconds,
+            cadence: run.cadence,
+            elevationGainM: run.elevationGainM,
+            reward: run.reward,
+            route: run.route,
+            source: run.source,
+            sourceLabel: run.sourceLabel,
+            raidContribution: run.raidContribution,
+            environmentCondition: run.environmentCondition,
+            rareEventCompleted: run.rareEventCompleted,
+            mutationForm: mutationForm,
+            mutationContribution: run.mutationContribution ?? SpeciesMutationContributionEngine.runContribution(
+                for: run,
+                preferredSpecies: run.reward.pet.species
+            )
+        )
+    }
+
+    private func runsForMutationProgress(species: PetSpecies, including run: CompletedRunRecord) -> [CompletedRunRecord] {
+        let canonicalSpeciesID = canonicalMutationSpeciesID(for: species)
+        var runs = completedRuns.filter { canonicalMutationSpeciesID(for: $0.reward.pet.species) == canonicalSpeciesID }
+        runs.append(run)
+        return runs.sorted { $0.endedAt < $1.endedAt }
+    }
+
+    private func canonicalMutationSpeciesID(for species: PetSpecies) -> String {
+        switch species {
+        case .shadebit:
+            return PetSpecies.sparkfang.rawValue
+        default:
+            return species.rawValue
+        }
     }
 
     func workoutArchive(for runID: String) -> WorkoutSessionArchive? {
@@ -418,6 +469,31 @@ final class PhoneProgressStore {
         }
 
         save()
+    }
+
+    func canDeleteRun(id: String) -> Bool {
+        guard completedRuns.contains(where: { $0.id == id }) else { return false }
+        if growthRecords.contains(where: { $0.assignedRunIDs.contains(id) }) { return false }
+        if eggInventory.contains(where: { $0.sourceRunID == id || $0.incubationRunIDs.contains(id) }) { return false }
+        return true
+    }
+
+    @discardableResult
+    func removeRun(id: String) -> Bool {
+        guard canDeleteRun(id: id) else { return false }
+
+        completedRuns.removeAll(where: { $0.id == id })
+        workoutArchives.removeAll(where: { $0.runID == id })
+        journal.removeAll(where: { $0.id == id })
+
+        do {
+            try archivePersistence.removeWorkoutPackageFiles(forRunID: id)
+        } catch {
+            // The persisted arrays remain canonical even if package file cleanup fails.
+        }
+
+        save()
+        return true
     }
 
     func claimWeeklyReward(id: String) {

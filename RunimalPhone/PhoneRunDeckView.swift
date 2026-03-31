@@ -6,6 +6,11 @@ private struct SelectedRunRecord: Identifiable {
     let id: String
 }
 
+private struct ExportedRunDocument: Identifiable {
+    let id = UUID()
+    let url: URL
+}
+
 extension UTType {
     static let mbtilesFile = UTType(filenameExtension: "mbtiles") ?? .data
     static let pmtilesFile = UTType(filenameExtension: "pmtiles") ?? .data
@@ -34,6 +39,8 @@ struct PhoneRunDeckView: View {
     @State private var selectedRun: SelectedRunRecord?
     @State private var selectedOfflineMapPackDetail: OfflineMapPackSummary?
     @State private var archiveFilter: RunArchiveFilter = .all
+    @State private var showRunTools = false
+    @State private var exportedDocument: ExportedRunDocument?
 
     var body: some View {
         ZStack {
@@ -55,67 +62,8 @@ struct PhoneRunDeckView: View {
                     if let latestWatchSync = store.latestWatchSyncedRun {
                         watchSyncHighlightCard(for: latestWatchSync)
                     }
-                    if let diagnostic = store.latestWatchSyncDiagnostic {
-                        watchSyncDiagnosticCard(diagnostic)
-                    }
                     summaryCard
-                    syncCard
-                    PhoneOfflineMapPackPanel(
-                        packs: store.offlineMapPacks,
-                        watchPacks: store.watchOfflineMapPacks,
-                        watchStoredPackIDs: store.watchStoredOfflineMapPackIDs,
-                        transferStatus: store.offlineMapTransferStatus,
-                        selectedPackID: store.selectedOfflineMapPackID,
-                        importStatusLabel: store.offlineMaps.importStatusLabel,
-                        lastImportError: store.offlineMaps.lastImportError,
-                        locationStatusLabel: store.currentLocation.statusLabel,
-                        locationError: store.currentLocation.lastError,
-                        accent: store.pet.accentColor,
-                        onCreatePack: { store.registerOfflineMapPack($0) },
-                        onCreateCurrentLocationPack: { store.createOfflineMapPackNearCurrentLocation() },
-                        onSelectPack: { store.setSelectedOfflineMapPack(id: $0) },
-                        onImportTiles: { importingOfflineMapPackID = $0 },
-                        onSendPack: { store.sendOfflineMapPackFiles(id: $0) },
-                        onRenamePack: { id, title in
-                            store.renameOfflineMapPack(id: id, title: title)
-                        },
-                        onDeletePack: { store.deleteOfflineMapPack(id: $0) }
-                    )
-                    PhoneOfflineMapValidationPanel(
-                        selectedPack: store.selectedOfflineMapPack,
-                        isStoredOnWatch: {
-                            guard let pack = store.selectedOfflineMapPack else { return false }
-                            return store.watchStoredOfflineMapPackIDs.contains(pack.id)
-                        }(),
-                        transferStatusLabel: {
-                            guard let pack = store.selectedOfflineMapPack else { return "팩 없음" }
-                            if let status = store.offlineMapTransferStatus[pack.id] {
-                                switch status.phase {
-                                case .idle:
-                                    return pack.tilesReady ? "전송 대기" : "파일 연결 필요"
-                                case .sending:
-                                    return "전송 중"
-                                case .storedOnWatch:
-                                    return "watch 저장 완료"
-                                case .failed:
-                                    return status.lastError.map { "전송 실패 · \($0)" } ?? "전송 실패"
-                                }
-                            }
-                            return pack.tilesReady ? "전송 대기" : "파일 연결 필요"
-                        }(),
-                        accent: store.pet.accentColor,
-                        onOpenDetail: {
-                            selectedOfflineMapPackDetail = store.selectedOfflineMapPack
-                        },
-                        onImportTiles: {
-                            guard let pack = store.selectedOfflineMapPack else { return }
-                            importingOfflineMapPackID = pack.id
-                        },
-                        onSend: {
-                            guard let pack = store.selectedOfflineMapPack else { return }
-                            store.sendOfflineMapPackFiles(id: pack.id)
-                        }
-                    )
+                    runToolsSection
                     archiveFilterStrip
                     if shouldShowRunimalArchive {
                         PhoneRunSyncHistoryPanel(
@@ -127,6 +75,9 @@ struct PhoneRunDeckView: View {
                             canUseRunCore: { store.canUseRunCore($0) },
                             usageSummary: { store.runCoreUsageSummary(for: $0) },
                             workoutArchive: { store.workoutArchive(for: $0.id) },
+                            canDeleteRun: { store.canDeleteRunRecord($0) },
+                            onExportRun: { exportRun($0) },
+                            onDeleteRun: { _ = store.deleteRunRecord(id: $0.id) },
                             onSelectRun: { selectedRun = SelectedRunRecord(id: $0.id) }
                         )
                     }
@@ -140,6 +91,9 @@ struct PhoneRunDeckView: View {
                             canUseRunCore: { store.canUseRunCore($0) },
                             usageSummary: { store.runCoreUsageSummary(for: $0) },
                             workoutArchive: { store.workoutArchive(for: $0.id) },
+                            canDeleteRun: { store.canDeleteRunRecord($0) },
+                            onExportRun: { exportRun($0) },
+                            onDeleteRun: { _ = store.deleteRunRecord(id: $0.id) },
                             onSelectRun: { selectedRun = SelectedRunRecord(id: $0.id) }
                         )
                     }
@@ -157,7 +111,6 @@ struct PhoneRunDeckView: View {
                             }
                         )
                     }
-                    PhoneTelemetryPanel(logger: store.telemetry)
                 }
                 .padding(20)
             }
@@ -206,6 +159,9 @@ struct PhoneRunDeckView: View {
         }
         .sheet(item: $selectedRun) { selectedRun in
             PhoneRunRecordDetailSheet(store: store, runID: selectedRun.id)
+        }
+        .sheet(item: $exportedDocument) { document in
+            ShareSheet(items: [document.url])
         }
         .sheet(item: $selectedOfflineMapPackDetail) { pack in
             PhoneOfflineMapPackDetailSheet(
@@ -324,6 +280,12 @@ struct PhoneRunDeckView: View {
                     .foregroundStyle(archiveFilter == filter ? GameBoyPalette.lightest : GameBoyPalette.darkest)
                 }
             }
+        }
+    }
+
+    private func exportRun(_ run: CompletedRunRecord) {
+        if let url = try? store.exportFileURL(for: run) {
+            exportedDocument = ExportedRunDocument(url: url)
         }
     }
 
@@ -502,72 +464,6 @@ struct PhoneRunDeckView: View {
         }
     }
 
-    private func watchSyncDiagnosticCard(_ diagnostic: WatchRunSyncDiagnostic) -> some View {
-        GameSurface(
-            title: diagnostic.hasAnyMismatch ? "워치 동기화 값 점검" : "워치 동기화 값 일치",
-            accent: diagnostic.hasAnyMismatch ? .orange : .green,
-            eyebrow: "Sync QA"
-        ) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("워치에서 막 들어온 원본값과 iPhone에 저장된 값을 나란히 비교합니다. 실기 QA 때 거리, 평균 심박, 평균 케이던스 차이를 바로 확인할 수 있습니다.")
-                    .font(.footnote.monospaced())
-                    .foregroundStyle(GameBoyPalette.mediumDark)
-
-                metricDiffRow(
-                    title: "거리",
-                    inbound: distanceLabel(diagnostic.inbound.distanceMeters),
-                    persisted: distanceLabel(diagnostic.persisted.distanceMeters),
-                    delta: signedMetersLabel(diagnostic.distanceDeltaMeters)
-                )
-                metricDiffRow(
-                    title: "시간",
-                    inbound: durationLabel(diagnostic.inbound.durationSeconds),
-                    persisted: durationLabel(diagnostic.persisted.durationSeconds),
-                    delta: signedSecondsLabel(diagnostic.durationDeltaSeconds)
-                )
-                metricDiffRow(
-                    title: "평균 페이스",
-                    inbound: paceLabel(diagnostic.inbound.averagePaceSeconds),
-                    persisted: paceLabel(diagnostic.persisted.averagePaceSeconds),
-                    delta: signedPaceLabel(diagnostic.paceDeltaSeconds)
-                )
-                if let averageHeartRateDelta = diagnostic.averageHeartRateDelta {
-                    metricDiffRow(
-                        title: "평균 심박",
-                        inbound: heartRateLabel(diagnostic.inbound.averageHeartRate),
-                        persisted: heartRateLabel(diagnostic.persisted.averageHeartRate),
-                        delta: signedHeartRateLabel(averageHeartRateDelta)
-                    )
-                }
-                if let cadenceDelta = diagnostic.cadenceDelta {
-                    metricDiffRow(
-                        title: "평균 케이던스",
-                        inbound: cadenceLabel(diagnostic.inbound.cadence),
-                        persisted: cadenceLabel(diagnostic.persisted.cadence),
-                        delta: signedCadenceLabel(cadenceDelta)
-                    )
-                }
-            }
-        }
-    }
-
-    private func metricDiffRow(title: String, inbound: String, persisted: String, delta: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(title)
-                    .font(.caption.monospaced().weight(.black))
-                    .foregroundStyle(GameBoyPalette.darkest)
-                Spacer()
-                TraitChip(label: delta, accent: delta == "일치" ? .green.opacity(0.28) : .orange.opacity(0.32))
-            }
-
-            HStack(spacing: 8) {
-                RunimalSignalBadge(icon: "applewatch", label: inbound, accent: .cyan)
-                RunimalSignalBadge(icon: "iphone", label: persisted, accent: .white.opacity(0.22))
-            }
-        }
-    }
-
     private func distanceLabel(_ meters: Double) -> String {
         String(format: "%.2f km", meters / 1000)
     }
@@ -598,26 +494,6 @@ struct PhoneRunDeckView: View {
     private func cadenceLabel(_ value: Int?) -> String {
         guard let value else { return "-- spm" }
         return "\(value) spm"
-    }
-
-    private func signedMetersLabel(_ meters: Double) -> String {
-        abs(meters) < 1 ? "일치" : String(format: "%@%.0fm", meters > 0 ? "+" : "", meters)
-    }
-
-    private func signedSecondsLabel(_ seconds: Int) -> String {
-        seconds == 0 ? "일치" : "\(seconds > 0 ? "+" : "")\(seconds)s"
-    }
-
-    private func signedPaceLabel(_ seconds: Int) -> String {
-        seconds == 0 ? "일치" : "\(seconds > 0 ? "+" : "")\(seconds)s/km"
-    }
-
-    private func signedHeartRateLabel(_ bpm: Double) -> String {
-        abs(bpm) < 0.5 ? "일치" : String(format: "%@%.0f bpm", bpm > 0 ? "+" : "", bpm)
-    }
-
-    private func signedCadenceLabel(_ cadence: Int) -> String {
-        cadence == 0 ? "일치" : "\(cadence > 0 ? "+" : "")\(cadence) spm"
     }
 
     private var workoutCard: some View {
@@ -693,14 +569,55 @@ struct PhoneRunDeckView: View {
         .buttonStyle(.plain)
     }
 
+    private var runToolsSection: some View {
+        DisclosureGroup(isExpanded: $showRunTools) {
+            VStack(alignment: .leading, spacing: 14) {
+                syncCard
+                PhoneOfflineMapPackPanel(
+                    packs: store.offlineMapPacks,
+                    watchPacks: store.watchOfflineMapPacks,
+                    watchStoredPackIDs: store.watchStoredOfflineMapPackIDs,
+                    transferStatus: store.offlineMapTransferStatus,
+                    selectedPackID: store.selectedOfflineMapPackID,
+                    importStatusLabel: store.offlineMaps.importStatusLabel,
+                    lastImportError: store.offlineMaps.lastImportError,
+                    locationStatusLabel: store.currentLocation.statusLabel,
+                    locationError: store.currentLocation.lastError,
+                    accent: store.pet.accentColor,
+                    onCreatePack: { store.registerOfflineMapPack($0) },
+                    onCreateCurrentLocationPack: { store.createOfflineMapPackNearCurrentLocation() },
+                    onSelectPack: { store.setSelectedOfflineMapPack(id: $0) },
+                    onImportTiles: { importingOfflineMapPackID = $0 },
+                    onSendPack: { store.sendOfflineMapPackFiles(id: $0) },
+                    onRenamePack: { id, title in
+                        store.renameOfflineMapPack(id: id, title: title)
+                    },
+                    onDeletePack: { store.deleteOfflineMapPack(id: $0) }
+                )
+            }
+            .padding(.top, 12)
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("가져오기 및 지도")
+                    .font(.caption.monospaced().weight(.black))
+                    .tracking(1.2)
+                    .foregroundStyle(GameBoyPalette.mediumDark)
+                Text("FIT 가져오기, 자동 pause, 오프라인 지도 관리는 필요할 때만 엽니다.")
+                    .font(.footnote.monospaced())
+                    .foregroundStyle(GameBoyPalette.darkest)
+            }
+        }
+        .tint(GameBoyPalette.darkest)
+    }
+
     private var syncCard: some View {
-        GameSurface(title: "연결 상태", accent: store.pet.accentColor, eyebrow: "기기 연동") {
+        GameSurface(title: "러닝 설정", accent: store.pet.accentColor, eyebrow: "핵심 연결") {
             VStack(alignment: .leading, spacing: 14) {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     RunimalMetricTile(icon: "doc.badge.plus", title: "파일", value: "FIT", accent: store.pet.accentColor)
                     RunimalMetricTile(icon: "applewatch.watchface", title: "워치", value: store.connectivity.reachabilityLabel, accent: .cyan)
-                    RunimalMetricTile(icon: "shippingbox.fill", title: "보관함", value: store.vault.statusLabel, accent: .orange)
-                    RunimalMetricTile(icon: "icloud.fill", title: "클라우드", value: store.cloudMirror.statusLabel, accent: .mint)
+                    RunimalMetricTile(icon: "pause.circle.fill", title: "자동 pause", value: store.autoPauseEnabled ? "ON" : "OFF", accent: .orange)
+                    RunimalMetricTile(icon: "map.fill", title: "지도 팩", value: "\(store.offlineMapPacks.count)개", accent: .mint)
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -719,47 +636,6 @@ struct PhoneRunDeckView: View {
                     Text(store.autoPauseEnabled ? "자동 pause ON · 저속 구간을 자동으로 pause 처리합니다." : "자동 pause OFF · 정지는 수동 종료/재개만 반영합니다.")
                         .font(.footnote.monospaced())
                         .foregroundStyle(GameBoyPalette.mediumDark)
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("오프라인 지도")
-                        .font(.headline.monospaced().weight(.black))
-                        .foregroundStyle(GameBoyPalette.darkest)
-                    Text("iPhone 팩 \(store.offlineMapPacks.count)개 · Watch 카탈로그 \(store.watchOfflineMapPacks.count)개")
-                        .font(.footnote.monospaced())
-                        .foregroundStyle(GameBoyPalette.mediumDark)
-                }
-
-                if let reward = store.connectivity.lastReward {
-                    HStack(alignment: .center, spacing: 12) {
-                        PixelPetView(pet: reward.pet, pixelSize: 6)
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("최근 생성")
-                                .font(.caption.monospaced().weight(.black))
-                                .foregroundStyle(GameBoyPalette.mediumDark)
-                            Text(reward.pet.displayName)
-                                .font(.headline.monospaced().weight(.black))
-                                .foregroundStyle(GameBoyPalette.darkest)
-                            Text(reward.coreLabel)
-                                .font(.footnote.monospaced())
-                                .foregroundStyle(GameBoyPalette.mediumDark)
-                        }
-
-                        Spacer()
-
-                        TraitChip(label: "+\(reward.experience) XP", accent: .green)
-                    }
-                } else if let snapshot = store.connectivity.lastSnapshot {
-                    HStack(spacing: 8) {
-                        RunimalSignalBadge(icon: "point.topleft.down.curvedto.point.bottomright.up.fill", label: "\(Int(snapshot.distanceMeters))m", accent: .cyan)
-                        RunimalSignalBadge(icon: "waveform.path.ecg", label: "\(snapshot.cadence ?? 0) spm", accent: store.pet.accentColor)
-                    }
-                }
-
-                HStack(spacing: 10) {
-                    RunimalMetricTile(icon: "waveform.path.ecg", title: "케이던스", value: "\(store.summary.cadence) spm", accent: .cyan)
-                    RunimalMetricTile(icon: "timer", title: "페이스", value: "\(store.summary.averagePaceSeconds / 60):\(String(format: "%02d", store.summary.averagePaceSeconds % 60))", accent: store.pet.accentColor)
                 }
 
                 HStack(spacing: 10) {

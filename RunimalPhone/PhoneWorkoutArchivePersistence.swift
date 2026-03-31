@@ -42,6 +42,20 @@ struct PhoneWorkoutArchivePersistence {
         try saveArray(archives, filename: "workout-archives.json")
     }
 
+    func removeWorkoutPackageFiles(forRunID runID: String) throws {
+        let packagesDirectoryURL = directoryURL.appendingPathComponent("WorkoutPackages", isDirectory: true)
+        guard fileManager.fileExists(atPath: packagesDirectoryURL.path) else { return }
+
+        let packageURLs = try fileManager.contentsOfDirectory(
+            at: packagesDirectoryURL,
+            includingPropertiesForKeys: nil
+        )
+
+        for packageURL in packageURLs where packageURL.lastPathComponent.hasPrefix("\(runID)-") {
+            try fileManager.removeItem(at: packageURL)
+        }
+    }
+
     func storeReceivedWorkoutPackageFile(
         at sourceURL: URL,
         runID: String,

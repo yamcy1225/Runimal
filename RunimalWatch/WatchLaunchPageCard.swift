@@ -78,7 +78,7 @@ struct WatchLaunchPageCard: View {
     private var gpsHeader: some View {
         HStack(spacing: 8) {
             Text("GPS")
-                .font(.caption.monospaced().weight(.black))
+                .font(.caption2.monospaced().weight(.black))
                 .foregroundStyle(GameBoyPalette.mediumDark)
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
@@ -89,12 +89,12 @@ struct WatchLaunchPageCard: View {
                         .frame(width: max(geometry.size.width * gpsSignalStrength, 12))
                 }
             }
-            .frame(height: 10)
+            .frame(height: 8)
         }
     }
 
     private var companionField: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 10) {
             if let companion {
                 companionSummary(companion)
             } else {
@@ -106,22 +106,22 @@ struct WatchLaunchPageCard: View {
                                 .stroke(GameBoyPalette.darkest, lineWidth: 2)
                         )
 
-                    VStack(spacing: 6) {
+                    VStack(spacing: 8) {
                         Image(systemName: "applewatch.radiowaves.left.and.right")
-                            .font(.system(size: 22, weight: .black))
+                            .font(.system(size: 24, weight: .black))
                             .foregroundStyle(GameBoyPalette.mediumDark)
                         Text("동행 대기")
-                            .font(.caption.monospaced().weight(.black))
+                            .font(.footnote.monospaced().weight(.black))
                             .foregroundStyle(GameBoyPalette.darkest)
                     }
                 }
-                .frame(height: 74)
+                .frame(height: 82)
             }
         }
     }
 
     private func companionSummary(_ companion: WatchMainCompanionContext) -> some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 7) {
             WatchCompanionActionField(
                 companion: companion,
                 accent: accent,
@@ -134,15 +134,32 @@ struct WatchLaunchPageCard: View {
                 .foregroundStyle(GameBoyPalette.darkest)
                 .lineLimit(1)
                 .minimumScaleFactor(0.82)
+
+            if let summaryLine = compactSummaryLine(for: companion) {
+                Text(summaryLine)
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(GameBoyPalette.mediumDark)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+            }
         }
+    }
+
+    private func compactSummaryLine(for companion: WatchMainCompanionContext) -> String? {
+        if companion.selection.kind == .egg {
+            return nil
+        }
+
+        return companion.petHeadline ?? companion.detailText
     }
 
     private var primaryButton: some View {
         Button(primaryButtonLabel) {
             onPrimaryAction()
         }
-        .font(.subheadline.monospaced().weight(.black))
-        .frame(maxWidth: .infinity, minHeight: 36)
+        .font(.caption.monospaced().weight(.black))
+        .frame(maxWidth: .infinity, minHeight: 32)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(primaryButtonAccent)

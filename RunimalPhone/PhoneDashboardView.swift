@@ -14,9 +14,14 @@ final class PhoneDashboardStore {
     let progress = PhoneProgressStore()
     let vault = PhoneVaultSyncManager()
     let cloudMirror = PhoneCloudMirrorManager()
-    let contentCatalog = PhoneContentCatalog()
+    let worldPackManifest = PhoneWorldPackManifestManager()
     let telemetry = PhoneTelemetryLogger()
     var latestFeedOutcome: CompanionFeedOutcome?
+    var activeWorldPackIDs: [String] = []
+
+    var contentCatalog: PhoneContentCatalog {
+        PhoneContentCatalog(manifest: worldPackManifest)
+    }
 
     let summary = RunSummary(
         distanceKm: 10.02,
@@ -52,7 +57,7 @@ final class PhoneDashboardStore {
     }
 
     var quests: [RunQuestStatus] {
-        RunimalGameEngine.evaluateRunQuests(for: summary, claimedRewardIDs: claimedWeeklyRewardIDs)
+        RunimalGameEngine.evaluateRunQuests(for: currentRunSummary, claimedRewardIDs: claimedWeeklyRewardIDs)
     }
 
     var suggestedWorkout: WorkoutPlanSuggestion {
@@ -108,9 +113,35 @@ final class PhoneDashboardStore {
 
     var mainEggResonance: Double {
         guard let egg = mainEgg else { return 0.24 }
-        let bpm = latestCompletedRun?.averageHeartRate ?? Double(summary.cadence) * 0.78
+        let bpm = latestCompletedRun?.averageHeartRate ?? Double(currentRunSummary.cadence) * 0.78
         let bpmRatio = min(max((bpm - 95) / 75, 0.16), 1)
         return min(max((egg.progressRatio * 0.58) + (bpmRatio * 0.42), 0.18), 1)
+    }
+
+    var currentRunSummary: RunSummary {
+        guard let latestCompletedRun else { return summary }
+        return runSummary(from: latestCompletedRun)
+    }
+
+    var featuredCompanionDistanceKm: Double {
+        metricSummary(for: featuredCompanion)?.totalDistanceKm ?? featuredCompanion.totalDistanceKm
+    }
+
+    var featuredCompanionCadence: Int? {
+        metricSummary(for: featuredCompanion)?.averageCadence ?? latestCompletedRun?.cadence
+    }
+
+    var featuredCompanionSignalLabel: String {
+        if mainSelection?.kind == .egg {
+            return mainEgg?.shell.scanHeadline ?? "SCAN ACTIVE"
+        }
+
+        let totalDistanceKm = featuredCompanionDistanceKm
+        if totalDistanceKm > 0 {
+            return "\(totalDistanceKm.formatted(.number.precision(.fractionLength(1))))km 누적 동행"
+        }
+
+        return featuredCompanion.headline
     }
 
     var mainSelectionLabel: String {
@@ -212,12 +243,6 @@ final class PhoneDashboardStore {
         guard let record = connectivity.lastCompletedRun else { return nil }
         guard record.source == "watch-healthkit" || record.source == "watch-demo" else { return nil }
         return record
-    }
-
-    var latestWatchSyncDiagnostic: WatchRunSyncDiagnostic? {
-        guard let inbound = latestWatchSyncedRun else { return nil }
-        guard let persisted = completedRuns.first(where: { $0.id == inbound.id }) else { return nil }
-        return WatchRunSyncDiagnostic(inbound: inbound, persisted: persisted)
     }
 
     var offlineMapPacks: [OfflineMapPackSummary] {
@@ -460,6 +485,9 @@ final class PhoneDashboardStore {
     }
 
     func bootstrap() {
+        let availablePackIDs = DefaultWorldContent.packSummaries.map(\.packID)
+        worldPackManifest.load(availablePackIDs: availablePackIDs)
+        activeWorldPackIDs = worldPackManifest.enabledPackIDs
         progress.load()
         offlineMaps.load()
         let vaultSnapshot = vault.loadSnapshot()
@@ -475,6 +503,14 @@ final class PhoneDashboardStore {
         persistVault()
         cloudMirror.validateRuntime()
         telemetry.log("bootstrap", detail: "store initialized")
+    }
+
+    func toggleWorldPack(_ packID: String) {
+        let availablePackIDs = DefaultWorldContent.packSummaries.map(\.packID)
+        worldPackManifest.toggle(packID: packID, availablePackIDs: availablePackIDs)
+        activeWorldPackIDs = worldPackManifest.enabledPackIDs
+        syncMainCompanionSelection()
+        telemetry.log("toggle_world_pack", detail: "\(packID):\(activeWorldPackIDs.joined(separator: ","))")
     }
 
     func requestHealthAuthorization() async {
@@ -829,43 +865,65 @@ final class PhoneDashboardStore {
         guard reward.bonusLabels.isEmpty == false else { return }
         telemetry.log("reward_pulse_applied", detail: reward.bonusLabels.joined(separator: ", "))
     }
-}
 
-struct WatchRunSyncDiagnostic {
-    let inbound: CompletedRunRecord
-    let persisted: CompletedRunRecord
+    private func runSummary(from record: CompletedRunRecord) -> RunSummary {
+        let paceSeconds = record.averagePaceSeconds ?? Int(
+            (Double(max(record.durationSeconds, 1)) / max(record.distanceMeters / 1000, 1)).rounded()
+        )
+        let cadence = record.cadence ?? currentCadenceFallback
 
-    var distanceDeltaMeters: Double {
-        persisted.distanceMeters - inbound.distanceMeters
+        return RunSummary(
+            distanceKm: record.distanceMeters / 1000,
+            averagePaceSeconds: paceSeconds,
+            cadence: cadence,
+            elevationGainM: record.elevationGainM,
+            variability: routeVariability(for: record.route),
+            aura: aura(for: record.startedAt),
+            shape: shape(for: record.route),
+            environmentCondition: record.environmentCondition,
+            rareEventCompleted: record.rareEventCompleted
+        )
     }
 
-    var durationDeltaSeconds: Int {
-        persisted.durationSeconds - inbound.durationSeconds
+    private var currentCadenceFallback: Int {
+        latestCompletedRun?.cadence ?? summary.cadence
     }
 
-    var paceDeltaSeconds: Int {
-        (persisted.averagePaceSeconds ?? 0) - (inbound.averagePaceSeconds ?? 0)
+    private func aura(for date: Date) -> RunTimeAura {
+        let hour = Calendar.current.component(.hour, from: date)
+        switch hour {
+        case 5..<11:
+            return .dawn
+        case 11..<17:
+            return .day
+        case 17..<21:
+            return .dusk
+        default:
+            return .night
+        }
     }
 
-    var averageHeartRateDelta: Double? {
-        guard let inbound = inbound.averageHeartRate,
-              let persisted = persisted.averageHeartRate else { return nil }
-        return persisted - inbound
+    private func shape(for route: [RoutePoint]) -> RouteShape {
+        guard route.count > 2, let first = route.first, let last = route.last else {
+            return .freeform
+        }
+
+        let closureMeters = hypot(first.latitude - last.latitude, first.longitude - last.longitude) * 111_000
+        if closureMeters < 120 {
+            return .loop
+        }
+        return .outAndBack
     }
 
-    var cadenceDelta: Int? {
-        guard let inbound = inbound.cadence,
-              let persisted = persisted.cadence else { return nil }
-        return persisted - inbound
-    }
+    private func routeVariability(for route: [RoutePoint]) -> Double {
+        guard route.count > 4 else { return summary.variability }
 
-    var hasAnyMismatch: Bool {
-        if abs(distanceDeltaMeters) >= 1 { return true }
-        if durationDeltaSeconds != 0 { return true }
-        if paceDeltaSeconds != 0 { return true }
-        if let averageHeartRateDelta, abs(averageHeartRateDelta) >= 0.5 { return true }
-        if let cadenceDelta, cadenceDelta != 0 { return true }
-        return false
+        let latitudes = route.map(\.latitude)
+        let longitudes = route.map(\.longitude)
+        let latSpan = (latitudes.max() ?? 0) - (latitudes.min() ?? 0)
+        let lonSpan = (longitudes.max() ?? 0) - (longitudes.min() ?? 0)
+        let spread = max(latSpan, lonSpan) * 111_000
+        return min(max(spread / 5000, 0.04), 0.24)
     }
 }
 

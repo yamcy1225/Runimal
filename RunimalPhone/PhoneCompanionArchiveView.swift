@@ -96,7 +96,9 @@ struct PhoneCompanionArchiveView: View {
 
                     PixelPetView(
                         pet: entry.companion.pet,
-                        pixelSize: 8
+                        pixelSize: 8,
+                        mutationForm: store.mutationForm(for: entry.companion),
+                        mutationHistory: store.mutationHistory(for: entry.companion)
                     )
 
                     if entry.retired {
@@ -109,15 +111,33 @@ struct PhoneCompanionArchiveView: View {
                     .font(.subheadline.monospaced().weight(.black))
                     .foregroundStyle(GameBoyPalette.darkest)
 
-                HStack(spacing: 6) {
-                    TraitChip(label: "Lv.\(entry.companion.level)", accent: entry.companion.pet.accentColor)
-                    TraitChip(label: "유대 \(entry.companion.bond)", accent: GameBoyPalette.mediumLight)
+                if let form = store.mutationForm(for: entry.companion) {
+                    Text(form.displayTitle)
+                        .font(.caption2.monospaced().weight(.black))
+                        .foregroundStyle(GameBoyPalette.mediumDark)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
                 }
 
-                Text(entry.companion.headline)
-                    .font(.caption2.monospaced())
-                    .foregroundStyle(GameBoyPalette.mediumDark)
-                    .lineLimit(2)
+                if let lore = store.contentCatalog.companionWorldProfile(for: entry.companion.pet) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(lore.fantasyLine)
+                            .font(.caption2.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.darkest)
+                            .lineSpacing(3)
+                            .lineLimit(2)
+                        Text(lore.habitatLine)
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(GameBoyPalette.mediumDark)
+                            .lineSpacing(3)
+                            .lineLimit(2)
+                    }
+                } else {
+                    Text(entry.companion.headline)
+                        .font(.caption2.monospaced())
+                        .foregroundStyle(GameBoyPalette.mediumDark)
+                        .lineLimit(2)
+                }
             }
         }
     }

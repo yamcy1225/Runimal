@@ -7,6 +7,8 @@ struct PhoneCompanionRosterPanel: View {
     let mainDetail: String
     let companions: [PetCollectionEntry]
     let eggs: [EggInventoryEntry]
+    let mutationForm: (PetCollectionEntry) -> MutationFormSnapshot?
+    let mutationHistory: (PetCollectionEntry) -> MutationHistorySnapshot?
     let onSelectPet: (String) -> Void
     let onSelectEgg: (String) -> Void
     let onHatchEgg: (String) -> Void
@@ -88,13 +90,25 @@ struct PhoneCompanionRosterPanel: View {
                     ForEach(companions) { companion in
                         HStack(alignment: .center, spacing: 12) {
                             portraitTile(accent: companion.pet.accentColor, supportAccent: companion.pet.accentColor.opacity(0.24)) {
-                                PixelPetView(pet: companion.pet, pixelSize: 6.6)
+                                PixelPetView(
+                                    pet: companion.pet,
+                                    pixelSize: 6.6,
+                                    mutationForm: mutationForm(companion),
+                                    mutationHistory: mutationHistory(companion)
+                                )
                             }
 
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(companion.pet.displayName)
                                     .font(.subheadline.monospaced().weight(.black))
                                     .foregroundStyle(GameBoyPalette.darkest)
+                                if let form = mutationForm(companion) {
+                                    Text(form.displayTitle)
+                                        .font(.caption2.monospaced().weight(.black))
+                                        .foregroundStyle(GameBoyPalette.mediumDark)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.68)
+                                }
                                 HStack(spacing: 6) {
                                     TraitChip(label: "Lv.\(companion.level)", accent: companion.pet.accentColor)
                                     TraitChip(label: "유대 \(companion.bond)", accent: GameBoyPalette.mediumLight)

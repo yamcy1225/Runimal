@@ -13,7 +13,7 @@ struct WatchCompanionActionField: View {
 
             GeometryReader { geometry in
                 let size = geometry.size
-                let spriteSize = min(size.width * 0.34, size.height * 0.72, 44)
+                let spriteSize = min(size.width * 0.3, size.height * 0.66, 40)
                 let spritePosition = companion.selection.kind == .egg
                     ? eggPosition(in: size, spriteSize: spriteSize, phase: phase)
                     : roamingPosition(in: size, spriteSize: spriteSize, phase: phase)
@@ -44,14 +44,18 @@ struct WatchCompanionActionField: View {
                 }
             }
         }
-        .frame(height: 74)
+        .frame(height: 62)
         .clipped()
     }
 
     private var spriteView: some View {
         Group {
             if companion.selection.kind == .pet, let pet = companion.pet {
-                PixelPetView(pet: pet, pixelSize: 3.2)
+                PixelPetView(
+                    pet: pet,
+                    pixelSize: 3.2,
+                    mutationVisualState: visualState
+                )
             } else if let shell = companion.eggShell {
                 TraceEggView(
                     accent: accent,
@@ -67,9 +71,22 @@ struct WatchCompanionActionField: View {
         }
     }
 
+    private var visualState: MutationVisualState? {
+        guard companion.selection.kind == .pet else { return nil }
+        guard companion.mutationBodyStage != nil || companion.mutationEcologyStage != nil || companion.mutationRhythmStage != nil else {
+            return nil
+        }
+        return MutationVisualState(
+            bodyStage: companion.mutationBodyStage ?? 0,
+            ecologyStage: companion.mutationEcologyStage ?? 0,
+            rhythmStage: companion.mutationRhythmStage ?? 0
+        )
+    }
+
     private func roamingPosition(in size: CGSize, spriteSize: CGFloat, phase: TimeInterval) -> CGPoint {
-        let xAmplitude = max((size.width - spriteSize) * (isRunning ? 0.26 : 0.2), 10)
-        let yAmplitude = max((size.height - spriteSize) * (isRunning ? 0.18 : 0.12), 6)
+        let rhythmBoost = CGFloat(Double(visualState?.rhythmStage ?? 0) * 0.018)
+        let xAmplitude = max((size.width - spriteSize) * ((isRunning ? 0.26 : 0.2) + rhythmBoost), 10)
+        let yAmplitude = max((size.height - spriteSize) * ((isRunning ? 0.18 : 0.12) + rhythmBoost * 0.7), 6)
         let x = size.width / 2
             + CGFloat(sin(phase * (isRunning ? 1.15 : 0.84))) * xAmplitude
             + CGFloat(sin(phase * 2.1)) * 5
@@ -154,10 +171,13 @@ struct WatchCompanionActionField: View {
     }
 
     private func standbyPulse(size: CGSize, phase: TimeInterval) -> some View {
-        let glow = 0.18 + (sin(phase * 2.4) + 1) * 0.08
+        let bodyStage = Double(visualState?.bodyStage ?? 0)
+        let ecologyStage = Double(visualState?.ecologyStage ?? 0)
+        let glow = 0.18 + (sin(phase * 2.4) + 1) * 0.08 + bodyStage * 0.015 + ecologyStage * 0.01
+        let widthScale = 0.7 + bodyStage * 0.03
 
         return RoundedRectangle(cornerRadius: 10, style: .continuous)
             .stroke(accent.opacity(glow), lineWidth: 2)
-            .frame(width: size.width * 0.7, height: 24)
+            .frame(width: size.width * widthScale, height: 24 + ecologyStage * 0.8)
     }
 }

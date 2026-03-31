@@ -107,7 +107,9 @@ public enum WorkoutArchiveCanonicalizer {
             sourceLabel: record.sourceLabel,
             raidContribution: record.raidContribution,
             environmentCondition: record.environmentCondition,
-            rareEventCompleted: record.rareEventCompleted
+            rareEventCompleted: record.rareEventCompleted,
+            mutationForm: record.mutationForm,
+            mutationContribution: record.mutationContribution
         )
     }
 

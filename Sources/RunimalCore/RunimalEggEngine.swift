@@ -57,10 +57,20 @@ public enum RunimalEggEngine {
     }
 
     public static func shell(for run: CompletedRunRecord) -> EggShellType {
-        if run.elevationGainM >= 90 { return .stone }
-        if run.averagePaceSeconds ?? 999 <= 310 || (run.cadence ?? 0) >= 172 { return .ember }
-        if isNight(run.startedAt) { return .dusk }
-        if run.distanceMeters >= 7000 { return .gale }
+        let summary = RunimalSpeciesRuleEngine.summarize(run: run)
+
+        if summary.elevationGainM >= 120 {
+            return .stone
+        }
+        if summary.averagePaceSeconds < 330 || summary.cadence >= 176 {
+            return .ember
+        }
+        if summary.aura == .night {
+            return .dusk
+        }
+        if summary.distanceKm >= 8 || summary.shape == .outAndBack {
+            return .gale
+        }
         return .moss
     }
 
@@ -231,125 +241,16 @@ public enum RunimalEggEngine {
     }
 
     private static func weightedSpecies(from egg: EggInventoryEntry, using runs: [CompletedRunRecord]) -> [PetSpecies: Int] {
-        var weights = Dictionary(uniqueKeysWithValues: PetSpecies.allCases.map { ($0, 1) })
-
-        switch egg.shell {
-        case .ember:
-            weights[.sparkfang, default: 0] += 5
-            weights[.windrunner, default: 0] += 2
-        case .gale:
-            weights[.windrunner, default: 0] += 5
-            weights[.sparkfang, default: 0] += 2
-        case .moss:
-            weights[.mosshop, default: 0] += 5
-            weights[.seedle, default: 0] += 2
-        case .dusk:
-            weights[.shadebit, default: 0] += 5
-            weights[.mosshop, default: 0] += 2
-        case .stone:
-            weights[.stoneback, default: 0] += 5
-            weights[.mosshop, default: 0] += 2
-        }
-
-        for run in runs {
-            if run.rareEventCompleted {
-                weights[.sparkfang, default: 0] += 6
-                weights[.shadebit, default: 0] += 2
-            }
-
-            switch run.environmentCondition {
-            case .rain:
-                weights[.mosshop, default: 0] += 4
-                weights[.seedle, default: 0] += 1
-            case .snow:
-                weights[.shadebit, default: 0] += 3
-            case .wind:
-                weights[.windrunner, default: 0] += 3
-            case .heat:
-                weights[.sparkfang, default: 0] += 3
-            case .cold:
-                weights[.stoneback, default: 0] += 2
-            case .overcast, .clear, .unknown:
-                break
-            }
-
-            if let pace = run.averagePaceSeconds, pace <= 310 {
-                weights[.sparkfang, default: 0] += 2
-            }
-            if run.distanceMeters >= 8000 {
-                weights[.windrunner, default: 0] += 2
-            }
-            if run.elevationGainM >= 80 {
-                weights[.stoneback, default: 0] += 3
-            }
-            if (run.cadence ?? 0) >= 166 && run.distanceMeters >= 4000 {
-                weights[.mosshop, default: 0] += 2
-            }
-            if isNight(run.startedAt) {
-                weights[.shadebit, default: 0] += 3
-            }
-            if run.distanceMeters < 4000 && (run.averagePaceSeconds ?? 999) >= 340 {
-                weights[.seedle, default: 0] += 2
-            }
-        }
-
-        return weights
+        RunimalSpeciesRuleEngine.shellBiasedScores(for: egg.shell, runs: runs)
     }
 
     private static func summarize(runs: [CompletedRunRecord], fallbackShell: EggShellType) -> RunSummary {
-        guard runs.isEmpty == false else {
-            return RunSummary(
-                distanceKm: 3.0,
-                averagePaceSeconds: 330,
-                cadence: 165,
-                elevationGainM: 10,
-                variability: 0.12,
-                aura: fallbackAura(for: fallbackShell),
-                shape: .freeform
-            )
-        }
-
-        let distanceKm = runs.reduce(0.0) { $0 + ($1.distanceMeters / 1000.0) } / Double(runs.count)
-        let pace = runs.compactMap(\.averagePaceSeconds).reduce(0, +) / max(runs.compactMap(\.averagePaceSeconds).count, 1)
-        let cadence = runs.compactMap(\.cadence).reduce(0, +) / max(runs.compactMap(\.cadence).count, 1)
-        let elevation = runs.reduce(0) { $0 + $1.elevationGainM } / runs.count
-
-        return RunSummary(
-            distanceKm: max(distanceKm, 1.0),
-            averagePaceSeconds: max(pace, 300),
-            cadence: max(cadence, 160),
-            elevationGainM: max(elevation, 0),
-            variability: 0.12,
-            aura: isNight(runs.last?.startedAt ?? Date()) ? .night : .day,
-            shape: .freeform,
-            environmentCondition: dominantEnvironment(in: runs),
-            rareEventCompleted: runs.contains(where: \.rareEventCompleted)
-        )
+        RunimalSpeciesRuleEngine.summarize(runs: runs, fallbackShell: fallbackShell)
     }
 
     private static func dominantSpecies(in weights: [PetSpecies: Int]) -> PetSpecies {
         weights.max(by: { $0.value < $1.value })?.key ?? .seedle
     }
-
-    private static func dominantEnvironment(in runs: [CompletedRunRecord]) -> EnvironmentCondition {
-        let counts = runs.reduce(into: [EnvironmentCondition: Int]()) { partial, run in
-            partial[run.environmentCondition, default: 0] += 1
-        }
-
-        return counts
-            .filter { $0.key != .unknown }
-            .max(by: { $0.value < $1.value })?
-            .key ?? .unknown
-    }
-
-    private static func fallbackAura(for shell: EggShellType) -> RunTimeAura {
-        switch shell {
-        case .dusk: return .night
-        case .moss: return .dusk
-        default: return .day
-        }
-    }
-
     private static func isNight(_ date: Date) -> Bool {
         let hour = Calendar.current.component(.hour, from: date)
         return hour < 6 || hour >= 20

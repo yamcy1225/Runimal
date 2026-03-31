@@ -1,0 +1,168 @@
+{
+  "schemaVersion": "0.1.0",
+  "project": "RunimalWorld",
+  "description": "World content draft schema for lore, species, mutation families, regions, seasons, and narrative episodes.",
+  "contentPack": {
+    "packID": "season-0-quiet-signal",
+    "title": "Quiet Signal",
+    "type": "season",
+    "status": "draft",
+    "playerFacingTheme": "잠든 세계에 작은 생기가 돌아오기 시작한다",
+    "featuredRegionIDs": [
+      "urban-core",
+      "nature-trail"
+    ],
+    "featuredSpeciesIDs": [
+      "windrunner",
+      "seedle",
+      "mosshop"
+    ],
+    "featuredVariantIDs": [
+      "tempo-surge",
+      "zen-bloom"
+    ],
+    "episodeIDs": [
+      "episode-awakening-signal"
+    ]
+  },
+  "speciesBible": [
+    {
+      "speciesID": "windrunner",
+      "displayName": "Windrunner",
+      "baseElement": "light",
+      "fantasy": "장거리와 순항의 감각을 지닌 길잡이형 러니멀",
+      "metricBias": {
+        "distance": "high",
+        "paceStability": "high",
+        "cadence": "medium",
+        "elevation": "low",
+        "nightAffinity": "low",
+        "routeComplexity": "medium"
+      },
+      "habitatTags": [
+        "urban",
+        "riverside",
+        "open-path"
+      ],
+      "visualKeywords": [
+        "wing",
+        "trail",
+        "light-feather"
+      ],
+      "narrativeHooks": [
+        "잃어버린 길을 먼저 찾는 종족",
+        "먼 거리를 갈수록 더 또렷해지는 존재"
+      ],
+      "defaultMutationFamilyIDs": [
+        "windrunner-swift-gale",
+        "windrunner-route-loop",
+        "windrunner-wildland-trail"
+      ]
+    }
+  ],
+  "mutationFamilies": [
+    {
+      "familyID": "windrunner-swift-gale",
+      "speciesID": "windrunner",
+      "axis": "body",
+      "branchName": "Gale Swift",
+      "unlockHint": "장거리와 안정 페이스가 오래 유지될수록 가까워진다",
+      "metricBias": {
+        "distance": "high",
+        "paceStability": "high"
+      },
+      "visualShift": [
+        "longer-wing",
+        "thinner-silhouette",
+        "wind-tail"
+      ],
+      "storyTone": "순항, 자유, 선도"
+    }
+  ],
+  "rareVariants": [
+    {
+      "variantID": "tempo-surge",
+      "displayName": "Tempo Surge",
+      "playerFacingName": "특별한 진화: 템포 서지",
+      "triggerHint": "고케이던스와 빠른 페이스",
+      "narrativeMeaning": "속도와 리듬이 과열된 흔적",
+      "suggestedSpeciesIDs": [
+        "sparkfang",
+        "windrunner"
+      ]
+    }
+  ],
+  "regions": [
+    {
+      "regionID": "urban-core",
+      "title": "도심 구역",
+      "unlockCondition": "default",
+      "environmentBias": {
+        "timeAuras": [
+          "day",
+          "dusk"
+        ],
+        "routeShapes": [
+          "loop",
+          "out-and-back"
+        ],
+        "environmentConditions": [
+          "clear",
+          "overcast"
+        ]
+      },
+      "activeSpeciesIDs": [
+        "seedle",
+        "sparkfang",
+        "windrunner"
+      ],
+      "activeVariantIDs": [
+        "tempo-surge",
+        "loop-sigil"
+      ],
+      "narrativeSummary": "가장 먼저 생기가 돌아오는 생활권 구역"
+    }
+  ],
+  "seasons": [
+    {
+      "seasonID": "quiet-signal",
+      "title": "Quiet Signal",
+      "theme": "조용한 각성과 첫 교감",
+      "featuredRegionIDs": [
+        "urban-core",
+        "nature-trail"
+      ],
+      "featuredSpeciesIDs": [
+        "seedle",
+        "windrunner",
+        "mosshop"
+      ],
+      "featuredVariantIDs": [
+        "zen-bloom"
+      ],
+      "eventHooks": [
+        "first-egg-awakening",
+        "starter-growth-loop"
+      ]
+    }
+  ],
+  "narrativeEpisodes": [
+    {
+      "episodeID": "episode-awakening-signal",
+      "seasonID": "quiet-signal",
+      "regionID": "urban-core",
+      "triggerRules": {
+        "completedRunsMin": 1,
+        "distanceKmMin": 2.0
+      },
+      "playerFacingText": "처음으로 약한 활력 신호가 감지되었다. 잠든 알이 숨을 쉬기 시작한다.",
+      "rewardPayload": {
+        "unlockRegionIDs": [],
+        "unlockSpeciesIDs": [
+          "seedle"
+        ],
+        "unlockVariantIDs": []
+      }
+    }
+  ]
+}

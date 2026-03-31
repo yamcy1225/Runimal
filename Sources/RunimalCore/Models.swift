@@ -150,6 +150,34 @@ public struct GeneratedPet: Codable, Equatable, Sendable {
     }
 }
 
+public struct MutationFormSnapshot: Codable, Equatable, Sendable {
+    public let speciesID: String
+    public let formID: String
+    public let shortLabel: String
+    public let bodyBranchID: String
+    public let ecologyBranchID: String
+    public let rhythmBranchID: String
+    public let confidence: Double
+
+    public init(
+        speciesID: String,
+        formID: String,
+        shortLabel: String,
+        bodyBranchID: String,
+        ecologyBranchID: String,
+        rhythmBranchID: String,
+        confidence: Double
+    ) {
+        self.speciesID = speciesID
+        self.formID = formID
+        self.shortLabel = shortLabel
+        self.bodyBranchID = bodyBranchID
+        self.ecologyBranchID = ecologyBranchID
+        self.rhythmBranchID = rhythmBranchID
+        self.confidence = confidence
+    }
+}
+
 public struct RunQuestStatus: Equatable, Sendable {
     public let label: String
     public let reward: String
@@ -775,6 +803,8 @@ public struct CompletedRunRecord: Codable, Equatable, Identifiable, Sendable {
     public let raidContribution: Int
     public let environmentCondition: EnvironmentCondition
     public let rareEventCompleted: Bool
+    public let mutationForm: MutationFormSnapshot?
+    public let mutationContribution: MutationRunContributionSnapshot?
 
     public init(
         id: String,
@@ -792,7 +822,9 @@ public struct CompletedRunRecord: Codable, Equatable, Identifiable, Sendable {
         sourceLabel: String? = nil,
         raidContribution: Int = 0,
         environmentCondition: EnvironmentCondition = .unknown,
-        rareEventCompleted: Bool = false
+        rareEventCompleted: Bool = false,
+        mutationForm: MutationFormSnapshot? = nil,
+        mutationContribution: MutationRunContributionSnapshot? = nil
     ) {
         self.id = id
         self.startedAt = startedAt
@@ -810,6 +842,8 @@ public struct CompletedRunRecord: Codable, Equatable, Identifiable, Sendable {
         self.raidContribution = raidContribution
         self.environmentCondition = environmentCondition
         self.rareEventCompleted = rareEventCompleted
+        self.mutationForm = mutationForm
+        self.mutationContribution = mutationContribution
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -829,6 +863,8 @@ public struct CompletedRunRecord: Codable, Equatable, Identifiable, Sendable {
         case raidContribution
         case environmentCondition
         case rareEventCompleted
+        case mutationForm
+        case mutationContribution
     }
 
     public init(from decoder: Decoder) throws {
@@ -849,6 +885,8 @@ public struct CompletedRunRecord: Codable, Equatable, Identifiable, Sendable {
         raidContribution = try container.decodeIfPresent(Int.self, forKey: .raidContribution) ?? 0
         environmentCondition = try container.decodeIfPresent(EnvironmentCondition.self, forKey: .environmentCondition) ?? .unknown
         rareEventCompleted = try container.decodeIfPresent(Bool.self, forKey: .rareEventCompleted) ?? false
+        mutationForm = try container.decodeIfPresent(MutationFormSnapshot.self, forKey: .mutationForm)
+        mutationContribution = try container.decodeIfPresent(MutationRunContributionSnapshot.self, forKey: .mutationContribution)
     }
 }
 

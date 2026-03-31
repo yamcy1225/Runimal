@@ -14,7 +14,10 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "RunimalCore"
+            name: "RunimalCore",
+            resources: [
+                .process("Resources"),
+            ]
         ),
         .executableTarget(
             name: "RunimalCLI",

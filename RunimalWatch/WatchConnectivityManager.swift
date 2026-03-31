@@ -100,11 +100,13 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
                 selection: selection,
                 petName: payload["mainCompanion_petName"] as? String,
                 petHeadline: payload["mainCompanion_petHeadline"] as? String,
+                detailText: payload["mainCompanion_detailText"] as? String,
                 updatedAt: updatedAt
             )
         case .egg:
             return WatchMainCompanionContext(
                 selection: selection,
+                detailText: payload["mainCompanion_detailText"] as? String,
                 eggShell: (payload["mainCompanion_eggShell"] as? String).flatMap(EggShellType.init(rawValue:)),
                 eggTitle: payload["mainCompanion_eggTitle"] as? String,
                 eggProgressRatio: payload["mainCompanion_eggProgressRatio"] as? Double,

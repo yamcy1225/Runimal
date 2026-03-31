@@ -41,6 +41,9 @@ final class CompanionLoopModelsTests: XCTestCase {
             pet: pet,
             petName: "Misty",
             petHeadline: "steady runner",
+            mutationBodyStage: 3,
+            mutationEcologyStage: 2,
+            mutationRhythmStage: 1,
             updatedAt: updatedAt
         )
 
@@ -54,6 +57,9 @@ final class CompanionLoopModelsTests: XCTestCase {
         XCTAssertEqual(restored?.pet?.element, context.pet?.element)
         XCTAssertEqual(restored?.pet?.palette, context.pet?.palette)
         XCTAssertEqual(restored?.pet?.rareVariant, context.pet?.rareVariant)
+        XCTAssertEqual(restored?.mutationBodyStage, context.mutationBodyStage)
+        XCTAssertEqual(restored?.mutationEcologyStage, context.mutationEcologyStage)
+        XCTAssertEqual(restored?.mutationRhythmStage, context.mutationRhythmStage)
         XCTAssertEqual(restored?.updatedAt, updatedAt)
     }
 }

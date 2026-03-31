@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "0.1.0",
+  "project": "RunimalWorld",
+  "description": "Aurora Frontier expansion pack for cold-air dawn routes and frost-touched narrative episodes.",
+  "contentPack": {
+    "packID": "aurora-frontier",
+    "title": "Aurora Frontier",
+    "type": "expansion",
+    "status": "draft",
+    "playerFacingTheme": "차가운 새벽 공기와 오로라 반응을 다루는 북방 확장팩",
+    "featuredRegionIDs": ["glacier-veil"],
+    "featuredSpeciesIDs": ["mosshop", "windrunner"],
+    "featuredVariantIDs": ["frost-thread"],
+    "episodeIDs": ["episode-frostbloom"]
+  },
+  "speciesBible": [],
+  "mutationFamilies": [
+    {
+      "familyID": "mosshop-frost-bloom",
+      "speciesID": "mosshop",
+      "axis": "habitat",
+      "branchName": "Frost Bloom",
+      "unlockHint": "차가운 새벽 공기와 고른 호흡",
+      "metricBias": {
+        "distance": null,
+        "paceStability": "high",
+        "cadence": null,
+        "elevation": null,
+        "nightAffinity": null,
+        "routeComplexity": null
+      },
+      "visualShift": ["ice-moss", "frost-petal"],
+      "storyTone": "차갑지만 살아 있는 회복의 결"
+    }
+  ],
+  "rareVariants": [
+    {
+      "variantID": "frost-thread",
+      "displayName": "Frost Thread",
+      "playerFacingName": "특별한 진화: 프로스트 스레드",
+      "triggerHint": "차가운 새벽과 느린 회복 러닝",
+      "narrativeMeaning": "얼어붙은 공기 사이로 생명의 결이 다시 이어진 흔적",
+      "suggestedSpeciesIDs": ["mosshop", "windrunner"]
+    }
+  ],
+  "regions": [
+    {
+      "regionID": "glacier-veil",
+      "title": "서리 장막 구역",
+      "unlockCondition": "cold-dawn-runs-3",
+      "environmentBias": {
+        "timeAuras": ["dawn"],
+        "routeShapes": ["out-and-back", "freeform"],
+        "environmentConditions": ["cold", "clear", "wind"]
+      },
+      "activeSpeciesIDs": ["mosshop", "windrunner"],
+      "activeVariantIDs": ["frost-thread"],
+      "narrativeSummary": "차가운 새벽 숨결이 응결되어 길 위에 얇은 생명의 막을 드리우는 북방 생태권"
+    }
+  ],
+  "seasons": [
+    {
+      "seasonID": "aurora-frontier",
+      "title": "Aurora Frontier",
+      "theme": "서리와 회복의 새벽 원정",
+      "featuredRegionIDs": ["glacier-veil"],
+      "featuredSpeciesIDs": ["mosshop", "windrunner"],
+      "featuredVariantIDs": ["frost-thread"],
+      "eventHooks": ["frost-bloom-trace", "aurora-breath-chain"]
+    }
+  ],
+  "narrativeEpisodes": [
+    {
+      "episodeID": "episode-frostbloom",
+      "seasonID": "aurora-frontier",
+      "regionID": "glacier-veil",
+      "triggerRules": {
+        "completedRunsMin": 1,
+        "distanceKmMin": 3.5,
+        "cadenceMin": null,
+        "nightRunRequired": null,
+        "elevationGainMin": null
+      },
+      "playerFacingText": "서리 장막 아래에서 얼음꽃 같은 이끼 숨결이 피어나고, 잊힌 북방 길의 문양이 발끝에 맺힌다.",
+      "rewardPayload": {
+        "unlockRegionIDs": [],
+        "unlockSpeciesIDs": [],
+        "unlockVariantIDs": ["frost-thread"]
+      }
+    }
+  ]
+}

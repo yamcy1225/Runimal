@@ -1,0 +1,126 @@
+{
+  "schemaVersion": "0.1.0",
+  "project": "RunimalWorld",
+  "description": "Seed content pack for the initial Runimal world framework.",
+  "contentPack": {
+    "packID": "master-seed",
+    "title": "Runimal World Seed",
+    "type": "expansion",
+    "status": "draft",
+    "playerFacingTheme": "달리기로 잠든 세계를 깨우는 첫 생태권 세트",
+    "featuredRegionIDs": ["urban-core", "nature-trail", "altitude-ridge", "moonlight-alley", "festival-gate"],
+    "featuredSpeciesIDs": ["windrunner", "stoneback", "sparkfang", "mosshop", "seedle"],
+    "featuredVariantIDs": ["tempo-surge", "zen-bloom", "summit-heart", "eclipse-mark", "loop-sigil"],
+    "episodeIDs": ["episode-awakening-signal", "episode-sparkflood", "episode-mossbreath", "episode-ridgeheart", "episode-moonmark"]
+  },
+  "speciesBible": [
+    {
+      "speciesID": "windrunner",
+      "displayName": "Windrunner",
+      "baseElement": "light",
+      "fantasy": "장거리와 순항에 반응하는 길잡이형 러니멀",
+      "metricBias": { "distance": "high", "paceStability": "high", "cadence": "medium", "elevation": "low", "nightAffinity": "low", "routeComplexity": "medium" },
+      "habitatTags": ["urban", "riverside", "open-path"],
+      "visualKeywords": ["wing", "trail", "feather"],
+      "narrativeHooks": ["먼 길을 먼저 읽어내는 종족", "오래 달릴수록 선명해지는 존재"],
+      "defaultMutationFamilyIDs": ["windrunner-gale-swift", "windrunner-loop-route", "windrunner-trail-wildland"]
+    },
+    {
+      "speciesID": "stoneback",
+      "displayName": "Stoneback",
+      "baseElement": "earth",
+      "fantasy": "오르막과 저항을 견디며 자라는 수호형 러니멀",
+      "metricBias": { "distance": "medium", "paceStability": "medium", "cadence": "low", "elevation": "high", "nightAffinity": "low", "routeComplexity": "low" },
+      "habitatTags": ["ridge", "stairs", "rock"],
+      "visualKeywords": ["shell", "ridge", "rock-heart"],
+      "narrativeHooks": ["언덕의 심장을 등에 얹은 종족", "느리더라도 끝까지 버티는 존재"],
+      "defaultMutationFamilyIDs": ["stoneback-ridge-guard", "stoneback-summit-pulse", "stoneback-fault-wild"]
+    },
+    {
+      "speciesID": "sparkfang",
+      "displayName": "Sparkfang",
+      "baseElement": "flame",
+      "fantasy": "빠른 템포와 폭발적인 케이던스에 반응하는 질주형 러니멀",
+      "metricBias": { "distance": "low", "paceStability": "medium", "cadence": "high", "elevation": "low", "nightAffinity": "low", "routeComplexity": "medium" },
+      "habitatTags": ["city", "sprint-lane", "signal-zone"],
+      "visualKeywords": ["fang", "spark", "tail-flare"],
+      "narrativeHooks": ["순간의 불꽃을 좇는 종족", "파열 직전의 리듬을 먹고 자라는 존재"],
+      "defaultMutationFamilyIDs": ["sparkfang-tempo-rhythm", "sparkfang-neon-urban", "sparkfang-burst-swift"]
+    },
+    {
+      "speciesID": "mosshop",
+      "displayName": "Mosshop",
+      "baseElement": "leaf",
+      "fantasy": "평온한 호흡과 자연 리듬에 반응하는 회복형 러니멀",
+      "metricBias": { "distance": "medium", "paceStability": "high", "cadence": "medium", "elevation": "low", "nightAffinity": "low", "routeComplexity": "low" },
+      "habitatTags": ["forest", "park", "rain-trail"],
+      "visualKeywords": ["moss", "round", "soft-leaf"],
+      "narrativeHooks": ["쉬는 법을 기억하는 종족", "회복의 숨결을 넓히는 존재"],
+      "defaultMutationFamilyIDs": ["mosshop-bloom-pulse", "mosshop-rain-wildland", "mosshop-canopy-guard"]
+    },
+    {
+      "speciesID": "seedle",
+      "displayName": "Seedle",
+      "baseElement": "leaf",
+      "fantasy": "시작의 활력에서 태어나는 발아형 러니멀",
+      "metricBias": { "distance": "medium", "paceStability": "medium", "cadence": "medium", "elevation": "medium", "nightAffinity": "low", "routeComplexity": "low" },
+      "habitatTags": ["starter", "garden", "everywhere"],
+      "visualKeywords": ["seed", "sprout", "tiny-tail"],
+      "narrativeHooks": ["어디서든 시작될 수 있는 종족", "가장 많은 가능성을 품은 존재"],
+      "defaultMutationFamilyIDs": ["seedle-sprout-swift", "seedle-root-guard", "seedle-twilight-bud"]
+    }
+  ],
+  "mutationFamilies": [
+    { "familyID": "windrunner-gale-swift", "speciesID": "windrunner", "axis": "body", "branchName": "Gale Swift", "unlockHint": "장거리와 안정 페이스", "metricBias": { "distance": "high", "paceStability": "high" }, "visualShift": ["long-wing", "thin-tail", "wind-trail"], "storyTone": "순항과 자유" },
+    { "familyID": "windrunner-loop-route", "speciesID": "windrunner", "axis": "rhythm", "branchName": "Loop Route", "unlockHint": "반복 루프 경로", "metricBias": { "routeComplexity": "high" }, "visualShift": ["sigil-feather", "ring-tail"], "storyTone": "문양과 항법" },
+    { "familyID": "windrunner-trail-wildland", "speciesID": "windrunner", "axis": "habitat", "branchName": "Trail Wildland", "unlockHint": "야외 장거리 코스", "metricBias": { "distance": "high", "elevation": "medium" }, "visualShift": ["trail-crown"], "storyTone": "탐사와 개활지" },
+
+    { "familyID": "stoneback-ridge-guard", "speciesID": "stoneback", "axis": "body", "branchName": "Ridge Guard", "unlockHint": "고도 상승과 언덕", "metricBias": { "elevation": "high" }, "visualShift": ["heavy-shell", "ridge-back"], "storyTone": "수호와 버팀" },
+    { "familyID": "stoneback-summit-pulse", "speciesID": "stoneback", "axis": "rhythm", "branchName": "Summit Pulse", "unlockHint": "강한 심박과 오르막 지속", "metricBias": { "elevation": "high", "paceStability": "medium" }, "visualShift": ["heart-core"], "storyTone": "심장과 결의" },
+    { "familyID": "stoneback-fault-wild", "speciesID": "stoneback", "axis": "habitat", "branchName": "Fault Wild", "unlockHint": "거친 지형", "metricBias": { "elevation": "high", "routeComplexity": "medium" }, "visualShift": ["fracture-lines"], "storyTone": "지각과 균열" },
+
+    { "familyID": "sparkfang-tempo-rhythm", "speciesID": "sparkfang", "axis": "rhythm", "branchName": "Tempo Rhythm", "unlockHint": "고케이던스", "metricBias": { "cadence": "high" }, "visualShift": ["tempo-flare"], "storyTone": "속도와 열기" },
+    { "familyID": "sparkfang-neon-urban", "speciesID": "sparkfang", "axis": "habitat", "branchName": "Neon Urban", "unlockHint": "도심 인터벌", "metricBias": { "cadence": "high", "routeComplexity": "medium" }, "visualShift": ["neon-fang"], "storyTone": "도심 질주" },
+    { "familyID": "sparkfang-burst-swift", "speciesID": "sparkfang", "axis": "body", "branchName": "Burst Swift", "unlockHint": "짧고 빠른 스퍼트", "metricBias": { "cadence": "high", "paceStability": "medium" }, "visualShift": ["burst-tail"], "storyTone": "폭발과 추격" },
+
+    { "familyID": "mosshop-bloom-pulse", "speciesID": "mosshop", "axis": "rhythm", "branchName": "Bloom Pulse", "unlockHint": "안정적인 호흡", "metricBias": { "paceStability": "high" }, "visualShift": ["petal-aura"], "storyTone": "회복과 개화" },
+    { "familyID": "mosshop-rain-wildland", "speciesID": "mosshop", "axis": "habitat", "branchName": "Rain Wildland", "unlockHint": "비와 숲길", "metricBias": { "distance": "medium", "paceStability": "high" }, "visualShift": ["rain-moss"], "storyTone": "숲과 촉촉함" },
+    { "familyID": "mosshop-canopy-guard", "speciesID": "mosshop", "axis": "body", "branchName": "Canopy Guard", "unlockHint": "천천히 오래 달리기", "metricBias": { "distance": "high" }, "visualShift": ["canopy-back"], "storyTone": "보호와 휴식" },
+
+    { "familyID": "sparkfang-eclipse-twilight", "speciesID": "sparkfang", "axis": "habitat", "branchName": "Eclipse Twilight", "unlockHint": "야간 러닝", "metricBias": { "nightAffinity": "high", "routeComplexity": "medium" }, "visualShift": ["eclipse-mark", "neon-fang"], "storyTone": "황혼과 전류" },
+    { "familyID": "sparkfang-maze-route", "speciesID": "sparkfang", "axis": "rhythm", "branchName": "Maze Route", "unlockHint": "복잡한 야간 경로", "metricBias": { "routeComplexity": "high", "nightAffinity": "high" }, "visualShift": ["maze-tail"], "storyTone": "왜곡과 추적" },
+    { "familyID": "seedle-echo-bud", "speciesID": "seedle", "axis": "body", "branchName": "Echo Bud", "unlockHint": "낮은 조도와 조심스러운 회복 주행", "metricBias": { "nightAffinity": "medium", "paceStability": "medium" }, "visualShift": ["echo-ear", "twilight-bud"], "storyTone": "그림자와 발아" },
+
+    { "familyID": "seedle-sprout-swift", "speciesID": "seedle", "axis": "body", "branchName": "Sprout Swift", "unlockHint": "입문 러닝과 가벼운 리듬", "metricBias": { "cadence": "medium" }, "visualShift": ["sprout-tail"], "storyTone": "시작과 발아" },
+    { "familyID": "seedle-root-guard", "speciesID": "seedle", "axis": "body", "branchName": "Root Guard", "unlockHint": "꾸준한 누적 거리", "metricBias": { "distance": "medium", "paceStability": "medium" }, "visualShift": ["root-shell"], "storyTone": "정착과 성장" },
+    { "familyID": "seedle-twilight-bud", "speciesID": "seedle", "axis": "habitat", "branchName": "Twilight Bud", "unlockHint": "황혼 러닝", "metricBias": { "nightAffinity": "medium" }, "visualShift": ["twilight-bud"], "storyTone": "가능성과 변주" }
+  ],
+  "rareVariants": [
+    { "variantID": "tempo-surge", "displayName": "Tempo Surge", "playerFacingName": "특별한 진화: 템포 서지", "triggerHint": "고케이던스와 빠른 페이스", "narrativeMeaning": "속도와 리듬이 과열된 흔적", "suggestedSpeciesIDs": ["sparkfang", "windrunner"] },
+    { "variantID": "zen-bloom", "displayName": "Zen Bloom", "playerFacingName": "특별한 진화: 젠 블룸", "triggerHint": "안정된 페이스와 고른 호흡", "narrativeMeaning": "평온함이 꽃처럼 남은 흔적", "suggestedSpeciesIDs": ["mosshop", "seedle"] },
+    { "variantID": "summit-heart", "displayName": "Summit Heart", "playerFacingName": "특별한 진화: 서밋 하트", "triggerHint": "언덕과 고도 상승", "narrativeMeaning": "오르막을 견딘 심장의 흔적", "suggestedSpeciesIDs": ["stoneback"] },
+    { "variantID": "eclipse-mark", "displayName": "Eclipse Mark", "playerFacingName": "특별한 진화: 이클립스 마크", "triggerHint": "야간 러닝과 그림자 구간", "narrativeMeaning": "밤의 위상이 남긴 황혼 계열의 흔적", "suggestedSpeciesIDs": ["sparkfang", "seedle"] },
+    { "variantID": "loop-sigil", "displayName": "Loop Sigil", "playerFacingName": "특별한 진화: 루프 시길", "triggerHint": "반복되는 루프 코스", "narrativeMeaning": "같은 길을 반복해 새겨진 문양", "suggestedSpeciesIDs": ["windrunner", "sparkfang"] }
+  ],
+  "regions": [
+    { "regionID": "urban-core", "title": "도심 구역", "unlockCondition": "default", "environmentBias": { "timeAuras": ["day", "dusk"], "routeShapes": ["loop", "out-and-back"], "environmentConditions": ["clear", "overcast"] }, "activeSpeciesIDs": ["seedle", "sparkfang", "windrunner"], "activeVariantIDs": ["tempo-surge", "loop-sigil"], "narrativeSummary": "가장 먼저 활력이 되돌아오는 생활권 관문" },
+    { "regionID": "nature-trail", "title": "자연 구역", "unlockCondition": "distance-total-15km", "environmentBias": { "timeAuras": ["day", "dawn"], "routeShapes": ["freeform", "out-and-back"], "environmentConditions": ["rain", "clear", "overcast"] }, "activeSpeciesIDs": ["mosshop", "seedle", "windrunner"], "activeVariantIDs": ["zen-bloom"], "narrativeSummary": "회복과 호흡이 짙어지는 숲길 생태권" },
+    { "regionID": "altitude-ridge", "title": "고지대 구역", "unlockCondition": "elevation-total-250m", "environmentBias": { "timeAuras": ["day", "dusk"], "routeShapes": ["out-and-back", "maze"], "environmentConditions": ["clear", "wind", "cold"] }, "activeSpeciesIDs": ["stoneback", "windrunner"], "activeVariantIDs": ["summit-heart"], "narrativeSummary": "오르막과 버팀이 생명으로 응축되는 암석 지대" },
+    { "regionID": "moonlight-alley", "title": "달빛 구역", "unlockCondition": "night-runs-5", "environmentBias": { "timeAuras": ["night", "dusk"], "routeShapes": ["maze", "loop"], "environmentConditions": ["clear", "cold", "unknown"] }, "activeSpeciesIDs": ["sparkfang", "seedle", "windrunner"], "activeVariantIDs": ["eclipse-mark", "loop-sigil"], "narrativeSummary": "달빛과 그림자가 황혼 계열로 번지는 신비 구역" },
+    { "regionID": "festival-gate", "title": "특별 이벤트 구역", "unlockCondition": "season-event-only", "environmentBias": { "timeAuras": ["day", "night"], "routeShapes": ["loop", "freeform"], "environmentConditions": ["clear", "wind", "overcast"] }, "activeSpeciesIDs": ["seedle", "sparkfang", "mosshop"], "activeVariantIDs": ["tempo-surge", "zen-bloom", "eclipse-mark"], "narrativeSummary": "협동 목표로만 열리는 축제형 구역" }
+  ],
+  "seasons": [
+    { "seasonID": "quiet-signal", "title": "Quiet Signal", "theme": "조용한 각성과 첫 교감", "featuredRegionIDs": ["urban-core", "nature-trail"], "featuredSpeciesIDs": ["seedle", "windrunner", "mosshop"], "featuredVariantIDs": ["zen-bloom"], "eventHooks": ["first-egg-awakening", "starter-growth-loop"] },
+    { "seasonID": "gale-frontier", "title": "Gale Frontier", "theme": "바람길 개방과 장거리 탐사", "featuredRegionIDs": ["urban-core", "altitude-ridge"], "featuredSpeciesIDs": ["windrunner"], "featuredVariantIDs": ["loop-sigil"], "eventHooks": ["long-distance-hunt", "route-memory-signal"] },
+    { "seasonID": "verdant-circuit", "title": "Verdant Circuit", "theme": "회복과 자연 리듬의 복원", "featuredRegionIDs": ["nature-trail"], "featuredSpeciesIDs": ["mosshop", "seedle"], "featuredVariantIDs": ["zen-bloom"], "eventHooks": ["cooldown-grove", "rain-breath-ritual"] },
+    { "seasonID": "summit-fault", "title": "Summit Fault", "theme": "오르막과 균열의 심장", "featuredRegionIDs": ["altitude-ridge"], "featuredSpeciesIDs": ["stoneback"], "featuredVariantIDs": ["summit-heart"], "eventHooks": ["climb-chain", "ridge-rescue"] },
+    { "seasonID": "hollow-dusk", "title": "Hollow Dusk", "theme": "밤의 표식과 그림자 경계", "featuredRegionIDs": ["moonlight-alley"], "featuredSpeciesIDs": ["sparkfang", "seedle"], "featuredVariantIDs": ["eclipse-mark"], "eventHooks": ["night-lure", "eclipse-threshold"] }
+  ],
+  "narrativeEpisodes": [
+    { "episodeID": "episode-awakening-signal", "seasonID": "quiet-signal", "regionID": "urban-core", "triggerRules": { "completedRunsMin": 1, "distanceKmMin": 2.0 }, "playerFacingText": "처음으로 약한 활력 신호가 감지되었다. 잠든 알이 숨을 쉬기 시작한다.", "rewardPayload": { "unlockRegionIDs": [], "unlockSpeciesIDs": ["seedle"], "unlockVariantIDs": [] } },
+    { "episodeID": "episode-sparkflood", "seasonID": "quiet-signal", "regionID": "urban-core", "triggerRules": { "completedRunsMin": 3, "cadenceMin": 170 }, "playerFacingText": "도심 구역의 전광 표지판이 흔들리며, 스파크 같은 송곳니 흔적이 나타난다.", "rewardPayload": { "unlockRegionIDs": [], "unlockSpeciesIDs": ["sparkfang"], "unlockVariantIDs": ["tempo-surge"] } },
+    { "episodeID": "episode-mossbreath", "seasonID": "verdant-circuit", "regionID": "nature-trail", "triggerRules": { "completedRunsMin": 5, "distanceKmMin": 12.0 }, "playerFacingText": "숲길에 고요한 숨결이 번지며, 이끼처럼 부드러운 발자국이 드러난다.", "rewardPayload": { "unlockRegionIDs": ["nature-trail"], "unlockSpeciesIDs": ["mosshop"], "unlockVariantIDs": ["zen-bloom"] } },
+    { "episodeID": "episode-ridgeheart", "seasonID": "summit-fault", "regionID": "altitude-ridge", "triggerRules": { "completedRunsMin": 5, "elevationGainMin": 120 }, "playerFacingText": "능선 아래에서 둔탁한 심장 소리가 울리고, 암석 등껍질의 거대한 실루엣이 깨어난다.", "rewardPayload": { "unlockRegionIDs": ["altitude-ridge"], "unlockSpeciesIDs": ["stoneback"], "unlockVariantIDs": ["summit-heart"] } },
+    { "episodeID": "episode-moonmark", "seasonID": "hollow-dusk", "regionID": "moonlight-alley", "triggerRules": { "completedRunsMin": 5, "nightRunRequired": true }, "playerFacingText": "달빛 구역의 벽면에 검은 표식이 퍼지고, 스파크와 새싹 계열에서 황혼 형질이 깨어난다.", "rewardPayload": { "unlockRegionIDs": ["moonlight-alley"], "unlockSpeciesIDs": [], "unlockVariantIDs": ["eclipse-mark"] } }
+  ]
+}

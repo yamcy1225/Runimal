@@ -3,9 +3,16 @@ import SwiftUI
 
 struct PhoneCollectionView: View {
     let store: PhoneDashboardStore
-    @State private var showResetAlert = false
-    @State private var showDangerZone = false
     @State private var hatchResult: HatchCinematicPayload?
+    @State private var showCollectionExtras = false
+
+    private var worldPack: WorldContentPack {
+        store.contentCatalog.worldContentPack()
+    }
+
+    private var worldPackSummaries: [ContentPackSummary] {
+        store.contentCatalog.worldContentPackSummaries()
+    }
 
     private let columns = [
         GridItem(.flexible(), spacing: 14),
@@ -32,12 +39,11 @@ struct PhoneCollectionView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 stableCard
+                worldAtlasCard
                 stableSection
                 growthSection
                 storageSection
-                shareSection
-                researchSection
-                dangerSection
+                collectionExtrasSection
             }
             .padding(20)
         }
@@ -56,6 +62,68 @@ struct PhoneCollectionView: View {
         }
     }
 
+    private var worldAtlasCard: some View {
+        GameSurface(title: "세계 아틀라스", accent: store.mainAccentColor, eyebrow: "CONTENT") {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(worldPack.contentPack.playerFacingTheme)
+                    .font(.headline.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.darkest)
+                    .lineLimit(1)
+
+                HStack(spacing: 8) {
+                    TraitChip(label: "활성 팩 \(worldPackSummaries.count)", accent: store.mainAccentColor)
+                    TraitChip(label: "변이 \(worldPack.rareVariants.count)", accent: .orange.opacity(0.28))
+                    TraitChip(label: "에피소드 \(worldPack.narrativeEpisodes.count)", accent: .mint.opacity(0.28))
+                }
+
+                LazyVGrid(columns: columns, spacing: 10) {
+                    ForEach(DefaultWorldContent.packSummaries, id: \.packID) { summary in
+                        Button {
+                            store.toggleWorldPack(summary.packID)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: store.activeWorldPackIDs.contains(summary.packID) ? "checkmark.circle.fill" : "circle")
+                                        .font(.caption.weight(.black))
+                                    Text(summary.title)
+                                        .font(.subheadline.monospaced().weight(.black))
+                                        .lineLimit(1)
+                                }
+
+                                Text(summary.type.uppercased())
+                                    .font(.caption2.monospaced().weight(.black))
+                                    .foregroundStyle(GameBoyPalette.mediumDark)
+                                    .lineLimit(1)
+                            }
+                            .foregroundStyle(GameBoyPalette.darkest)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(
+                                        store.activeWorldPackIDs.contains(summary.packID)
+                                        ? store.mainAccentColor.opacity(0.14)
+                                        : GameBoyPalette.mediumLight.opacity(0.1)
+                                    )
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(
+                                        store.activeWorldPackIDs.contains(summary.packID)
+                                        ? store.mainAccentColor.opacity(0.46)
+                                        : GameBoyPalette.darkest.opacity(0.12),
+                                        lineWidth: 1
+                                    )
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+
     private var stableSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             sectionHeader("메인 슬롯", detail: "지금 들고 갈 주인공을 정합니다.")
@@ -65,6 +133,8 @@ struct PhoneCollectionView: View {
                 mainDetail: store.mainSelectionDetail,
                 companions: store.collection,
                 eggs: store.eggInventory,
+                mutationForm: store.mutationForm(for:),
+                mutationHistory: store.mutationHistory(for:),
                 onSelectPet: store.activateCompanion(_:),
                 onSelectEgg: store.activateEgg(_:),
                 onHatchEgg: handleHatch(_:)
@@ -100,6 +170,8 @@ struct PhoneCollectionView: View {
             )
             PhonePetDetailPanel(
                 companion: store.featuredCompanion,
+                mutationForm: store.mutationForm(for: store.featuredCompanion),
+                mutationHistory: store.mutationHistory(for: store.featuredCompanion),
                 progress: store.evolutionProgress,
                 activeEffects: store.activeWeeklyEffects,
                 season: store.weeklyBoard.season
@@ -161,6 +233,19 @@ struct PhoneCollectionView: View {
         }
     }
 
+    private var collectionExtrasSection: some View {
+        DisclosureGroup(isExpanded: $showCollectionExtras) {
+            VStack(alignment: .leading, spacing: 18) {
+                shareSection
+                researchSection
+            }
+            .padding(.top, 12)
+        } label: {
+            sectionHeader("추가 메뉴", detail: "공유와 제작은 필요할 때만 엽니다.")
+        }
+        .tint(GameBoyPalette.darkest)
+    }
+
     private func sectionHeader(_ title: String, detail: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
@@ -195,7 +280,13 @@ struct PhoneCollectionView: View {
                                 resonance: store.mainEggResonance
                             )
                         } else {
-                            PixelPetView(pet: store.featuredCompanion.pet, pixelSize: 10, seasonalLayers: store.seasonalLayers)
+                            PixelPetView(
+                                pet: store.featuredCompanion.pet,
+                                pixelSize: 10,
+                                mutationForm: store.mutationForm(for: store.featuredCompanion),
+                                mutationHistory: store.mutationHistory(for: store.featuredCompanion),
+                                seasonalLayers: store.seasonalLayers
+                            )
                         }
                     }
                     .frame(width: 110, height: 110)
@@ -204,6 +295,14 @@ struct PhoneCollectionView: View {
                         Text(store.mainSelectionLabel)
                             .font(.title2.monospaced().weight(.black))
                             .foregroundStyle(GameBoyPalette.darkest)
+                        if let form = store.mutationForm(for: store.featuredCompanion),
+                           store.mainSelection?.kind != .egg {
+                            Text(form.displayTitle)
+                                .font(.caption.monospaced().weight(.black))
+                                .foregroundStyle(GameBoyPalette.mediumDark)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.78)
+                        }
                         Text(store.mainSelectionDetail)
                             .font(.footnote.monospaced())
                             .foregroundStyle(GameBoyPalette.mediumDark)
@@ -217,6 +316,17 @@ struct PhoneCollectionView: View {
                                 TraitChip(label: "유대 \(store.featuredCompanion.bond)", accent: .white.opacity(0.28))
                             }
                         }
+                    }
+                }
+
+                if let lore = store.contentCatalog.companionWorldProfile(for: store.featuredCompanion.pet) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(lore.fantasyLine)
+                            .font(.footnote.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.darkest)
+                        Text(lore.habitatLine)
+                            .font(.caption.monospaced())
+                            .foregroundStyle(GameBoyPalette.mediumDark)
                     }
                 }
 
@@ -249,74 +359,6 @@ struct PhoneCollectionView: View {
                             }
                         }
                     }
-                }
-            }
-        }
-        .alert("모든 기록을 초기화할까요?", isPresented: $showResetAlert) {
-            Button("초기화", role: .destructive) {
-                store.resetProgress()
-            }
-            Button("취소", role: .cancel) {}
-        } message: {
-            Text("펫, 알, 성장 기록을 초기 상태로 되돌립니다.")
-        }
-    }
-
-    private var dangerSection: some View {
-        GameSurface(title: "위험 구역", accent: .red.opacity(0.82), eyebrow: "신중하게 사용") {
-            VStack(alignment: .leading, spacing: 12) {
-                Button {
-                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
-                        showDangerZone.toggle()
-                    }
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("초기화 메뉴 열기")
-                                    .font(.headline.monospaced().weight(.black))
-                                    .foregroundStyle(GameBoyPalette.darkest)
-                                Text("펼친 뒤에만 버튼이 보입니다.")
-                                    .font(.footnote.monospaced())
-                                    .foregroundStyle(GameBoyPalette.mediumDark)
-                            }
-
-                        Spacer()
-
-                        Image(systemName: showDangerZone ? "chevron.up.circle.fill" : "chevron.down.circle.fill")
-                            .font(.title3.weight(.bold))
-                            .foregroundStyle(.red.opacity(0.92))
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-
-                if showDangerZone {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("모든 동행체와 알, 성장 기록을 초기화합니다.")
-                            .font(.footnote.monospaced())
-                            .foregroundStyle(GameBoyPalette.mediumDark)
-
-                        Button(role: .destructive) {
-                            showResetAlert = true
-                        } label: {
-                            Label("처음부터 다시 시작", systemImage: "arrow.counterclockwise")
-                                .font(.caption.monospaced().weight(.black))
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(GameBoyPalette.lightest)
-                        .padding(.vertical, 11)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(Color.red.opacity(0.9))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .stroke(GameBoyPalette.darkest, lineWidth: 2)
-                                )
-                        )
-                    }
-                    .transition(.move(edge: .top).combined(with: .opacity))
                 }
             }
         }
@@ -356,7 +398,13 @@ struct PhoneCollectionView: View {
                             .stroke(store.featuredCompanion.pet.accentColor.opacity(0.76), style: StrokeStyle(lineWidth: 2, dash: [4, 4]))
                             .frame(width: 70, height: 70)
 
-                        PixelPetView(pet: store.featuredCompanion.pet, pixelSize: 8, seasonalLayers: store.seasonalLayers)
+                        PixelPetView(
+                            pet: store.featuredCompanion.pet,
+                            pixelSize: 8,
+                            mutationForm: store.mutationForm(for: store.featuredCompanion),
+                            mutationHistory: store.mutationHistory(for: store.featuredCompanion),
+                            seasonalLayers: store.seasonalLayers
+                        )
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
@@ -416,6 +464,8 @@ struct PhoneCollectionView: View {
                                 PixelPetView(
                                     pet: entry.pet,
                                     pixelSize: 8,
+                                    mutationForm: store.mutationForm(for: entry),
+                                    mutationHistory: store.mutationHistory(for: entry),
                                     seasonalLayers: entry.id == store.mainSelection?.targetID && store.mainSelection?.kind == .pet ? store.seasonalLayers : []
                                 )
 
@@ -437,6 +487,13 @@ struct PhoneCollectionView: View {
                                     .font(.caption2.monospaced().weight(.black))
                                     .foregroundStyle(GameBoyPalette.mediumDark)
                                     .lineLimit(1)
+                                if let form = store.mutationForm(for: entry) {
+                                    Text(form.displayTitle)
+                                        .font(.caption2.monospaced())
+                                        .foregroundStyle(GameBoyPalette.mediumDark.opacity(0.88))
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.7)
+                                }
                             }
 
                             HStack(spacing: 6) {
@@ -464,6 +521,12 @@ struct PhoneCollectionView: View {
                             Text(distanceSupportLine(for: entry))
                                 .font(.caption2.monospaced())
                                 .foregroundStyle(GameBoyPalette.mediumDark)
+                            if let lore = store.contentCatalog.companionWorldProfile(for: entry.pet) {
+                                Text(lore.hookLine)
+                                    .font(.caption2.monospaced())
+                                    .foregroundStyle(GameBoyPalette.mediumDark.opacity(0.88))
+                                    .lineLimit(2)
+                            }
 
                             Button(entry.id == store.mainSelection?.targetID && store.mainSelection?.kind == .pet ? "선택됨" : "메인으로") {
                                 store.activateCompanion(entry.id)
@@ -506,7 +569,12 @@ struct PhoneCollectionView: View {
     }
 
     private func distanceSupportLine(for entry: PetCollectionEntry) -> String {
-        "\(entry.totalDistanceKm.formatted(.number.precision(.fractionLength(1)))) km  ·  유대 \(entry.bond)"
+        if let lore = store.contentCatalog.companionWorldProfile(for: entry.pet),
+           let mutationLine = lore.mutationLine {
+            return mutationLine
+        }
+
+        return "\(entry.totalDistanceKm.formatted(.number.precision(.fractionLength(1)))) km  ·  유대 \(entry.bond)"
     }
 
     private var resonanceCompareBoard: some View {

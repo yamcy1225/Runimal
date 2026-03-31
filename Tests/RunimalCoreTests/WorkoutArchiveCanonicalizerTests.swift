@@ -97,6 +97,81 @@ final class WorkoutArchiveCanonicalizerTests: XCTestCase {
         XCTAssertEqual(updatedRecord.durationSeconds, archive.timerTimeSeconds)
     }
 
+    func testUpdatePreservesMutationFormSnapshot() {
+        let startedAt = Date(timeIntervalSince1970: 30_000)
+        let archive = WorkoutSessionArchive(
+            runID: "run-3",
+            startedAt: startedAt,
+            endedAt: startedAt.addingTimeInterval(900),
+            elapsedTimeSeconds: 900,
+            timerTimeSeconds: 900,
+            movingTimeSeconds: 880,
+            distanceMeters: 2_400,
+            averageHeartRate: 154,
+            averageCadence: 176,
+            averagePaceSeconds: 375,
+            elevationGainM: 18,
+            source: "watch-healthkit",
+            trackPoints: [makePoint(offset: 0, lat: 37.2, lon: 127.2, accuracy: 8)],
+            rawTrackPoints: [makePoint(offset: 0, lat: 37.2, lon: 127.2, accuracy: 8)],
+            displayTrackPoints: [],
+            laps: [],
+            events: []
+        )
+        let reward = RunRewardSummary(
+            pet: GeneratedPet(
+                species: .windrunner,
+                element: .light,
+                palette: "mist",
+                rareVariant: nil,
+                explanation: [],
+                stats: PetStats(vitality: 1, agility: 2, dexterity: 3, focus: 4, defense: 5)
+            ),
+            coreLabel: "steady",
+            experience: 120,
+            completedQuestCount: 1,
+            flavorText: "done"
+        )
+        let mutationForm = MutationFormSnapshot(
+            speciesID: "windrunner",
+            formID: "windrunner.aero-swift.river-open.draft-route",
+            shortLabel: "Aero Swift · River Open · Draft Route",
+            bodyBranchID: "aero-swift",
+            ecologyBranchID: "river-open",
+            rhythmBranchID: "draft-route",
+            confidence: 0.8
+        )
+        let mutationContribution = MutationRunContributionSnapshot(
+            speciesID: "windrunner",
+            axes: [
+                MutationAxisContributionSnapshot(axis: .body, branchID: "aero-swift", branchTitle: "Aero Swift", score: 5, progress: 0.62),
+                MutationAxisContributionSnapshot(axis: .ecology, branchID: "river-open", branchTitle: "River Open", score: 4, progress: 0.55),
+                MutationAxisContributionSnapshot(axis: .rhythm, branchID: "draft-route", branchTitle: "Draft Route", score: 3, progress: 0.5)
+            ]
+        )
+        let record = CompletedRunRecord(
+            id: "run-3",
+            startedAt: startedAt,
+            endedAt: startedAt.addingTimeInterval(900),
+            distanceMeters: 2_000,
+            durationSeconds: 900,
+            averageHeartRate: 152,
+            averagePaceSeconds: 390,
+            cadence: 172,
+            elevationGainM: 12,
+            reward: reward,
+            route: [],
+            source: "watch-healthkit",
+            mutationForm: mutationForm,
+            mutationContribution: mutationContribution
+        )
+
+        let updatedRecord = WorkoutArchiveCanonicalizer.update(record, with: archive)
+
+        XCTAssertEqual(updatedRecord.mutationForm, mutationForm)
+        XCTAssertEqual(updatedRecord.mutationContribution, mutationContribution)
+    }
+
     private func makePoint(offset: TimeInterval, lat: Double, lon: Double, accuracy: Double) -> WorkoutTrackPoint {
         WorkoutTrackPoint(
             timestamp: Date(timeIntervalSince1970: 10_000 + offset),
