@@ -41,9 +41,15 @@ final class CompanionLoopModelsTests: XCTestCase {
             pet: pet,
             petName: "Misty",
             petHeadline: "steady runner",
+            companionLevel: 36,
+            companionStageLabel: "성년기",
+            growthStageIndex: 4,
             mutationBodyStage: 3,
             mutationEcologyStage: 2,
             mutationRhythmStage: 1,
+            mutationBodyBranchID: "aero-swift",
+            mutationEcologyBranchID: "river-open",
+            mutationRhythmBranchID: "tailwind-pulse",
             updatedAt: updatedAt
         )
 
@@ -53,13 +59,53 @@ final class CompanionLoopModelsTests: XCTestCase {
         XCTAssertEqual(restored?.selection, context.selection)
         XCTAssertEqual(restored?.petName, context.petName)
         XCTAssertEqual(restored?.petHeadline, context.petHeadline)
+        XCTAssertEqual(restored?.companionLevel, context.companionLevel)
+        XCTAssertEqual(restored?.companionStageLabel, context.companionStageLabel)
         XCTAssertEqual(restored?.pet?.species, context.pet?.species)
         XCTAssertEqual(restored?.pet?.element, context.pet?.element)
         XCTAssertEqual(restored?.pet?.palette, context.pet?.palette)
         XCTAssertEqual(restored?.pet?.rareVariant, context.pet?.rareVariant)
+        XCTAssertEqual(restored?.growthStageIndex, context.growthStageIndex)
         XCTAssertEqual(restored?.mutationBodyStage, context.mutationBodyStage)
         XCTAssertEqual(restored?.mutationEcologyStage, context.mutationEcologyStage)
         XCTAssertEqual(restored?.mutationRhythmStage, context.mutationRhythmStage)
+        XCTAssertEqual(restored?.mutationBodyBranchID, context.mutationBodyBranchID)
+        XCTAssertEqual(restored?.mutationEcologyBranchID, context.mutationEcologyBranchID)
+        XCTAssertEqual(restored?.mutationRhythmBranchID, context.mutationRhythmBranchID)
         XCTAssertEqual(restored?.updatedAt, updatedAt)
+    }
+
+    func testWatchSelectionTransportPayloadReconstructsPetSpeciesForFallbackRoute() {
+        let pet = GeneratedPet(
+            species: .sparkfang,
+            element: .flame,
+            palette: "ember",
+            rareVariant: .eclipseMark,
+            explanation: [],
+            stats: PetStats(vitality: 1, agility: 1, dexterity: 1, focus: 1, defense: 1)
+        )
+        let context = WatchMainCompanionContext(
+            selection: MainCompanionSelection(kind: .pet, targetID: "pet-2"),
+            pet: pet,
+            petName: "Blink",
+            companionLevel: 18,
+            companionStageLabel: "유년기",
+            growthStageIndex: 3,
+            mutationBodyBranchID: "burst-swift",
+            mutationEcologyBranchID: "neon-urban",
+            mutationRhythmBranchID: "tempo-rush"
+        )
+
+        let restored = WatchMainCompanionContext(
+            watchSelectionTransportPayload: context.watchSelectionTransportPayload
+        )
+
+        XCTAssertEqual(restored?.pet?.species, .sparkfang)
+        XCTAssertEqual(restored?.pet?.element, .flame)
+        XCTAssertEqual(restored?.pet?.palette, "ember")
+        XCTAssertEqual(restored?.pet?.rareVariant, .eclipseMark)
+        XCTAssertEqual(restored?.companionLevel, 18)
+        XCTAssertEqual(restored?.companionStageLabel, "유년기")
+        XCTAssertEqual(restored?.growthStageIndex, 3)
     }
 }

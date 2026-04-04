@@ -4,8 +4,8 @@ public enum DefaultSpeciesExpansionBlueprints {
     public static let baseSpeciesBlueprints: [SpeciesExpansionBlueprint] = [
         blueprint(
             speciesID: "windrunner",
-            displayName: "Windrunner",
-            fantasy: "장거리와 항로 감각을 읽는 길잡이형 러니멀",
+            displayName: "에이라리스",
+            fantasy: "먼 항로의 결을 깃결에 새기며 달린 이보다 먼저 바람길을 읽어내는 선도형 러니멀",
             body: [
                 branch("aero-swift", .body, "Aero Swift", "가볍고 길게 뻗는 체형", "장거리 순항"),
                 branch("crest-guard", .body, "Crest Guard", "날개깃이 단단해진 체형", "바람 저항"),
@@ -24,8 +24,8 @@ public enum DefaultSpeciesExpansionBlueprints {
         ),
         blueprint(
             speciesID: "stoneback",
-            displayName: "Stoneback",
-            fantasy: "오르막과 저항을 등에 지는 수호형 러니멀",
+            displayName: "크래그맨틀",
+            fantasy: "산마루의 중량과 인내를 갑각 아래 켜켜이 눌러 담는 방벽형 러니멀",
             body: [
                 branch("ridge-guard", .body, "Ridge Guard", "능선 방어형 체형", "언덕 지속"),
                 branch("summit-core", .body, "Summit Core", "정상 돌파형 체형", "고도 상승"),
@@ -44,8 +44,8 @@ public enum DefaultSpeciesExpansionBlueprints {
         ),
         blueprint(
             speciesID: "sparkfang",
-            displayName: "Sparkfang",
-            fantasy: "빠른 템포와 폭발적인 반응을 먹고 자라는 질주형 러니멀",
+            displayName: "신더래시",
+            fantasy: "질주의 열과 추격의 찰나를 송곳니 끝에 벼려 두는 화염형 러니멀",
             body: [
                 branch("burst-swift", .body, "Burst Swift", "폭발 질주형", "짧고 빠른 세션"),
                 branch("arc-raider", .body, "Arc Raider", "짧은 추격형", "인터벌"),
@@ -64,8 +64,8 @@ public enum DefaultSpeciesExpansionBlueprints {
         ),
         blueprint(
             speciesID: "mosshop",
-            displayName: "Mosshop",
-            fantasy: "회복과 호흡의 흐름을 넓히는 치유형 러니멀",
+            displayName: "모스베일",
+            fantasy: "회복의 숨과 눅진한 정적을 몸 둘레에 드리워 주변 풍경까지 가라앉히는 치유형 러니멀",
             body: [
                 branch("canopy-guard", .body, "Canopy Guard", "부드러운 보호형", "긴 회복 주행"),
                 branch("bloom-round", .body, "Bloom Round", "둥근 생장형", "편안한 러닝"),
@@ -84,8 +84,8 @@ public enum DefaultSpeciesExpansionBlueprints {
         ),
         blueprint(
             speciesID: "seedle",
-            displayName: "Seedle",
-            fantasy: "시작과 발아, 적응을 상징하는 입문형 러니멀",
+            displayName: "던스프리그",
+            fantasy: "탄생의 미약한 생기를 모아 새벽의 어린 순처럼 틔워 내는 발아형 러니멀",
             body: [
                 branch("sprout-swift", .body, "Sprout Swift", "가벼운 발아형", "첫 러닝"),
                 branch("root-guard", .body, "Root Guard", "정착 성장형", "누적 거리"),
@@ -97,7 +97,7 @@ public enum DefaultSpeciesExpansionBlueprints {
                 branch("twilight-bud", .ecology, "Twilight Bud", "황혼 적응형", "dusk run"),
             ],
             rhythm: [
-                branch("first-step", .rhythm, "First Step", "첫걸음 리듬", "초기 러닝"),
+                branch("first-step", .rhythm, "Birth Step", "탄생 리듬", "초기 러닝"),
                 branch("steady-root", .rhythm, "Steady Root", "기초 적응 리듬", "낮은 변동성"),
                 branch("grow-loop", .rhythm, "Grow Loop", "꾸준 누적 리듬", "habit loop"),
             ]

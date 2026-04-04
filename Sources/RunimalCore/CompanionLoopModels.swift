@@ -110,9 +110,15 @@ public struct WatchMainCompanionContext: Codable, Equatable, Sendable {
     public let petName: String?
     public let petHeadline: String?
     public let detailText: String?
+    public let companionLevel: Int?
+    public let companionStageLabel: String?
+    public let growthStageIndex: Int?
     public let mutationBodyStage: Int?
     public let mutationEcologyStage: Int?
     public let mutationRhythmStage: Int?
+    public let mutationBodyBranchID: String?
+    public let mutationEcologyBranchID: String?
+    public let mutationRhythmBranchID: String?
     public let eggShell: EggShellType?
     public let eggTitle: String?
     public let eggProgressRatio: Double?
@@ -125,9 +131,15 @@ public struct WatchMainCompanionContext: Codable, Equatable, Sendable {
         petName: String? = nil,
         petHeadline: String? = nil,
         detailText: String? = nil,
+        companionLevel: Int? = nil,
+        companionStageLabel: String? = nil,
+        growthStageIndex: Int? = nil,
         mutationBodyStage: Int? = nil,
         mutationEcologyStage: Int? = nil,
         mutationRhythmStage: Int? = nil,
+        mutationBodyBranchID: String? = nil,
+        mutationEcologyBranchID: String? = nil,
+        mutationRhythmBranchID: String? = nil,
         eggShell: EggShellType? = nil,
         eggTitle: String? = nil,
         eggProgressRatio: Double? = nil,
@@ -139,9 +151,15 @@ public struct WatchMainCompanionContext: Codable, Equatable, Sendable {
         self.petName = petName
         self.petHeadline = petHeadline
         self.detailText = detailText
+        self.companionLevel = companionLevel
+        self.companionStageLabel = companionStageLabel
+        self.growthStageIndex = growthStageIndex
         self.mutationBodyStage = mutationBodyStage
         self.mutationEcologyStage = mutationEcologyStage
         self.mutationRhythmStage = mutationRhythmStage
+        self.mutationBodyBranchID = mutationBodyBranchID
+        self.mutationEcologyBranchID = mutationEcologyBranchID
+        self.mutationRhythmBranchID = mutationRhythmBranchID
         self.eggShell = eggShell
         self.eggTitle = eggTitle
         self.eggProgressRatio = eggProgressRatio
@@ -152,7 +170,7 @@ public struct WatchMainCompanionContext: Codable, Equatable, Sendable {
     public var displayName: String {
         switch selection.kind {
         case .pet:
-            return petName ?? "동행체"
+            return petName ?? "동행"
         case .egg:
             return eggTitle ?? "???"
         }
@@ -164,9 +182,15 @@ public struct WatchMainCompanionContext: Codable, Equatable, Sendable {
         case petName
         case petHeadline
         case detailText
+        case companionLevel
+        case companionStageLabel
+        case growthStageIndex
         case mutationBodyStage
         case mutationEcologyStage
         case mutationRhythmStage
+        case mutationBodyBranchID
+        case mutationEcologyBranchID
+        case mutationRhythmBranchID
         case eggShell
         case eggTitle
         case eggProgressRatio
@@ -181,9 +205,15 @@ public struct WatchMainCompanionContext: Codable, Equatable, Sendable {
         petName = try container.decodeIfPresent(String.self, forKey: .petName)
         petHeadline = try container.decodeIfPresent(String.self, forKey: .petHeadline)
         detailText = try container.decodeIfPresent(String.self, forKey: .detailText)
+        companionLevel = try container.decodeIfPresent(Int.self, forKey: .companionLevel)
+        companionStageLabel = try container.decodeIfPresent(String.self, forKey: .companionStageLabel)
+        growthStageIndex = try container.decodeIfPresent(Int.self, forKey: .growthStageIndex)
         mutationBodyStage = try container.decodeIfPresent(Int.self, forKey: .mutationBodyStage)
         mutationEcologyStage = try container.decodeIfPresent(Int.self, forKey: .mutationEcologyStage)
         mutationRhythmStage = try container.decodeIfPresent(Int.self, forKey: .mutationRhythmStage)
+        mutationBodyBranchID = try container.decodeIfPresent(String.self, forKey: .mutationBodyBranchID)
+        mutationEcologyBranchID = try container.decodeIfPresent(String.self, forKey: .mutationEcologyBranchID)
+        mutationRhythmBranchID = try container.decodeIfPresent(String.self, forKey: .mutationRhythmBranchID)
         eggShell = try container.decodeIfPresent(EggShellType.self, forKey: .eggShell)
         eggTitle = try container.decodeIfPresent(String.self, forKey: .eggTitle)
         eggProgressRatio = try container.decodeIfPresent(Double.self, forKey: .eggProgressRatio)
@@ -217,6 +247,15 @@ public struct WatchMainCompanionContext: Codable, Equatable, Sendable {
         if let detailText {
             payload["detailText"] = detailText
         }
+        if let companionLevel {
+            payload["companionLevel"] = companionLevel
+        }
+        if let companionStageLabel {
+            payload["companionStageLabel"] = companionStageLabel
+        }
+        if let growthStageIndex {
+            payload["growthStageIndex"] = growthStageIndex
+        }
         if let mutationBodyStage {
             payload["mutationBodyStage"] = mutationBodyStage
         }
@@ -225,6 +264,15 @@ public struct WatchMainCompanionContext: Codable, Equatable, Sendable {
         }
         if let mutationRhythmStage {
             payload["mutationRhythmStage"] = mutationRhythmStage
+        }
+        if let mutationBodyBranchID {
+            payload["mutationBodyBranchID"] = mutationBodyBranchID
+        }
+        if let mutationEcologyBranchID {
+            payload["mutationEcologyBranchID"] = mutationEcologyBranchID
+        }
+        if let mutationRhythmBranchID {
+            payload["mutationRhythmBranchID"] = mutationRhythmBranchID
         }
         if let eggShell {
             payload["eggShell"] = eggShell.rawValue
@@ -255,11 +303,28 @@ public struct WatchMainCompanionContext: Codable, Equatable, Sendable {
 
         switch selection.kind {
         case .pet:
+            if let pet {
+                payload["watchSelected_petSpecies"] = pet.species.rawValue
+                payload["watchSelected_petElement"] = pet.element.rawValue
+                payload["watchSelected_petPalette"] = pet.palette
+                if let rareVariant = pet.rareVariant {
+                    payload["watchSelected_petRareVariant"] = rareVariant.rawValue
+                }
+            }
             if let petName {
                 payload["watchSelected_petName"] = petName
             }
             if let petHeadline {
                 payload["watchSelected_petHeadline"] = petHeadline
+            }
+            if let companionLevel {
+                payload["watchSelected_companionLevel"] = companionLevel
+            }
+            if let companionStageLabel {
+                payload["watchSelected_companionStageLabel"] = companionStageLabel
+            }
+            if let growthStageIndex {
+                payload["watchSelected_growthStageIndex"] = growthStageIndex
             }
             if let mutationBodyStage {
                 payload["watchSelected_mutationBodyStage"] = mutationBodyStage
@@ -269,6 +334,15 @@ public struct WatchMainCompanionContext: Codable, Equatable, Sendable {
             }
             if let mutationRhythmStage {
                 payload["watchSelected_mutationRhythmStage"] = mutationRhythmStage
+            }
+            if let mutationBodyBranchID {
+                payload["watchSelected_mutationBodyBranchID"] = mutationBodyBranchID
+            }
+            if let mutationEcologyBranchID {
+                payload["watchSelected_mutationEcologyBranchID"] = mutationEcologyBranchID
+            }
+            if let mutationRhythmBranchID {
+                payload["watchSelected_mutationRhythmBranchID"] = mutationRhythmBranchID
             }
         case .egg:
             if let eggTitle {
@@ -323,9 +397,15 @@ public struct WatchMainCompanionContext: Codable, Equatable, Sendable {
             petName: wcPayload["petName"] as? String,
             petHeadline: wcPayload["petHeadline"] as? String,
             detailText: wcPayload["detailText"] as? String,
+            companionLevel: wcPayload["companionLevel"] as? Int,
+            companionStageLabel: wcPayload["companionStageLabel"] as? String,
+            growthStageIndex: wcPayload["growthStageIndex"] as? Int,
             mutationBodyStage: wcPayload["mutationBodyStage"] as? Int,
             mutationEcologyStage: wcPayload["mutationEcologyStage"] as? Int,
             mutationRhythmStage: wcPayload["mutationRhythmStage"] as? Int,
+            mutationBodyBranchID: wcPayload["mutationBodyBranchID"] as? String,
+            mutationEcologyBranchID: wcPayload["mutationEcologyBranchID"] as? String,
+            mutationRhythmBranchID: wcPayload["mutationRhythmBranchID"] as? String,
             eggShell: (wcPayload["eggShell"] as? String).flatMap(EggShellType.init(rawValue:)),
             eggTitle: wcPayload["eggTitle"] as? String,
             eggProgressRatio: wcPayload["eggProgressRatio"] as? Double,
@@ -357,14 +437,37 @@ public struct WatchMainCompanionContext: Codable, Equatable, Sendable {
 
         switch kind {
         case .pet:
+            var reconstructedPet: GeneratedPet?
+            if let speciesRaw = payload["watchSelected_petSpecies"] as? String,
+               let elementRaw = payload["watchSelected_petElement"] as? String,
+               let palette = payload["watchSelected_petPalette"] as? String,
+               let species = PetSpecies(rawValue: speciesRaw),
+               let element = PetElement(rawValue: elementRaw) {
+                let rareVariant = (payload["watchSelected_petRareVariant"] as? String).flatMap(RareVariant.init(rawValue:))
+                reconstructedPet = GeneratedPet(
+                    species: species,
+                    element: element,
+                    palette: palette,
+                    rareVariant: rareVariant,
+                    explanation: [],
+                    stats: PetStats(vitality: 0, agility: 0, dexterity: 0, focus: 0, defense: 0)
+                )
+            }
             self.init(
                 selection: selection,
+                pet: reconstructedPet,
                 petName: payload["watchSelected_petName"] as? String ?? payload["watchSelected_displayName"] as? String,
                 petHeadline: payload["watchSelected_petHeadline"] as? String,
                 detailText: payload["watchSelected_detailText"] as? String,
+                companionLevel: payload["watchSelected_companionLevel"] as? Int,
+                companionStageLabel: payload["watchSelected_companionStageLabel"] as? String,
+                growthStageIndex: payload["watchSelected_growthStageIndex"] as? Int,
                 mutationBodyStage: payload["watchSelected_mutationBodyStage"] as? Int,
                 mutationEcologyStage: payload["watchSelected_mutationEcologyStage"] as? Int,
                 mutationRhythmStage: payload["watchSelected_mutationRhythmStage"] as? Int,
+                mutationBodyBranchID: payload["watchSelected_mutationBodyBranchID"] as? String,
+                mutationEcologyBranchID: payload["watchSelected_mutationEcologyBranchID"] as? String,
+                mutationRhythmBranchID: payload["watchSelected_mutationRhythmBranchID"] as? String,
                 updatedAt: updatedAt
             )
         case .egg:

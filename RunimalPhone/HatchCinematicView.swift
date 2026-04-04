@@ -4,6 +4,8 @@ import SwiftUI
 struct HatchCinematicView: View {
     let egg: EggInventoryEntry
     let pet: PetCollectionEntry
+    let sourceRun: CompletedRunRecord?
+    let renderState: CompanionPixelRenderState
     let onDismiss: () -> Void
 
     @State private var phase: HatchPhase = .wait
@@ -27,6 +29,14 @@ struct HatchCinematicView: View {
     private var variantLabel: String? {
         guard let rareVariant = pet.pet.rareVariant else { return nil }
         return RareVariantMeta.labels[rareVariant] ?? rareVariant.rawValue
+    }
+
+    private var momentNarrative: CompanionMomentNarrative {
+        RunimalGameEngine.hatchMomentNarrative(
+            egg: egg,
+            pet: pet,
+            sourceRun: sourceRun
+        )
     }
 
     var body: some View {
@@ -55,7 +65,14 @@ struct HatchCinematicView: View {
                     )
 
                     if revealPet {
-                        PixelPetView(pet: pet.pet, pixelSize: 13)
+                        PixelPetView(
+                            pet: pet.pet,
+                            pixelSize: 13,
+                            growthStageIndex: renderState.growthStageIndex,
+                            mutationForm: renderState.mutationForm,
+                            mutationHistory: renderState.mutationHistory,
+                            mutationVisualState: renderState.mutationVisualState
+                        )
                             .scaleEffect(revealFlash ? 1.08 : 1)
                             .transition(.scale(scale: 0.86).combined(with: .opacity))
 
@@ -114,6 +131,12 @@ struct HatchCinematicView: View {
                 .font(.footnote)
                 .foregroundStyle(.white.opacity(0.74))
                 .multilineTextAlignment(.center)
+
+            Text(momentNarrative.title)
+                .font(.caption.weight(.black))
+                .tracking(1.2)
+                .foregroundStyle(.white.opacity(0.86))
+                .multilineTextAlignment(.center)
         }
     }
 
@@ -169,6 +192,24 @@ struct HatchCinematicView: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
+                Text(momentNarrative.detail)
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.white.opacity(0.72))
+                    .lineSpacing(3)
+
+                HStack(spacing: 8) {
+                    Text(momentNarrative.emphasis)
+                        .font(.caption2.monospaced().weight(.black))
+                        .foregroundStyle(.black)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Capsule().fill(.white.opacity(0.92)))
+
+                    ForEach(Array(momentNarrative.badges.prefix(2)), id: \.self) { badge in
+                        TraitChip(label: badge, accent: .white.opacity(0.16))
+                    }
+                }
+
                 ForEach(egg.shell.scanLogLines, id: \.self) { line in
                     HStack(spacing: 8) {
                         Circle()
@@ -239,10 +280,10 @@ struct HatchCinematicView: View {
 
     private var headerTitle: String {
         switch phase {
-        case .wait: return "HATCH READY"
-        case .decoding: return "DIGITAL DECODING"
-        case .interference: return "INTERFERENCE ZONE"
-        case .complete: return isRareReveal ? "RARE DECODING COMPLETE" : "DECODING COMPLETE"
+        case .wait: return "부화 준비"
+        case .decoding: return "부화 진행 중"
+        case .interference: return "신호 정리 중"
+        case .complete: return isRareReveal ? "특별한 부화 완료" : "부화 완료"
         }
     }
 
@@ -251,11 +292,11 @@ struct HatchCinematicView: View {
         case .wait:
             return egg.shell.scanHeadline
         case .decoding:
-            return "DIGITAL DECODING..."
+            return "부화 준비 중..."
         case .interference:
-            return "SIGNAL STABILIZING..."
+            return "신호 정리 중..."
         case .complete:
-            return isRareReveal ? "\(pet.pet.displayName) // RARE LOCKED" : "\(pet.pet.displayName) GENERATED"
+            return isRareReveal ? "\(pet.pet.displayName) // 특별한 모습 확정" : "\(pet.pet.displayName) 등장"
         }
     }
 
@@ -264,14 +305,14 @@ struct HatchCinematicView: View {
         case .wait:
             return egg.shell.hatchHint
         case .decoding:
-            return "암호화된 데이터 블록을 실체화하는 중입니다."
+            return "모인 운동 기록을 바탕으로 부화를 준비하고 있습니다."
         case .interference:
-            return "데이터 타일이 분해되고 있습니다. 안정화 루틴으로 재구성 중입니다."
+            return "흩어진 신호를 다시 모아 하나의 모습으로 정리하고 있습니다."
         case .complete:
             if isRareReveal {
                 return "\(variantLabel ?? "희귀 변이") 신호가 고정되었습니다. 일반 개체보다 높은 가치의 생성 결과입니다."
             }
-            return "디지털 틈새 세계에서 새로운 동행체가 생성되었습니다."
+            return "러닝 기록에서 새로운 동행이 태어났습니다."
         }
     }
 
@@ -332,10 +373,10 @@ private enum HatchPhase {
 
     var badgeLabel: String {
         switch self {
-        case .wait: return "READY"
-        case .decoding: return "SCANNING"
-        case .interference: return "LOCKING"
-        case .complete: return "GENERATED"
+        case .wait: return "준비"
+        case .decoding: return "진행"
+        case .interference: return "정리"
+        case .complete: return "완료"
         }
     }
 }

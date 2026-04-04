@@ -10,6 +10,9 @@ struct WorldContentEngineTests {
         #expect(pack?.contentPack.packID == "master-seed")
         #expect(WorldContentPackLoader.availablePackResourceNames().contains("runimal-world-content.seed"))
         #expect(pack?.speciesBible.count == 5)
+        #expect(pack?.regions.count == 8)
+        #expect(pack?.seasons.count == 8)
+        #expect(pack?.narrativeEpisodes.count == 15)
         #expect(pack?.contentPack.featuredSpeciesIDs.contains("shadebit") == false)
     }
 
@@ -17,10 +20,17 @@ struct WorldContentEngineTests {
     func allResourcePacksLoadIncludingExpansion() {
         let packs = WorldContentPackLoader.loadAllPacks()
         let ids = packs.map(\.contentPack.packID)
+        let aurora = packs.first(where: { $0.contentPack.packID == "aurora-frontier" })
+        let obsidian = packs.first(where: { $0.contentPack.packID == "obsidian-circuit" })
 
         #expect(ids.contains("master-seed"))
         #expect(ids.contains("aurora-frontier"))
-        #expect(packs.count >= 2)
+        #expect(ids.contains("obsidian-circuit"))
+        #expect(packs.count >= 3)
+        #expect(aurora?.regions.count == 2)
+        #expect(aurora?.rareVariants.contains(where: { $0.variantID == "polar-echo" }) == true)
+        #expect(obsidian?.regions.count == 2)
+        #expect(obsidian?.seasons.count == 2)
     }
 
     @Test
@@ -28,8 +38,32 @@ struct WorldContentEngineTests {
         let pack = DefaultWorldContent.pack
 
         #expect(pack.regions.contains { $0.regionID == "glacier-veil" })
+        #expect(pack.regions.contains { $0.regionID == "tide-loop" })
+        #expect(pack.regions.contains { $0.regionID == "ember-belt" })
+        #expect(pack.regions.contains { $0.regionID == "root-garden" })
+        #expect(pack.regions.contains { $0.regionID == "signal-foundry" })
+        #expect(pack.regions.contains { $0.regionID == "glass-canyon" })
         #expect(pack.seasons.contains { $0.seasonID == "aurora-frontier" })
+        #expect(pack.seasons.contains { $0.seasonID == "relay-blaze" })
+        #expect(pack.seasons.contains { $0.seasonID == "river-mirror" })
+        #expect(pack.seasons.contains { $0.seasonID == "obsidian-circuit" })
         #expect(pack.narrativeEpisodes.contains { $0.episodeID == "episode-frostbloom" })
+        #expect(pack.narrativeEpisodes.contains { $0.episodeID == "episode-shadebit-threshold" })
+        #expect(pack.narrativeEpisodes.contains { $0.episodeID == "episode-foundry-surge" })
+    }
+
+    @Test
+    func mergedSpeciesBibleAccumulatesExpansionHooksAndHabitats() {
+        let pack = DefaultWorldContent.pack
+        let sparkfang = pack.speciesBible.first(where: { $0.speciesID == "sparkfang" })
+        let windrunner = pack.speciesBible.first(where: { $0.speciesID == "windrunner" })
+
+        #expect(sparkfang?.displayName == "신더래시")
+        #expect(windrunner?.displayName == "에이라리스")
+        #expect(sparkfang?.habitatTags.contains("heat") == true)
+        #expect(sparkfang?.narrativeHooks.contains(where: { $0.contains("제철소") || $0.contains("잔열") }) == true)
+        #expect(windrunner?.visualKeywords.contains("glass-ribbon") == true)
+        #expect(windrunner?.narrativeHooks.count ?? 0 > 4)
     }
 
     @Test
@@ -45,7 +79,7 @@ struct WorldContentEngineTests {
 
         let profile = RunimalWorldContentEngine.profile(for: pet)
 
-        #expect(profile?.fantasyLine.contains("길잡이형") == true)
+        #expect(profile?.fantasyLine.contains("바람길") == true)
         #expect(profile?.habitatLine.contains("도심") == true)
         #expect(profile?.mutationLine?.contains("Gale Swift") == true)
     }

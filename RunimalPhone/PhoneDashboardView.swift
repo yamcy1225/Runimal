@@ -5,6 +5,16 @@ import SwiftUI
 @Observable
 @MainActor
 final class PhoneDashboardStore {
+    private let emptySummary = RunSummary(
+        distanceKm: 0,
+        averagePaceSeconds: 0,
+        cadence: 0,
+        elevationGainM: 0,
+        variability: 0,
+        aura: .day,
+        shape: .freeform
+    )
+
     let healthKit = PhoneHealthKitManager()
     let fitImport = PhoneFITImportManager()
     let currentLocation = PhoneCurrentLocationManager()
@@ -95,6 +105,14 @@ final class PhoneDashboardStore {
         )
     }
 
+    var hasOwnedCompanion: Bool {
+        collection.isEmpty == false
+    }
+
+    var isEggOnlyState: Bool {
+        hasOwnedCompanion == false && mainSelection?.kind == .egg
+    }
+
     var variantCodex: [VariantCodexEntry] {
         RunimalGameEngine.buildVariantCodex(from: collection)
     }
@@ -113,22 +131,24 @@ final class PhoneDashboardStore {
 
     var mainEggResonance: Double {
         guard let egg = mainEgg else { return 0.24 }
-        let bpm = latestCompletedRun?.averageHeartRate ?? Double(currentRunSummary.cadence) * 0.78
+        let bpm = latestCompletedRun?.averageHeartRate ?? 108
         let bpmRatio = min(max((bpm - 95) / 75, 0.16), 1)
         return min(max((egg.progressRatio * 0.58) + (bpmRatio * 0.42), 0.18), 1)
     }
 
     var currentRunSummary: RunSummary {
-        guard let latestCompletedRun else { return summary }
+        guard let latestCompletedRun else { return emptySummary }
         return runSummary(from: latestCompletedRun)
     }
 
     var featuredCompanionDistanceKm: Double {
-        metricSummary(for: featuredCompanion)?.totalDistanceKm ?? featuredCompanion.totalDistanceKm
+        guard mainSelection?.kind != .egg else { return 0 }
+        return metricSummary(for: featuredCompanion)?.totalDistanceKm ?? featuredCompanion.totalDistanceKm
     }
 
     var featuredCompanionCadence: Int? {
-        metricSummary(for: featuredCompanion)?.averageCadence ?? latestCompletedRun?.cadence
+        guard mainSelection?.kind != .egg else { return nil }
+        return metricSummary(for: featuredCompanion)?.averageCadence ?? latestCompletedRun?.cadence
     }
 
     var featuredCompanionSignalLabel: String {
@@ -151,6 +171,9 @@ final class PhoneDashboardStore {
         case .pet:
             return featuredCompanion.pet.displayName
         case nil:
+            if let mainEgg {
+                return mainEgg.title
+            }
             return featuredCompanion.pet.displayName
         }
     }
@@ -158,20 +181,33 @@ final class PhoneDashboardStore {
     var mainSelectionDetail: String {
         switch mainSelection?.kind {
         case .egg:
-            guard let mainEgg else { return "새 알을 메인으로 들고 다니는 중" }
+            guard let mainEgg else { return "새 알을 대표로 데리고 있는 중" }
             return mainEgg.readyToHatch
-                ? "디코딩 안정화 완료. 실체화 시퀀스를 시작할 수 있습니다."
+                ? "부화 준비가 끝났습니다. 이제 바로 꺼낼 수 있습니다."
                 : mainEgg.shell.hatchHint
         case .pet:
             return featuredCompanion.headline
         case nil:
+            if let mainEgg {
+                return mainEgg.readyToHatch
+                    ? "부화 준비가 끝났습니다. 이제 바로 꺼낼 수 있습니다."
+                    : mainEgg.shell.hatchHint
+            }
             return featuredCompanion.headline
         }
     }
 
     var evolutionProgress: EvolutionProgress {
         RunimalCompanionGrowthEngine.evolutionProgress(
-            for: progress.growthRecord(for: featuredCompanion.id)
+            for: progress.growthRecord(for: featuredCompanion.id),
+            species: featuredCompanion.pet.species
+        )
+    }
+
+    var progressionSnapshot: CompanionProgressionSnapshot {
+        RunimalCompanionGrowthEngine.progressionSnapshot(
+            for: progress.growthRecord(for: featuredCompanion.id),
+            species: featuredCompanion.pet.species
         )
     }
 
@@ -183,8 +219,12 @@ final class PhoneDashboardStore {
         progress.completedRuns
     }
 
+    var actualCompletedRuns: [CompletedRunRecord] {
+        progress.completedRuns.filter { $0.source != "seeded-archive" }
+    }
+
     var latestCompletedRun: CompletedRunRecord? {
-        progress.completedRuns.first
+        actualCompletedRuns.first
     }
 
     var sanctuaryReward: SanctuaryRewardEvent? {
@@ -193,7 +233,7 @@ final class PhoneDashboardStore {
 
     var weeklyBoard: WeeklyBoard {
         RunimalGameEngine.weeklyBoard(
-            from: progress.completedRuns,
+            from: actualCompletedRuns,
             journal: progress.journal,
             codex: variantCodex
         )
@@ -220,7 +260,12 @@ final class PhoneDashboardStore {
     }
 
     var evolutionTarget: EvolutionTarget {
-        RunimalGameEngine.evolutionTarget(for: evolutionProgress, recentRun: latestCompletedRun)
+        RunimalGameEngine.evolutionTarget(
+            for: progressionSnapshot,
+            pet: featuredCompanion.pet,
+            recentRun: latestCompletedRun,
+            season: weeklyBoard.season
+        )
     }
 
     var availableRunCores: [CompletedRunRecord] {
@@ -332,8 +377,9 @@ final class PhoneDashboardStore {
     }
 
     var starterLoop: [StarterLoopStep] {
-        let hasStageAdvance = progress.growthRecords.contains {
-            RunimalCompanionGrowthEngine.evolutionProgress(for: $0).stageLabel != "Trace Egg"
+        let hasStageAdvance = progress.growthRecords.contains { record in
+            let species = collection.first(where: { $0.id == record.companionID })?.pet.species
+            return RunimalCompanionGrowthEngine.evolutionProgress(for: record, species: species).stageLabel != RunimalBalanceConfig.eggStageLabel
         }
 
         return RunimalOnboardingEngine.starterLoop(
@@ -470,467 +516,12 @@ final class PhoneDashboardStore {
             claimedRaidIDs: progress.claimedRaidRewardIDs
         )
     }
-
-    func activateConnectivity() {
-        connectivity.currentMainCompanionContext = watchMainCompanionContext
-        connectivity.currentMainCompanionProvider = { [weak self = self] in
-            self?.watchMainCompanionContext
-        }
-        connectivity.activate()
-        syncCompanionEffects()
-        syncMainCompanionSelection()
-        connectivity.pushAutoPauseEnabled(progress.autoPauseEnabled)
-        connectivity.pushOfflineMapPackCatalog(offlineMaps.packs)
-        connectivity.pushSelectedOfflineMapPackID(offlineMaps.selectedPackID)
-    }
-
-    func bootstrap() {
-        let availablePackIDs = DefaultWorldContent.packSummaries.map(\.packID)
-        worldPackManifest.load(availablePackIDs: availablePackIDs)
-        activeWorldPackIDs = worldPackManifest.enabledPackIDs
-        progress.load()
-        offlineMaps.load()
-        let vaultSnapshot = vault.loadSnapshot()
-        let cloudSnapshot = cloudMirror.restoreIfAvailable()
-
-        if let vaultSnapshot, let cloudSnapshot {
-            progress.restore(from: RunimalSnapshotMergeEngine.merge(vaultSnapshot, cloudSnapshot))
-        } else if let single = vaultSnapshot ?? cloudSnapshot {
-            progress.restore(from: single)
-        }
-        progress.seedIfNeeded(from: runArchive)
-        progress.evaluateSanctuaryRewardIfNeeded()
-        persistVault()
-        cloudMirror.validateRuntime()
-        telemetry.log("bootstrap", detail: "store initialized")
-    }
-
-    func toggleWorldPack(_ packID: String) {
-        let availablePackIDs = DefaultWorldContent.packSummaries.map(\.packID)
-        worldPackManifest.toggle(packID: packID, availablePackIDs: availablePackIDs)
-        activeWorldPackIDs = worldPackManifest.enabledPackIDs
-        syncMainCompanionSelection()
-        telemetry.log("toggle_world_pack", detail: "\(packID):\(activeWorldPackIDs.joined(separator: ","))")
-    }
-
-    func requestHealthAuthorization() async {
-        await healthKit.requestAuthorization()
-    }
-
-    func syncExternalHealthKitRuns() async {
-        if healthKit.authorizationStatus == "not requested" {
-            await healthKit.requestAuthorization()
-        }
-
-        let imports = await healthKit.syncExternalRuns(
-            claimedRewardIDs: claimedWeeklyRewardIDs,
-            existingRunsByID: Dictionary(uniqueKeysWithValues: completedRuns.map { ($0.id, $0) })
-        )
-
-        guard !imports.isEmpty else { return }
-
-        for item in imports.reversed() {
-            progress.append(completedRun: item.record)
-            progress.append(reward: item.reward, snapshot: item.snapshot)
-            telemetry.log("external_workout_imported", detail: "\(item.sourceName) · \(item.id)")
-        }
-
-        persistVault()
-    }
-
-    func importFITRun(from url: URL) async {
-        do {
-            let item = try await fitImport.importFile(
-                from: url,
-                claimedRewardIDs: claimedWeeklyRewardIDs
-            )
-            progress.append(completedRun: item.record)
-            progress.append(reward: item.reward, snapshot: item.snapshot)
-            telemetry.log("fit_file_imported", detail: "\(item.sourceName) · \(item.id)")
-            persistVault()
-        } catch {
-            fitImport.markImportFailed(error.localizedDescription)
-        }
-    }
-
-    func clearImportedExternalRuns() {
-        progress.removeImportedExternalRuns()
-        healthKit.resetImportedWorkoutIDs()
-        fitImport.resetImportedStatus()
-        telemetry.log("external_workout_cleared", detail: "manual clear")
-        persistVault()
-    }
-
-    func setAutoPauseEnabled(_ enabled: Bool) {
-        progress.setAutoPauseEnabled(enabled)
-        connectivity.pushAutoPauseEnabled(enabled)
-        telemetry.log("auto_pause_toggled", detail: enabled ? "on" : "off")
-        persistVault()
-    }
-
-    func registerOfflineMapPack(_ pack: OfflineMapPackSummary) {
-        offlineMaps.prepareLocalStorage(for: pack)
-        offlineMaps.selectPack(id: pack.id)
-        offlineMaps.markTransferredToWatch(ids: [pack.id])
-        connectivity.pushOfflineMapPackCatalog(offlineMaps.packs)
-        connectivity.pushSelectedOfflineMapPackID(offlineMaps.selectedPackID)
-        sendOfflineMapPackFiles(id: pack.id)
-        telemetry.log("offline_map_pack_registered", detail: pack.title)
-    }
-
-    func setSelectedOfflineMapPack(id: String) {
-        offlineMaps.selectPack(id: id)
-        connectivity.pushSelectedOfflineMapPackID(offlineMaps.selectedPackID)
-        telemetry.log("offline_map_pack_selected", detail: id)
-    }
-
-    func syncWorkoutPlan() async {
-        let suggestion = await planner.syncSuggestedWorkout(for: pet)
-        connectivity.pushSuggestedWorkout(suggestion)
-        telemetry.log("sync_workout_plan", detail: suggestion.title)
-    }
-
-    func ingestLatestReward() {
-        guard let reward = connectivity.lastReward else { return }
-        let adjustedReward: RunRewardSummary
-
-        if let snapshot = connectivity.lastSnapshot {
-            adjustedReward = RunimalGameEngine.evaluateReward(for: snapshot, claimedRewardIDs: claimedWeeklyRewardIDs)
-        } else {
-            adjustedReward = RunimalGameEngine.applyWeeklyRewardModifiers(to: reward, claimedRewardIDs: claimedWeeklyRewardIDs)
-        }
-
-        progress.append(reward: adjustedReward, snapshot: connectivity.lastSnapshot)
-        persistVault()
-        logRewardPulseTelemetry(for: adjustedReward)
-        telemetry.log("reward_ingested", detail: adjustedReward.coreLabel)
-    }
-
-    func ingestCompletedRun() {
-        guard let record = connectivity.lastCompletedRun else { return }
-        let isFirstCompletedRun = completedRuns.contains(where: { $0.source != "seeded-archive" }) == false
-        progress.append(completedRun: record)
-        persistVault()
-        if isFirstCompletedRun {
-            telemetry.log("first_run_completed", detail: record.id)
-        }
-        telemetry.log("completed_run_ingested", detail: record.id)
-    }
-
-    func claimWeeklyReward() {
-        guard let reward = claimableWeeklyReward else { return }
-        progress.claimWeeklyReward(id: reward.id)
-        syncCompanionEffects()
-        persistVault()
-        telemetry.log("weekly_reward_claimed", detail: reward.id)
-    }
-
-    func activateCompanion(_ companionID: String) {
-        progress.activateCompanion(id: companionID)
-        syncMainCompanionSelection()
-        persistVault()
-        telemetry.log("activate_companion", detail: companionID)
-    }
-
-    func activateEgg(_ eggID: String) {
-        progress.activateEgg(id: eggID)
-        syncMainCompanionSelection()
-        persistVault()
-        telemetry.log("activate_egg", detail: eggID)
-    }
-
-    @discardableResult
-    func feedActiveCompanion(with runID: String) -> CompanionFeedOutcome? {
-        guard let run = completedRuns.first(where: { $0.id == runID }) else { return nil }
-        let wasFirstStageUp = hasUnlockedNonTraceStage == false
-        latestFeedOutcome = progress.feed(
-            run: run,
-            to: featuredCompanion,
-            activeEffects: activeWeeklyEffects,
-            season: weeklyBoard.season
-        )
-        persistVault()
-        if let outcome = latestFeedOutcome {
-            if outcome.bonusLabels.contains("Signal Lock") {
-                telemetry.log("signal_lock_applied", detail: "\(run.id):\(outcome.afterProgress.stageLabel)")
-            }
-            if outcome.stageAdvanced, wasFirstStageUp {
-                telemetry.log("first_stage_up", detail: outcome.afterProgress.stageLabel)
-            }
-        }
-        telemetry.log("feed_companion", detail: run.id)
-        return latestFeedOutcome
-    }
-
-    @discardableResult
-    func forgeEgg(from runID: String) -> EggInventoryEntry? {
-        guard let run = completedRuns.first(where: { $0.id == runID }) else { return nil }
-        guard progress.eggOpportunity(for: run).eligible else { return nil }
-        let wasFirstEgg = eggInventory.isEmpty
-        let forgedEgg = progress.forgeEgg(from: run)
-        persistVault()
-        if let forgedEgg {
-            let firstFlag = wasFirstEgg ? "first" : "repeat"
-            telemetry.log("egg_created", detail: "\(forgedEgg.shell.rawValue):\(firstFlag)")
-        }
-        telemetry.log("forge_egg", detail: run.id)
-        return forgedEgg
-    }
-
-    @discardableResult
-    func incubateMainEgg(with runID: String) -> EggInventoryEntry? {
-        guard let run = completedRuns.first(where: { $0.id == runID }) else { return nil }
-        guard let eggBefore = mainEgg else { return nil }
-        let proposedExperience = RunimalEggEngine.incubationExperienceGain(for: run, egg: eggBefore)
-        let updatedEgg = progress.incubateMainEgg(with: run)
-        persistVault()
-        if let updatedEgg, updatedEgg.storedExperience > eggBefore.storedExperience + proposedExperience {
-            telemetry.log("decode_lock_applied", detail: "\(updatedEgg.id):\(updatedEgg.shell.rawValue)")
-        }
-        telemetry.log("incubate_egg", detail: run.id)
-        return updatedEgg
-    }
-
-    @discardableResult
-    func hatchEgg(_ eggID: String) -> PetCollectionEntry? {
-        let isFirstHatch = progress.ownedCompanions.contains(where: { $0.id.hasPrefix("hatched-") }) == false
-        let companion = progress.hatchEgg(eggID)
-        syncMainCompanionSelection()
-        persistVault()
-        if let companion {
-            let hatchDetail = isFirstHatch ? "first:\(companion.pet.species.rawValue)" : companion.pet.species.rawValue
-            telemetry.log("egg_hatched", detail: hatchDetail)
-            if let rareVariant = companion.pet.rareVariant {
-                let rareLabel = RareVariantMeta.labels[rareVariant] ?? rareVariant.rawValue
-                telemetry.log("rare_variant_obtained", detail: "\(rareLabel):\(companion.pet.species.rawValue)")
-            }
-        }
-        telemetry.log("hatch_egg", detail: eggID)
-        return companion
-    }
-
-    func resetProgress() {
-        progress.resetProgress(from: runArchive)
-        latestFeedOutcome = nil
-        persistVault()
-        syncCompanionEffects()
-        syncMainCompanionSelection()
-        telemetry.log("reset_progress", detail: "seeded")
-    }
-
-    func clearFeedOutcome() {
-        latestFeedOutcome = nil
-    }
-
-    func retireCompanion(_ companionID: String) {
-        guard let offer = retirableOffers.first(where: { $0.companion.id == companionID }) else { return }
-        _ = progress.retireCompanion(companionID, essenceReward: offer.essenceReward)
-        persistVault()
-        telemetry.log("retire_companion", detail: companionID)
-    }
-
-    func forgeOption(_ optionID: String) {
-        guard let option = forgeOptions.first(where: { $0.id == optionID }) else { return }
-        _ = progress.purchaseForgeOption(option)
-        persistVault()
-        telemetry.log("forge_option", detail: option.id)
-    }
-
-    func selectRole(_ role: CompanionRole) {
-        progress.selectRole(role, for: featuredCompanion.id)
-        persistVault()
-        telemetry.log("select_role", detail: role.rawValue)
-    }
-
-    func unlockBuildNode(_ nodeID: String) {
-        guard let node = buildNodes.first(where: { $0.id == nodeID }) else { return }
-        _ = progress.unlockSkillNode(nodeID, for: featuredCompanion.id, cost: node.cost)
-        persistVault()
-        telemetry.log("unlock_build_node", detail: nodeID)
-    }
-
-    func claimSeasonReward() {
-        _ = progress.claimSeasonReward(id: seasonEconomyBoard.seasonID)
-        persistVault()
-        telemetry.log("claim_season_reward", detail: seasonEconomyBoard.seasonID)
-    }
-
-    func claimRaidReward(_ encounterID: String) {
-        guard let encounter = raidEncounters.first(where: { $0.id == encounterID }) else { return }
-        _ = progress.claimRaidReward(
-            id: encounter.id,
-            title: encounter.title,
-            readinessScore: encounter.readinessScore,
-            threshold: encounter.claimThreshold,
-            branchReward: seasonalRaidBranchReward
-        )
-        persistVault()
-        telemetry.log("claim_raid_reward", detail: encounter.id)
-    }
-
-    func selectConflictPolicy(_ policy: SnapshotConflictPolicy) {
-        progress.setConflictPolicy(policy)
-        telemetry.log("select_conflict_policy", detail: policy.rawValue)
-    }
-
-    func applyConflictPolicy() {
-        let localSnapshot = vault.loadSnapshot()
-        let cloudSnapshot = cloudMirror.restoreIfAvailable()
-
-        let resolved: RunimalProgressSnapshot?
-
-        switch progress.conflictPolicy {
-        case .merged:
-            if let localSnapshot, let cloudSnapshot {
-                resolved = RunimalSnapshotMergeEngine.merge(localSnapshot, cloudSnapshot, priority: progress.duplicatePriority)
-            } else {
-                resolved = localSnapshot ?? cloudSnapshot
-            }
-        case .localPreferred:
-            resolved = localSnapshot ?? cloudSnapshot
-        case .cloudPreferred:
-            resolved = cloudSnapshot ?? localSnapshot
-        }
-
-        guard let resolved else { return }
-        progress.restore(from: resolved)
-        persistVault()
-        telemetry.log("apply_conflict_policy", detail: progress.conflictPolicy.rawValue)
-    }
-
-    func recordVerification(_ title: String, passed: Bool) {
-        progress.recordVerification(title, passed: passed)
-        persistVault()
-        telemetry.log("verification_recorded", detail: "\(title):\(passed)")
-    }
-
-    func selectDuplicatePriority(_ priority: SnapshotDuplicatePriority) {
-        progress.setDuplicatePriority(priority)
-        telemetry.log("select_duplicate_priority", detail: priority.rawValue)
-    }
-
-    func importSelectiveCandidate(_ id: String, type: String) {
-        let localSnapshot = vault.loadSnapshot()
-        let cloudSnapshot = cloudMirror.restoreIfAvailable()
-        progress.importSelectiveCandidate(id: id, type: type, local: localSnapshot, cloud: cloudSnapshot)
-        persistVault()
-        telemetry.log("selective_import", detail: "\(type):\(id)")
-    }
-
-    func importAllSelectiveCandidates(_ type: String) {
-        let localSnapshot = vault.loadSnapshot()
-        let cloudSnapshot = cloudMirror.restoreIfAvailable()
-        progress.importAllSelectiveCandidates(type: type, local: localSnapshot, cloud: cloudSnapshot)
-        persistVault()
-        telemetry.log("selective_import_all", detail: type)
-    }
-
-    func resolveRecordDiff(_ id: String, type: String, useCloud: Bool) {
-        let localSnapshot = vault.loadSnapshot()
-        let cloudSnapshot = cloudMirror.restoreIfAvailable()
-        progress.resolveRecordDiff(id: id, type: type, useCloud: useCloud, local: localSnapshot, cloud: cloudSnapshot)
-        persistVault()
-        telemetry.log("record_diff_resolved", detail: "\(type):\(id):\(useCloud)")
-    }
-
-    func resolveAllRecordDiffs(type: String, useCloud: Bool) {
-        let localSnapshot = vault.loadSnapshot()
-        let cloudSnapshot = cloudMirror.restoreIfAvailable()
-        progress.resolveAllRecordDiffs(type: type, useCloud: useCloud, local: localSnapshot, cloud: cloudSnapshot)
-        persistVault()
-        telemetry.log("record_diff_batch_resolved", detail: "\(type):\(useCloud)")
-    }
-
-    func syncCompanionEffects() {
-        let context = CompanionEffectContext(
-            claimedRewardIDs: Array(claimedWeeklyRewardIDs).sorted(),
-            activeEffects: activeWeeklyEffects
-        )
-        connectivity.pushCompanionEffects(context)
-    }
-
-    private func persistVault() {
-        let snapshot = progress.snapshot()
-        vault.save(snapshot: snapshot)
-        cloudMirror.mirror(snapshot: snapshot)
-    }
-
-    private var hasUnlockedNonTraceStage: Bool {
-        progress.growthRecords.contains {
-            RunimalCompanionGrowthEngine.evolutionProgress(for: $0).stageLabel != "Trace Egg"
-        }
-    }
-
-    private func logRewardPulseTelemetry(for reward: RunRewardSummary) {
-        guard reward.bonusLabels.isEmpty == false else { return }
-        telemetry.log("reward_pulse_applied", detail: reward.bonusLabels.joined(separator: ", "))
-    }
-
-    private func runSummary(from record: CompletedRunRecord) -> RunSummary {
-        let paceSeconds = record.averagePaceSeconds ?? Int(
-            (Double(max(record.durationSeconds, 1)) / max(record.distanceMeters / 1000, 1)).rounded()
-        )
-        let cadence = record.cadence ?? currentCadenceFallback
-
-        return RunSummary(
-            distanceKm: record.distanceMeters / 1000,
-            averagePaceSeconds: paceSeconds,
-            cadence: cadence,
-            elevationGainM: record.elevationGainM,
-            variability: routeVariability(for: record.route),
-            aura: aura(for: record.startedAt),
-            shape: shape(for: record.route),
-            environmentCondition: record.environmentCondition,
-            rareEventCompleted: record.rareEventCompleted
-        )
-    }
-
-    private var currentCadenceFallback: Int {
-        latestCompletedRun?.cadence ?? summary.cadence
-    }
-
-    private func aura(for date: Date) -> RunTimeAura {
-        let hour = Calendar.current.component(.hour, from: date)
-        switch hour {
-        case 5..<11:
-            return .dawn
-        case 11..<17:
-            return .day
-        case 17..<21:
-            return .dusk
-        default:
-            return .night
-        }
-    }
-
-    private func shape(for route: [RoutePoint]) -> RouteShape {
-        guard route.count > 2, let first = route.first, let last = route.last else {
-            return .freeform
-        }
-
-        let closureMeters = hypot(first.latitude - last.latitude, first.longitude - last.longitude) * 111_000
-        if closureMeters < 120 {
-            return .loop
-        }
-        return .outAndBack
-    }
-
-    private func routeVariability(for route: [RoutePoint]) -> Double {
-        guard route.count > 4 else { return summary.variability }
-
-        let latitudes = route.map(\.latitude)
-        let longitudes = route.map(\.longitude)
-        let latSpan = (latitudes.max() ?? 0) - (latitudes.min() ?? 0)
-        let lonSpan = (longitudes.max() ?? 0) - (longitudes.min() ?? 0)
-        let spread = max(latSpan, lonSpan) * 111_000
-        return min(max(spread / 5000, 0.04), 0.24)
-    }
 }
 
 struct PhoneDashboardView: View {
-    @State private var store = PhoneDashboardStore()
-    @State private var selectedTab = ProcessInfo.processInfo.environment["RUNIMAL_OPEN_COLLECTION_ON_LAUNCH"] == "1" ? 2 : 0
-    private let pageTitles = ["동행", "러닝", "보관함", "도감"]
+    @State var store = PhoneDashboardStore()
+    @State var selectedTab = ProcessInfo.processInfo.environment["RUNIMAL_OPEN_COLLECTION_ON_LAUNCH"] == "1" ? 2 : 0
+    let pageTitles = ["동행", "러닝", "보관함", "도감"]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -989,116 +580,6 @@ struct PhoneDashboardView: View {
             }
             .ignoresSafeArea()
         )
-    }
-
-    private var pageHeader: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("RUNIMAL")
-                        .font(.title3.monospaced().weight(.black))
-                        .tracking(1.6)
-                        .foregroundStyle(GameBoyPalette.darkest)
-                    Text("DIGITAL FIELD GUIDE")
-                        .font(.caption2.monospaced().weight(.black))
-                        .tracking(1.4)
-                        .foregroundStyle(GameBoyPalette.mediumDark)
-                }
-
-                Spacer()
-
-                RunimalSignalBadge(
-                    icon: "sparkles",
-                    label: store.weeklyBoard.season.title,
-                    accent: store.pet.accentColor
-                )
-            }
-
-            HStack(spacing: 6) {
-                pagePill(title: "동행", icon: "sparkles", tag: 0)
-                pagePill(title: "러닝", icon: "figure.run", tag: 1)
-                pagePill(title: "보관함", icon: "shippingbox.fill", tag: 2)
-                pagePill(title: "도감", icon: "book.closed.fill", tag: 3)
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.top, 12)
-        .padding(.bottom, 10)
-        .background(
-            Rectangle()
-                .fill(GameBoyPalette.lightest.opacity(0.92))
-                .overlay(alignment: .bottom) {
-                    Rectangle()
-                        .fill(GameBoyPalette.darkest)
-                        .frame(height: 2)
-                }
-        )
-    }
-
-    private var pageIndicator: some View {
-        HStack(spacing: 8) {
-            ForEach(Array(pageTitles.enumerated()), id: \.offset) { index, title in
-                VStack(spacing: 4) {
-                    Rectangle()
-                        .fill(selectedTab == index ? GameBoyPalette.darkest : GameBoyPalette.mediumLight)
-                        .frame(width: selectedTab == index ? 28 : 10, height: 5)
-                        .overlay(
-                            Rectangle()
-                                .stroke(GameBoyPalette.darkest, lineWidth: selectedTab == index ? 0 : 1)
-                        )
-                    Text(title)
-                        .font(.caption2.monospaced().weight(selectedTab == index ? .black : .medium))
-                        .foregroundStyle(selectedTab == index ? GameBoyPalette.darkest : GameBoyPalette.mediumDark)
-                }
-                .frame(maxWidth: .infinity)
-            }
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 6)
-        .padding(.bottom, 4)
-    }
-
-    private func pagePill(title: String, icon: String, tag: Int) -> some View {
-        let isActive = selectedTab == tag
-
-        return Button {
-            withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
-                selectedTab = tag
-            }
-        } label: {
-            HStack(spacing: 2) {
-                Image(systemName: icon)
-                    .font(.system(size: 10, weight: .black))
-                    .frame(width: 10)
-                Text(title)
-                    .fontWeight(.black)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.45)
-                    .allowsTightening(true)
-                    .layoutPriority(1)
-            }
-            .font(.system(size: 11, weight: .black, design: .monospaced))
-            .foregroundStyle(isActive ? GameBoyPalette.lightest : GameBoyPalette.darkest)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 8)
-            .frame(maxWidth: .infinity, minHeight: 36)
-            .frame(maxWidth: .infinity)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(isActive ? GameBoyPalette.mediumDark : GameBoyPalette.lightest)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(GameBoyPalette.darkest, lineWidth: 2)
-            )
-            .overlay(alignment: .topLeading) {
-                Rectangle()
-                    .fill(store.pet.accentColor.opacity(0.82))
-                    .frame(width: isActive ? 14 : 9, height: 4)
-                    .padding(6)
-            }
-        }
-        .buttonStyle(.plain)
     }
 }
 

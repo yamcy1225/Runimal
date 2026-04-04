@@ -167,14 +167,7 @@ struct GameBoyLCDOverlay: View {
 
 extension GeneratedPet {
     var displayName: String {
-        switch species {
-        case .windrunner: return "Windrunner"
-        case .stoneback: return "Stoneback"
-        case .sparkfang: return "Sparkfang"
-        case .mosshop: return "Mosshop"
-        case .shadebit: return "Shadebit"
-        case .seedle: return "Seedle"
-        }
+        species.displayName
     }
 
     var subtitle: String {
@@ -193,12 +186,25 @@ extension GeneratedPet {
     }
 
     var accentColor: Color {
-        switch element {
-        case .light: return Color(red: 0.78, green: 0.72, blue: 0.34)
-        case .flame: return Color(red: 0.78, green: 0.43, blue: 0.26)
-        case .leaf: return Color(red: 0.38, green: 0.62, blue: 0.40)
-        case .lunar: return Color(red: 0.44, green: 0.56, blue: 0.76)
-        case .earth: return Color(red: 0.56, green: 0.48, blue: 0.34)
+        species.accentColor
+    }
+}
+
+private extension PetSpecies {
+    var accentColor: Color {
+        switch self {
+        case .windrunner:
+            return Color(red: 0.345, green: 0.722, blue: 0.839)
+        case .stoneback:
+            return Color(red: 0.643, green: 0.494, blue: 0.322)
+        case .sparkfang:
+            return Color(red: 0.839, green: 0.369, blue: 0.243)
+        case .mosshop:
+            return Color(red: 0.353, green: 0.624, blue: 0.365)
+        case .shadebit:
+            return Color(red: 0.369, green: 0.404, blue: 0.718)
+        case .seedle:
+            return Color(red: 0.780, green: 0.741, blue: 0.275)
         }
     }
 }

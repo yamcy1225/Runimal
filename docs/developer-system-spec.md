@@ -66,6 +66,31 @@ Responsibilities:
 
 ## 3. Core Domain Objects
 
+## 2.4 Live Companion vs Run Core
+
+Runimal separates the companion you carry during a run from the workout resource produced after the run.
+
+Live Companion:
+
+- selected before the run
+- used for watch-side visuals, feedback, and runtime reactions
+- affects resonance and interaction bonuses
+- does not automatically consume the run result
+
+Run Core:
+
+- produced after a workout is completed
+- represented by `CompletedRunRecord`
+- stored as an unassigned resource until the player spends it
+- can be fed to any companion or used for egg creation / incubation
+- imported workouts from HealthKit / FIT must follow the same rule
+
+Design rule:
+
+- runtime companionship is emotional and reactive
+- post-run growth is manual and resource-driven
+- no automatic ownership lock should be applied from “who was carried during the run”
+
 ## 3.1 RunSummary
 
 Purpose:
@@ -120,6 +145,12 @@ Key fields:
 - `rareVariant`
 - `explanation`
 - `stats`
+
+Additional rules:
+
+- `palette` now tracks a species-anchored base palette name rather than an element family.
+- rare variants only append a suffix on top of the same species base palette.
+- reference: `docs/world/species-color-identity.ko.md`
 
 ## 3.4 PetCollectionEntry
 
@@ -309,18 +340,18 @@ Then reseeds baseline archive data.
 
 ## 6. Companion Loop Flow
 
-## 6.1 Main Pet Flow
+## 6.1 Main Companion Flow
 
 When the main selection is a pet:
 
-- `PhoneRunCoreDecisionPanel` allows `메인 펫 성장`
+- `PhoneRunCoreDecisionPanel` allows `지금 선택한 동행 성장`
 - `PhoneProgressStore.feed(...)` applies XP and bonuses
 
 ## 6.2 Main Egg Flow
 
 When the main selection is an egg:
 
-- `PhoneRunCoreDecisionPanel` allows `메인 알 키우기`
+- `PhoneRunCoreDecisionPanel` allows `지금 선택한 알 부화 준비`
 - `incubateMainEgg(with:)` adds XP and run ownership
 
 ## 6.3 Egg Creation Flow
@@ -525,4 +556,3 @@ High-value next steps:
 3. more shell-specific visuals
 4. better live watch guidance for hatch probability windows
 5. balancing tools for egg rarity and species distribution
-

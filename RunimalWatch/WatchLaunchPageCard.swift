@@ -9,6 +9,7 @@ struct WatchLaunchPageCard: View {
     let gpsAccuracyMeters: Double?
     let lastGPSUpdateAt: Date?
     let locationStatusLabel: String
+    let mutationReaction: MutationRuntimeReactionSnapshot?
     let countdownValue: Int?
     let onPrimaryAction: () -> Void
     let onRefreshCompanion: () -> Void
@@ -126,7 +127,8 @@ struct WatchLaunchPageCard: View {
                 companion: companion,
                 accent: accent,
                 heartResonance: heartResonance,
-                isRunning: sessionStateLabel == "running"
+                isRunning: sessionStateLabel == "running",
+                reaction: mutationReaction
             )
 
             Text(companion.displayName)
@@ -149,6 +151,11 @@ struct WatchLaunchPageCard: View {
     private func compactSummaryLine(for companion: WatchMainCompanionContext) -> String? {
         if companion.selection.kind == .egg {
             return nil
+        }
+
+        if let level = companion.companionLevel,
+           let stageLabel = companion.companionStageLabel {
+            return "Lv.\(level) · \(stageLabel)"
         }
 
         return companion.petHeadline ?? companion.detailText

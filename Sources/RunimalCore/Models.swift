@@ -9,6 +9,68 @@ public enum PetSpecies: String, Codable, CaseIterable, Sendable {
     case seedle
 }
 
+public extension PetSpecies {
+    var displayName: String {
+        switch self {
+        case .windrunner: return "에이라리스"
+        case .stoneback: return "크래그맨틀"
+        case .sparkfang: return "신더래시"
+        case .mosshop: return "모스베일"
+        case .shadebit: return "셰이드빗"
+        case .seedle: return "던스프리그"
+        }
+    }
+
+    var codename: String {
+        switch self {
+        case .windrunner: return "Aeralith"
+        case .stoneback: return "Cragmantle"
+        case .sparkfang: return "Cinderlash"
+        case .mosshop: return "Mossveil"
+        case .shadebit: return "Shadebit"
+        case .seedle: return "Dawnsprig"
+        }
+    }
+
+    var basePaletteName: String {
+        switch self {
+        case .windrunner: return "Sky Teal"
+        case .stoneback: return "Crag Ochre"
+        case .sparkfang: return "Ember Coral"
+        case .mosshop: return "Moss Jade"
+        case .shadebit: return "Twilight Indigo"
+        case .seedle: return "Dawn Lime"
+        }
+    }
+
+    var baseColorHex: String {
+        switch self {
+        case .windrunner: return "#58B8D6"
+        case .stoneback: return "#A47E52"
+        case .sparkfang: return "#D65E3E"
+        case .mosshop: return "#5A9F5D"
+        case .shadebit: return "#5E67B7"
+        case .seedle: return "#C7BD46"
+        }
+    }
+
+    func paletteName(rareVariant: RareVariant? = nil) -> String {
+        let base = basePaletteName
+
+        guard let rareVariant else {
+            return base
+        }
+
+        switch rareVariant {
+        case .summitHeart: return "\(base) Prime"
+        case .eclipseMark: return "\(base) Eclipse"
+        case .zenBloom: return "\(base) Zen"
+        case .tempoSurge: return "\(base) Rush"
+        case .loopSigil: return "\(base) Sigil"
+        }
+    }
+}
+
 public enum PetElement: String, Codable, Sendable {
     case light
     case flame
@@ -343,9 +405,44 @@ public struct EvolutionProgress: Codable, Equatable, Sendable {
     }
 }
 
+public struct CompanionProgressionSnapshot: Equatable, Sendable {
+    public let level: Int
+    public let stageIndex: Int
+    public let progress: EvolutionProgress
+    public let evolutionMilestones: [CompanionEvolutionMilestone]
+    public let nextEvolutionMilestone: CompanionEvolutionMilestone?
+    public let stageUnlockWindow: [CompanionStageUnlock]
+    public let lateGrowthWindow: [CompanionLateGrowthMilestone]
+    public let lateGrowthFeatures: CompanionLateGrowthFeatures
+    public let evolutionSummary: String?
+
+    public init(
+        level: Int,
+        stageIndex: Int,
+        progress: EvolutionProgress,
+        evolutionMilestones: [CompanionEvolutionMilestone],
+        nextEvolutionMilestone: CompanionEvolutionMilestone?,
+        stageUnlockWindow: [CompanionStageUnlock],
+        lateGrowthWindow: [CompanionLateGrowthMilestone],
+        lateGrowthFeatures: CompanionLateGrowthFeatures,
+        evolutionSummary: String?
+    ) {
+        self.level = level
+        self.stageIndex = stageIndex
+        self.progress = progress
+        self.evolutionMilestones = evolutionMilestones
+        self.nextEvolutionMilestone = nextEvolutionMilestone
+        self.stageUnlockWindow = stageUnlockWindow
+        self.lateGrowthWindow = lateGrowthWindow
+        self.lateGrowthFeatures = lateGrowthFeatures
+        self.evolutionSummary = evolutionSummary
+    }
+}
+
 public struct CompanionGrowthRecord: Codable, Equatable, Identifiable, Sendable {
     public let companionID: String
     public let totalExperience: Int
+    public let storedPotentialExperience: Int
     public let feedCount: Int
     public let assignedRunIDs: [String]
     public let lastFedAt: Date?
@@ -357,15 +454,36 @@ public struct CompanionGrowthRecord: Codable, Equatable, Identifiable, Sendable 
     public init(
         companionID: String,
         totalExperience: Int,
+        storedPotentialExperience: Int = 0,
         feedCount: Int,
         assignedRunIDs: [String],
         lastFedAt: Date?
     ) {
         self.companionID = companionID
         self.totalExperience = totalExperience
+        self.storedPotentialExperience = storedPotentialExperience
         self.feedCount = feedCount
         self.assignedRunIDs = assignedRunIDs
         self.lastFedAt = lastFedAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case companionID
+        case totalExperience
+        case storedPotentialExperience
+        case feedCount
+        case assignedRunIDs
+        case lastFedAt
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        companionID = try container.decode(String.self, forKey: .companionID)
+        totalExperience = try container.decode(Int.self, forKey: .totalExperience)
+        storedPotentialExperience = try container.decodeIfPresent(Int.self, forKey: .storedPotentialExperience) ?? 0
+        feedCount = try container.decode(Int.self, forKey: .feedCount)
+        assignedRunIDs = try container.decodeIfPresent([String].self, forKey: .assignedRunIDs) ?? []
+        lastFedAt = try container.decodeIfPresent(Date.self, forKey: .lastFedAt)
     }
 }
 
@@ -454,6 +572,7 @@ public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
     public let claimedRaidRewardIDs: [String]
     public let raidShardBalance: Int
     public let raidContributionTotal: Int
+    public let worldProgress: WorldProgressSnapshot
 
     public init(
         savedAt: Date,
@@ -475,7 +594,8 @@ public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
         claimedSeasonRewardIDs: [String],
         claimedRaidRewardIDs: [String],
         raidShardBalance: Int,
-        raidContributionTotal: Int = 0
+        raidContributionTotal: Int = 0,
+        worldProgress: WorldProgressSnapshot = .empty
     ) {
         self.savedAt = savedAt
         self.originDeviceID = originDeviceID
@@ -497,6 +617,7 @@ public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
         self.claimedRaidRewardIDs = claimedRaidRewardIDs
         self.raidShardBalance = raidShardBalance
         self.raidContributionTotal = raidContributionTotal
+        self.worldProgress = worldProgress
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -520,6 +641,7 @@ public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
         case claimedRaidRewardIDs
         case raidShardBalance
         case raidContributionTotal
+        case worldProgress
     }
 
     public init(from decoder: Decoder) throws {
@@ -544,6 +666,7 @@ public struct RunimalProgressSnapshot: Codable, Equatable, Sendable {
         claimedRaidRewardIDs = try container.decode([String].self, forKey: .claimedRaidRewardIDs)
         raidShardBalance = try container.decode(Int.self, forKey: .raidShardBalance)
         raidContributionTotal = try container.decodeIfPresent(Int.self, forKey: .raidContributionTotal) ?? completedRuns.reduce(0) { $0 + $1.raidContribution }
+        worldProgress = try container.decodeIfPresent(WorldProgressSnapshot.self, forKey: .worldProgress) ?? .empty
     }
 }
 
@@ -803,8 +926,12 @@ public struct CompletedRunRecord: Codable, Equatable, Identifiable, Sendable {
     public let raidContribution: Int
     public let environmentCondition: EnvironmentCondition
     public let rareEventCompleted: Bool
+    public let liveCompanionID: String?
+    public let liveCompanionName: String?
+    public let livePotentialProfile: LiveCompanionPotentialProfile?
     public let mutationForm: MutationFormSnapshot?
     public let mutationContribution: MutationRunContributionSnapshot?
+    public let worldImpact: WorldRunImpact?
 
     public init(
         id: String,
@@ -823,8 +950,12 @@ public struct CompletedRunRecord: Codable, Equatable, Identifiable, Sendable {
         raidContribution: Int = 0,
         environmentCondition: EnvironmentCondition = .unknown,
         rareEventCompleted: Bool = false,
+        liveCompanionID: String? = nil,
+        liveCompanionName: String? = nil,
+        livePotentialProfile: LiveCompanionPotentialProfile? = nil,
         mutationForm: MutationFormSnapshot? = nil,
-        mutationContribution: MutationRunContributionSnapshot? = nil
+        mutationContribution: MutationRunContributionSnapshot? = nil,
+        worldImpact: WorldRunImpact? = nil
     ) {
         self.id = id
         self.startedAt = startedAt
@@ -842,8 +973,12 @@ public struct CompletedRunRecord: Codable, Equatable, Identifiable, Sendable {
         self.raidContribution = raidContribution
         self.environmentCondition = environmentCondition
         self.rareEventCompleted = rareEventCompleted
+        self.liveCompanionID = liveCompanionID
+        self.liveCompanionName = liveCompanionName
+        self.livePotentialProfile = livePotentialProfile
         self.mutationForm = mutationForm
         self.mutationContribution = mutationContribution
+        self.worldImpact = worldImpact
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -863,8 +998,12 @@ public struct CompletedRunRecord: Codable, Equatable, Identifiable, Sendable {
         case raidContribution
         case environmentCondition
         case rareEventCompleted
+        case liveCompanionID
+        case liveCompanionName
+        case livePotentialProfile
         case mutationForm
         case mutationContribution
+        case worldImpact
     }
 
     public init(from decoder: Decoder) throws {
@@ -885,8 +1024,12 @@ public struct CompletedRunRecord: Codable, Equatable, Identifiable, Sendable {
         raidContribution = try container.decodeIfPresent(Int.self, forKey: .raidContribution) ?? 0
         environmentCondition = try container.decodeIfPresent(EnvironmentCondition.self, forKey: .environmentCondition) ?? .unknown
         rareEventCompleted = try container.decodeIfPresent(Bool.self, forKey: .rareEventCompleted) ?? false
+        liveCompanionID = try container.decodeIfPresent(String.self, forKey: .liveCompanionID)
+        liveCompanionName = try container.decodeIfPresent(String.self, forKey: .liveCompanionName)
+        livePotentialProfile = try container.decodeIfPresent(LiveCompanionPotentialProfile.self, forKey: .livePotentialProfile)
         mutationForm = try container.decodeIfPresent(MutationFormSnapshot.self, forKey: .mutationForm)
         mutationContribution = try container.decodeIfPresent(MutationRunContributionSnapshot.self, forKey: .mutationContribution)
+        worldImpact = try container.decodeIfPresent(WorldRunImpact.self, forKey: .worldImpact)
     }
 }
 
@@ -922,5 +1065,27 @@ public struct SyncDiagnosticEvent: Codable, Equatable, Identifiable, Sendable {
         self.timestamp = timestamp
         self.title = title
         self.detail = detail
+    }
+}
+
+public struct SyncAuditTrail: Codable, Equatable, Sendable {
+    public let lastMessage: String
+    public let lastInboundRoute: String
+    public let lastInboundPayloadKeys: [String]
+    public let recentEvents: [SyncDiagnosticEvent]
+    public let updatedAt: Date
+
+    public init(
+        lastMessage: String,
+        lastInboundRoute: String,
+        lastInboundPayloadKeys: [String],
+        recentEvents: [SyncDiagnosticEvent],
+        updatedAt: Date = Date()
+    ) {
+        self.lastMessage = lastMessage
+        self.lastInboundRoute = lastInboundRoute
+        self.lastInboundPayloadKeys = lastInboundPayloadKeys
+        self.recentEvents = recentEvents
+        self.updatedAt = updatedAt
     }
 }

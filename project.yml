@@ -44,6 +44,7 @@ targets:
       - path: SharedUI/AssetCatalog
     settings:
       base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIconPhone
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGNING_ALLOWED: YES
         CODE_SIGN_STYLE: Automatic
@@ -62,12 +63,15 @@ targets:
         INFOPLIST_KEY_NSHealthUpdateUsageDescription: Runimal writes completed run rewards back into your training history.
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone:
           - UIInterfaceOrientationPortrait
+        TARGETED_DEVICE_FAMILY: 1
         CODE_SIGN_ENTITLEMENTS: RunimalPhone/RunimalPhone.entitlements
     dependencies:
       - package: RunimalPackage
         product: RunimalCore
       - package: FitDataProtocol
         product: FitDataProtocol
+      - target: RunimalWatch
+        embed: true
   RunimalWatch:
     type: application
     platform: watchOS
@@ -78,6 +82,7 @@ targets:
       - path: SharedUI/AssetCatalog
     settings:
       base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIconWatch
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGNING_ALLOWED: YES
         CODE_SIGN_STYLE: Automatic
@@ -90,7 +95,7 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: RunimalWatch
         INFOPLIST_KEY_CFBundlePackageType: APPL
         INFOPLIST_KEY_WKApplication: YES
-        INFOPLIST_KEY_WKWatchOnly: YES
+        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.jaw.runimal.phone
         INFOPLIST_KEY_NSHealthShareUsageDescription: Runimal reads live run data to hatch and grow your companion.
         INFOPLIST_KEY_NSHealthUpdateUsageDescription: Runimal saves completed workouts and routes after each run.
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: Runimal needs your route during runs so your companion can learn the path you took.

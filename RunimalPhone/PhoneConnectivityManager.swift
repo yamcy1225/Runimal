@@ -22,6 +22,10 @@ struct OfflineMapPackTransferStatus: Equatable {
 @MainActor
 @Observable
 final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
+    private enum StorageKeys {
+        static let syncAuditTrail = "runimal.phone.syncAuditTrail"
+    }
+
     private let archivePersistence = PhoneWorkoutArchivePersistence()
     var activationStateLabel = "inactive"
     var reachabilityLabel = "offline"
@@ -55,6 +59,35 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
     var lastAcknowledgedMainCompanionTargetID: String?
     var currentMainCompanionProvider: (() -> WatchMainCompanionContext?)?
 
+    override init() {
+        super.init()
+        loadPersistedAuditTrail()
+    }
+
+    private func loadPersistedAuditTrail() {
+        guard let data = UserDefaults.standard.data(forKey: StorageKeys.syncAuditTrail),
+              let trail = try? JSONDecoder().decode(SyncAuditTrail.self, from: data) else {
+            return
+        }
+
+        lastMessage = trail.lastMessage
+        lastInboundRoute = trail.lastInboundRoute
+        lastInboundPayloadKeys = trail.lastInboundPayloadKeys
+        recentEvents = trail.recentEvents
+    }
+
+    private func persistAuditTrail() {
+        let trail = SyncAuditTrail(
+            lastMessage: lastMessage,
+            lastInboundRoute: lastInboundRoute,
+            lastInboundPayloadKeys: lastInboundPayloadKeys,
+            recentEvents: recentEvents
+        )
+
+        guard let data = try? JSONEncoder().encode(trail) else { return }
+        UserDefaults.standard.set(data, forKey: StorageKeys.syncAuditTrail)
+    }
+
     private func cancelOutstandingMainCompanionTransfers() {
         guard WCSession.isSupported() else { return }
         let session = WCSession.default
@@ -78,16 +111,21 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
         }
     }
 
+    private func freshestMainCompanionContext() -> WatchMainCompanionContext? {
+        currentMainCompanionProvider?() ?? currentMainCompanionContext ?? lastMainCompanionContext
+    }
+
+    private func cacheMainCompanionContext(_ context: WatchMainCompanionContext) {
+        currentMainCompanionContext = context
+        lastMainCompanionContext = context
+    }
+
     private func resendMainCompanionIfPossible() {
-        guard let context = currentMainCompanionContext ?? lastMainCompanionContext else { return }
+        guard let context = freshestMainCompanionContext() else { return }
+        cacheMainCompanionContext(context)
         let token = pendingMainCompanionToken ?? UUID().uuidString
         pendingMainCompanionToken = token
-        guard let payload = try? makeMainCompanionSyncPayload(context: context, token: token) else {
-            logEvent("repush main companion failed", "payload build failed")
-            return
-        }
-
-        sendMainCompanionPayload(payload, context: context, token: token, reason: "repush")
+        sendMainCompanionPayload(context: context, token: token, reason: "repush")
         scheduleMainCompanionRepush(token: token, selectionID: context.selection.id)
     }
 
@@ -101,30 +139,29 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
                 guard self.pendingMainCompanionToken == token else { return }
                 guard self.lastAcknowledgedMainCompanionToken != token else { return }
                 guard let context = self.lastMainCompanionContext, context.selection.id == selectionID else { return }
-                guard let payload = try? self.makeMainCompanionSyncPayload(context: context, token: token) else {
-                    self.logEvent("retry main companion failed", "payload build failed")
-                    continue
-                }
-                self.sendMainCompanionPayload(payload, context: context, token: token, reason: "retry")
+                self.sendMainCompanionPayload(context: context, token: token, reason: "retry")
             }
         }
     }
 
-    private func makeMainCompanionSyncPayload(
+    private func makeMainCompanionAppContextPayload(
         context: WatchMainCompanionContext,
         token: String
     ) throws -> [String: Any] {
-        var payload: [String: Any] = [
+        [
             "mainCompanionSyncToken": token,
             "mainCompanionSelectionID": context.selection.id,
+            "mainCompanionContext": try JSONEncoder().encode(context),
         ]
-        payload["mainCompanionContext"] = try JSONEncoder().encode(context)
-        for (key, value) in context.flattenedWCPayload {
-            payload[key] = value
-        }
-        for (key, value) in context.watchSelectionTransportPayload {
-            payload[key] = value
-        }
+    }
+
+    private func makeMainCompanionLivePayload(
+        context: WatchMainCompanionContext,
+        token: String
+    ) -> [String: Any] {
+        var payload = context.watchSelectionTransportPayload
+        payload["mainCompanionSyncToken"] = token
+        payload["mainCompanionSelectionID"] = context.selection.id
         return payload
     }
 
@@ -162,45 +199,77 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
             (jsonPayload["mainCompanion_targetID"] as? String)
     }
 
-    private func sendMainCompanionPayload(
-        _ payload: [String: Any],
-        context: WatchMainCompanionContext,
+    private func queueMainCompanionUserInfoFallback(
+        payload: [String: Any],
         token: String,
-        reason: String
+        reason: String,
+        displayName: String
     ) {
         let session = WCSession.default
-        cancelOutstandingMainCompanionTransfers()
+        session.transferUserInfo(payload)
+        queuedTransferCount = session.outstandingUserInfoTransfers.count
+        logEvent("\(reason) queued fallback", displayName)
 
         do {
-            try updateWatchApplicationContext(adding: payload)
+            try queueMainCompanionFileTransfer(
+                payload: freshestMainCompanionContext()?.watchSelectionTransportPayload ?? [:],
+                token: token
+            )
+            logEvent("\(reason) file fallback", displayName)
+        } catch {
+            logEvent("\(reason) file fallback failed", error.localizedDescription)
+        }
+    }
+
+    private func sendMainCompanionPayload(context: WatchMainCompanionContext, token: String, reason: String) {
+        let session = WCSession.default
+        cancelOutstandingMainCompanionTransfers()
+        let appContextPayload: [String: Any]
+        do {
+            appContextPayload = try makeMainCompanionAppContextPayload(context: context, token: token)
+        } catch {
+            logEvent("\(reason) app context failed", error.localizedDescription)
+            return
+        }
+        let livePayload = makeMainCompanionLivePayload(context: context, token: token)
+
+        do {
+            try updateWatchApplicationContext(adding: appContextPayload)
             logEvent("\(reason) app context", context.displayName)
         } catch {
             logEvent("\(reason) app context failed", error.localizedDescription)
         }
 
         if session.isReachable {
-            session.sendMessage(payload, replyHandler: { reply in
+            session.sendMessage(livePayload, replyHandler: { reply in
                 self.processPayload(reply, route: "messageReply")
             }, errorHandler: { error in
                 Task { @MainActor in
                     self.logEvent("\(reason) send failed", error.localizedDescription)
+                    self.queueMainCompanionUserInfoFallback(
+                        payload: appContextPayload,
+                        token: token,
+                        reason: reason,
+                        displayName: context.displayName
+                    )
                 }
             })
             logEvent("\(reason) send", context.displayName)
         } else {
             logEvent("\(reason) send skipped", "watch unreachable")
+            queueMainCompanionUserInfoFallback(
+                payload: appContextPayload,
+                token: token,
+                reason: reason,
+                displayName: context.displayName
+            )
         }
 
-        session.transferUserInfo(payload)
         queuedTransferCount = session.outstandingUserInfoTransfers.count
-        logEvent("\(reason) userInfo", context.displayName)
 
-        do {
-            try queueMainCompanionFileTransfer(payload: payload, token: token)
-            logEvent("\(reason) file", context.displayName)
-        } catch {
-            logEvent("\(reason) file failed", error.localizedDescription)
-        }
+        // Prefer the newest state via applicationContext/sendMessage, but keep
+        // a single latest fallback queued so the watch does not remain stuck on
+        // an empty companion card when reachability drops momentarily.
     }
 
     func activate() {
@@ -359,17 +428,10 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
     func pushMainCompanionContext(_ context: WatchMainCompanionContext) {
         guard WCSession.isSupported() else { return }
 
-        currentMainCompanionContext = context
-        lastMainCompanionContext = context
+        cacheMainCompanionContext(context)
         let token = UUID().uuidString
         pendingMainCompanionToken = token
-        guard let payload = try? makeMainCompanionSyncPayload(context: context, token: token) else {
-            lastMessage = "Main companion sync failed: payload build failed"
-            logEvent("push main companion failed", "payload build failed")
-            return
-        }
-
-        sendMainCompanionPayload(payload, context: context, token: token, reason: "push")
+        sendMainCompanionPayload(context: context, token: token, reason: "push")
         lastMessage = "Main companion synced"
         logEvent("push main companion", context.displayName)
         scheduleMainCompanionRepush(token: token, selectionID: context.selection.id)
@@ -454,27 +516,34 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
     ) {
         if message["requestMainCompanionContext"] as? Bool == true {
             Task { @MainActor in
-                let context = self.currentMainCompanionContext
-                    ?? self.lastMainCompanionContext
-                    ?? self.currentMainCompanionProvider?()
+                let context = self.freshestMainCompanionContext()
 
-                guard let context,
-                      let payload = try? self.makeMainCompanionSyncPayload(
-                        context: context,
-                        token: self.pendingMainCompanionToken ?? UUID().uuidString
-                      ) else {
+                guard let context else {
                     replyHandler([:])
                     return
                 }
 
-                self.lastMainCompanionContext = context
-                self.pendingMainCompanionToken = payload["mainCompanionSyncToken"] as? String
+                let token = self.pendingMainCompanionToken ?? UUID().uuidString
+                let appContextPayload: [String: Any]
                 do {
-                    try self.updateWatchApplicationContext(adding: payload)
+                    appContextPayload = try self.makeMainCompanionAppContextPayload(
+                        context: context,
+                        token: token
+                    )
+                } catch {
+                    self.logEvent("reply main companion failed", error.localizedDescription)
+                    replyHandler([:])
+                    return
+                }
+                let livePayload = self.makeMainCompanionLivePayload(context: context, token: token)
+                self.cacheMainCompanionContext(context)
+                self.pendingMainCompanionToken = token
+                do {
+                    try self.updateWatchApplicationContext(adding: appContextPayload)
                 } catch {
                     self.logEvent("reply main companion failed", error.localizedDescription)
                 }
-                replyHandler(payload)
+                replyHandler(livePayload)
                 self.logEvent("reply main companion", context.displayName)
             }
             return
@@ -642,12 +711,14 @@ final class PhoneConnectivityManager: NSObject, WCSessionDelegate {
             }
 
             self.refreshSessionState(WCSession.default)
+            self.persistAuditTrail()
         }
     }
 
     private func logEvent(_ title: String, _ detail: String) {
         recentEvents.insert(SyncDiagnosticEvent(title: title, detail: detail), at: 0)
-        recentEvents = Array(recentEvents.prefix(6))
+        recentEvents = Array(recentEvents.prefix(12))
+        persistAuditTrail()
     }
 }
 

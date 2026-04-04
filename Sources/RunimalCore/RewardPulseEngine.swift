@@ -23,20 +23,20 @@ public enum RunimalRewardPulseEngine {
 
         if completedQuestCount >= 2 {
             bonus += 14
-            labels.append("Mastery Pulse")
-            fragments.append("핵심 목표를 2개 이상 달성해 Mastery Pulse가 활성화되었습니다.")
+            labels.append("목표 달성")
+            fragments.append("핵심 목표를 2개 이상 달성해 추가 보상이 붙었습니다.")
         }
 
         if summary.rareEventCompleted {
             bonus += 20
-            labels.append("Rare Signal")
-            fragments.append("돌발 목표를 완수해 Rare Signal 보정이 적용되었습니다.")
+            labels.append("특별 이벤트")
+            fragments.append("돌발 목표를 완수해 특별 이벤트 보상이 적용되었습니다.")
         }
 
         if summary.environmentCondition != .unknown && summary.distanceKm >= 4 {
             bonus += 8
-            labels.append("Field Sync")
-            fragments.append("환경 신호가 안정적으로 읽혀 Field Sync 보너스가 더해졌습니다.")
+            labels.append("환경 호흡")
+            fragments.append("환경 흐름이 안정적으로 읽혀 환경 호흡 보너스가 더해졌습니다.")
         }
 
         return RewardPulseResult(
@@ -50,7 +50,7 @@ public enum RunimalRewardPulseEngine {
         currentProgress: EvolutionProgress,
         proposedExperience: Int
     ) -> RewardPulseResult {
-        guard currentProgress.stageLabel != "Mythic" else {
+        guard currentProgress.stageLabel != RunimalBalanceConfig.finalStageLabel else {
             return RewardPulseResult(bonusExperience: 0, bonusLabels: [], flavorFragments: [])
         }
 
@@ -66,8 +66,8 @@ public enum RunimalRewardPulseEngine {
 
         return RewardPulseResult(
             bonusExperience: gapAfterReward,
-            bonusLabels: ["Signal Lock"],
-            flavorFragments: ["진화 직전 구간이라 Signal Lock 보정으로 임계점을 고정했습니다."]
+            bonusLabels: ["단계 맞춤"],
+            flavorFragments: ["다음 단계 직전이라 단계 맞춤 보너스로 딱 맞게 채웠습니다."]
         )
     }
 
@@ -87,8 +87,8 @@ public enum RunimalRewardPulseEngine {
 
         return RewardPulseResult(
             bonusExperience: gapAfterReward,
-            bonusLabels: ["Decode Lock"],
-            flavorFragments: ["디코딩 임계점에 근접해 Decode Lock 보정이 적용되었습니다."]
+            bonusLabels: ["부화 맞춤"],
+            flavorFragments: ["부화 직전이라 부화 맞춤 보너스가 적용되었습니다."]
         )
     }
 }

@@ -5,8 +5,12 @@ import UIKit
 struct PhoneMilestoneSharePanel: View {
     let featuredCompanion: PetCollectionEntry
     let collection: [PetCollectionEntry]
+    let eggInventory: [EggInventoryEntry]
     let progress: EvolutionProgress
     let season: WeeklySeason
+    let onOpenFirstHatchFlow: () -> Void
+    let onOpenRareVariantFlow: () -> Void
+    let onOpenMythicFlow: () -> Void
 
     @State private var shareImage: UIImage?
     @State private var isShowingShareSheet = false
@@ -19,8 +23,22 @@ struct PhoneMilestoneSharePanel: View {
         ]
     }
 
+    private var progressionSnapshot: CompanionProgressionSnapshot {
+        let growthRecord = CompanionGrowthRecord(
+            companionID: featuredCompanion.id,
+            totalExperience: progress.totalExperience,
+            feedCount: 0,
+            assignedRunIDs: [],
+            lastFedAt: nil
+        )
+        return RunimalCompanionGrowthEngine.progressionSnapshot(
+            for: growthRecord,
+            species: featuredCompanion.pet.species
+        )
+    }
+
     var body: some View {
-        GameSurface(title: "공유 쇼케이스", accent: featuredCompanion.pet.accentColor, eyebrow: "SHARE READY") {
+        GameSurface(title: "공유 쇼케이스", accent: featuredCompanion.pet.accentColor, eyebrow: "공유 준비") {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .center) {
                     Text("가치가 가장 높은 순간만 시그널 포스터로 정리합니다.")
@@ -67,27 +85,86 @@ struct PhoneMilestoneSharePanel: View {
 
     private var firstHatchCard: MilestoneCard {
         if let firstHatch = collection.first(where: { $0.id.hasPrefix("hatched-") }) {
-            return .unlocked(.firstHatch(firstHatch))
+            return .unlocked(
+                .firstHatch(firstHatch),
+                target: RunimalGameEngine.shareMilestoneTarget(
+                    kind: .firstHatch,
+                    unlocked: true,
+                    snapshot: progressionSnapshot,
+                    pet: featuredCompanion.pet,
+                    season: season,
+                    collectionCount: collection.count
+                ),
+                progressState: RunimalGameEngine.shareMilestoneProgress(
+                    kind: .firstHatch,
+                    unlocked: true,
+                    snapshot: progressionSnapshot,
+                    pet: featuredCompanion.pet,
+                    season: season,
+                    collectionCount: collection.count,
+                    eggInventory: eggInventory
+                )
+            )
         }
+
         return .locked(
             id: "locked-first-hatch",
+            kind: .firstHatch,
             accent: .cyan.opacity(0.78),
             supportAccent: .mint.opacity(0.62),
             icon: "sparkles",
             badge: "FIRST HATCH",
             kicker: "LOCKED",
             title: "첫 부화",
-            detail: "처음 부화한 동행체가 생기면 이 카드가 열립니다.",
-            emphasis: "WAITING"
+            detail: "처음 부화한 동행이 생기면 이 카드가 열립니다.",
+            emphasis: "WAITING",
+            target: RunimalGameEngine.shareMilestoneTarget(
+                kind: .firstHatch,
+                unlocked: false,
+                snapshot: progressionSnapshot,
+                pet: featuredCompanion.pet,
+                season: season,
+                collectionCount: collection.count
+            ),
+            progressState: RunimalGameEngine.shareMilestoneProgress(
+                kind: .firstHatch,
+                unlocked: false,
+                snapshot: progressionSnapshot,
+                pet: featuredCompanion.pet,
+                season: season,
+                collectionCount: collection.count,
+                eggInventory: eggInventory
+            )
         )
     }
 
     private var rareVariantCard: MilestoneCard {
         if let rareCompanion = collection.first(where: { $0.pet.rareVariant != nil }) {
-            return .unlocked(.rareVariant(rareCompanion))
+            return .unlocked(
+                .rareVariant(rareCompanion),
+                target: RunimalGameEngine.shareMilestoneTarget(
+                    kind: .rareVariant,
+                    unlocked: true,
+                    snapshot: progressionSnapshot,
+                    pet: featuredCompanion.pet,
+                    season: season,
+                    collectionCount: collection.count
+                ),
+                progressState: RunimalGameEngine.shareMilestoneProgress(
+                    kind: .rareVariant,
+                    unlocked: true,
+                    snapshot: progressionSnapshot,
+                    pet: featuredCompanion.pet,
+                    season: season,
+                    collectionCount: collection.count,
+                    eggInventory: eggInventory
+                )
+            )
         }
+
         return .locked(
             id: "locked-rare-variant",
+            kind: .rareVariant,
             accent: .orange.opacity(0.84),
             supportAccent: .red.opacity(0.76),
             icon: "star.circle.fill",
@@ -95,24 +172,79 @@ struct PhoneMilestoneSharePanel: View {
             kicker: "LOCKED",
             title: "희귀 변이",
             detail: "돌발 목표와 특정 러닝 패턴이 맞아야 열립니다.",
-            emphasis: "SIGNAL"
+            emphasis: "SIGNAL",
+            target: RunimalGameEngine.shareMilestoneTarget(
+                kind: .rareVariant,
+                unlocked: false,
+                snapshot: progressionSnapshot,
+                pet: featuredCompanion.pet,
+                season: season,
+                collectionCount: collection.count
+            ),
+            progressState: RunimalGameEngine.shareMilestoneProgress(
+                kind: .rareVariant,
+                unlocked: false,
+                snapshot: progressionSnapshot,
+                pet: featuredCompanion.pet,
+                season: season,
+                collectionCount: collection.count,
+                eggInventory: eggInventory
+            )
         )
     }
 
     private var mythicCard: MilestoneCard {
-        if progress.stageLabel == "Mythic" {
-            return .unlocked(.mythic(featuredCompanion, RunimalGameEngine.mythicTitle(for: featuredCompanion.pet, season: season)))
+        if progress.stageLabel == RunimalBalanceConfig.finalStageLabel {
+            return .unlocked(
+                .mythic(featuredCompanion, RunimalGameEngine.mythicTitle(for: featuredCompanion.pet, season: season)),
+                target: RunimalGameEngine.shareMilestoneTarget(
+                    kind: .mythic,
+                    unlocked: true,
+                    snapshot: progressionSnapshot,
+                    pet: featuredCompanion.pet,
+                    season: season,
+                    collectionCount: collection.count
+                ),
+                progressState: RunimalGameEngine.shareMilestoneProgress(
+                    kind: .mythic,
+                    unlocked: true,
+                    snapshot: progressionSnapshot,
+                    pet: featuredCompanion.pet,
+                    season: season,
+                    collectionCount: collection.count,
+                    eggInventory: eggInventory
+                )
+            )
         }
+
         return .locked(
             id: "locked-mythic",
+            kind: .mythic,
             accent: .yellow.opacity(0.88),
             supportAccent: .pink.opacity(0.72),
             icon: "crown.fill",
             badge: "MYTHIC",
             kicker: "LOCKED",
             title: "최종 진화",
-            detail: "Stage를 끝까지 올리면 Mythic 포스터가 열립니다.",
-            emphasis: "APEX"
+            detail: "끝 단계까지 키우면 완성 포스터가 열립니다.",
+            emphasis: "APEX",
+            target: RunimalGameEngine.shareMilestoneTarget(
+                kind: .mythic,
+                unlocked: false,
+                snapshot: progressionSnapshot,
+                pet: featuredCompanion.pet,
+                season: season,
+                collectionCount: collection.count
+            ),
+            progressState: RunimalGameEngine.shareMilestoneProgress(
+                kind: .mythic,
+                unlocked: false,
+                snapshot: progressionSnapshot,
+                pet: featuredCompanion.pet,
+                season: season,
+                collectionCount: collection.count,
+                eggInventory: eggInventory
+            )
         )
     }
 
@@ -168,20 +300,33 @@ struct PhoneMilestoneSharePanel: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Button {
-                if let milestone = card.milestone {
-                    shareImage = renderShareImage(for: milestone)
-                    isShowingShareSheet = shareImage != nil
+            guidanceCard(for: card, accent: accent)
+
+            if card.isUnlocked {
+                Button {
+                    if let milestone = card.milestone {
+                        shareImage = renderShareImage(for: milestone)
+                        isShowingShareSheet = shareImage != nil
+                    }
+                } label: {
+                    Label(card.actionLabel, systemImage: "square.and.arrow.up.fill")
+                        .font(.subheadline.weight(.black))
+                        .frame(maxWidth: .infinity)
                 }
-            } label: {
-                Label(card.isUnlocked ? card.actionLabel : "아직 잠김", systemImage: card.isUnlocked ? "square.and.arrow.up.fill" : "lock.fill")
-                    .font(.subheadline.weight(.black))
-                    .frame(maxWidth: .infinity)
+                .buttonStyle(.borderedProminent)
+                .tint(accent)
+            } else {
+                Button {
+                    openFlow(for: card.kind)
+                } label: {
+                    Label(focusActionLabel(for: card.kind), systemImage: focusActionIcon(for: card.kind))
+                        .font(.subheadline.weight(.black))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(accent)
+                .opacity(0.96)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(accent)
-            .disabled(card.isUnlocked == false)
-            .opacity(card.isUnlocked ? 1 : 0.84)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(minHeight: 404)
@@ -204,6 +349,119 @@ struct PhoneMilestoneSharePanel: View {
                         .stroke(accent.opacity(0.14), lineWidth: 1)
                 )
         )
+    }
+
+    private func guidanceCard(for card: MilestoneCard, accent: Color) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            progressCard(for: card, accent: accent)
+
+            Text("다음 진행")
+                .font(.caption.monospaced().weight(.black))
+                .foregroundStyle(.white.opacity(0.78))
+
+            guidanceRow(title: card.target.focusTitle, detail: card.target.focusDetail, accent: accent)
+            guidanceRow(title: card.target.actionTitle, detail: card.target.actionDetail, accent: accent)
+            guidanceRow(title: card.target.checkpointTitle, detail: card.target.checkpointDetail, accent: accent)
+
+            if card.target.badges.isEmpty == false {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(card.target.badges, id: \.self) { badge in
+                            TraitChip(label: badge, accent: accent.opacity(0.18))
+                        }
+                    }
+                    .padding(.horizontal, 1)
+                }
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.white.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(.white.opacity(0.08), lineWidth: 1)
+                )
+        )
+    }
+
+    private func progressCard(for card: MilestoneCard, accent: Color) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("현재 진행")
+                    .font(.caption2.weight(.black))
+                    .foregroundStyle(accent.opacity(0.92))
+                Spacer(minLength: 8)
+                Text("\(Int((card.progressState.progress * 100).rounded()))%")
+                    .font(.caption2.monospacedDigit().weight(.black))
+                    .foregroundStyle(.white.opacity(0.72))
+            }
+
+            RunimalProgressBar(progress: card.progressState.progress, accent: accent, height: 8)
+
+            Text(card.progressState.label)
+                .font(.caption.weight(.black))
+                .foregroundStyle(.white)
+
+            Text(card.progressState.detail)
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.72))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(.black.opacity(0.14))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(.white.opacity(0.06), lineWidth: 1)
+                )
+        )
+    }
+
+    private func guidanceRow(title: String, detail: String, accent: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption2.weight(.black))
+                .foregroundStyle(accent.opacity(0.92))
+            Text(detail)
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.74))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func openFlow(for kind: ShareMilestoneKind) {
+        switch kind {
+        case .firstHatch:
+            onOpenFirstHatchFlow()
+        case .rareVariant:
+            onOpenRareVariantFlow()
+        case .mythic:
+            onOpenMythicFlow()
+        }
+    }
+
+    private func focusActionLabel(for kind: ShareMilestoneKind) -> String {
+        switch kind {
+        case .firstHatch:
+            return "알 준비 보기"
+        case .rareVariant:
+            return "희귀 준비 보기"
+        case .mythic:
+            return "성장 경로 보기"
+        }
+    }
+
+    private func focusActionIcon(for kind: ShareMilestoneKind) -> String {
+        switch kind {
+        case .firstHatch:
+            return "egg.fill"
+        case .rareVariant:
+            return "sparkles"
+        case .mythic:
+            return "arrow.up.forward.circle.fill"
+        }
     }
 
     private func previewPoster(for card: MilestoneCard) -> some View {
@@ -264,7 +522,10 @@ struct PhoneMilestoneSharePanel: View {
 
 private struct MilestoneCard: Identifiable {
     let id: String
+    let kind: ShareMilestoneKind
     let milestone: ShareMilestone?
+    let target: EvolutionTarget
+    let progressState: ShareMilestoneProgress
     let accent: Color
     let supportAccent: Color
     let icon: String
@@ -306,10 +567,13 @@ private struct MilestoneCard: Identifiable {
         }
     }
 
-    static func unlocked(_ milestone: ShareMilestone) -> MilestoneCard {
+    static func unlocked(_ milestone: ShareMilestone, target: EvolutionTarget, progressState: ShareMilestoneProgress) -> MilestoneCard {
         MilestoneCard(
             id: milestone.id,
+            kind: milestone.kind,
             milestone: milestone,
+            target: target,
+            progressState: progressState,
             accent: milestone.accent,
             supportAccent: milestone.supportAccent,
             icon: milestone.icon,
@@ -323,6 +587,7 @@ private struct MilestoneCard: Identifiable {
 
     static func locked(
         id: String,
+        kind: ShareMilestoneKind,
         accent: Color,
         supportAccent: Color,
         icon: String,
@@ -330,11 +595,16 @@ private struct MilestoneCard: Identifiable {
         kicker: String,
         title: String,
         detail: String,
-        emphasis: String
+        emphasis: String,
+        target: EvolutionTarget,
+        progressState: ShareMilestoneProgress
     ) -> MilestoneCard {
         MilestoneCard(
             id: id,
+            kind: kind,
             milestone: nil,
+            target: target,
+            progressState: progressState,
             accent: accent,
             supportAccent: supportAccent,
             icon: icon,
@@ -360,6 +630,17 @@ private enum ShareMilestone {
             return "rare-\(companion.id)"
         case .mythic(let companion, _):
             return "mythic-\(companion.id)"
+        }
+    }
+
+    var kind: ShareMilestoneKind {
+        switch self {
+        case .firstHatch:
+            return .firstHatch
+        case .rareVariant:
+            return .rareVariant
+        case .mythic:
+            return .mythic
         }
     }
 
@@ -453,7 +734,7 @@ private enum ShareMilestone {
         case .firstHatch(let companion):
             return "\(companion.pet.displayName) 부화 완료"
         case .rareVariant(let companion):
-            let variant = companion.pet.rareVariant.flatMap { RareVariantMeta.labels[$0] } ?? "Rare"
+            let variant = companion.pet.rareVariant.flatMap { RareVariantMeta.labels[$0] } ?? "특별한 모습"
             return "\(variant) 획득"
         case .mythic(_, let title):
             return title
@@ -463,18 +744,18 @@ private enum ShareMilestone {
     var detail: String {
         switch self {
         case .firstHatch:
-            return "처음 해독에 성공한 동행체를 스타트 카드로 저장합니다."
+            return "처음 부화에 성공한 동행을 시작 카드로 저장합니다."
         case .rareVariant(let companion):
             return RareVariantMeta.triggerHints[companion.pet.rareVariant ?? .tempoSurge] ?? "희귀 신호를 포착했습니다."
         case .mythic:
-            return "최종 진화에 도달한 순간을 전용 포스터로 남깁니다."
+            return "완성에 도달한 순간을 전용 포스터로 남깁니다."
         }
     }
 
     var emphasis: String {
         switch self {
         case .firstHatch:
-            return "DECODED"
+            return "부화 완료"
         case .rareVariant(let companion):
             return companion.pet.rareVariant.flatMap { RareVariantMeta.badges[$0] } ?? "RARE"
         case .mythic:
@@ -490,18 +771,18 @@ private enum ShareMilestone {
             let variant = companion.pet.rareVariant.flatMap { RareVariantMeta.labels[$0] } ?? "Rare"
             return "\(variant) 신호 포착"
         case .mythic:
-            return "최종 진화 도달"
+            return "완성 도달"
         }
     }
 
     var subline: String {
         switch self {
         case .firstHatch:
-            return "첫 러닝 루프를 통과한 개체가 현실 슬롯에 정착했습니다."
+            return "첫 러닝 루프를 통과한 동행이 실제 기록에 자리 잡았습니다."
         case .rareVariant:
             return "돌발 목표와 러닝 패턴이 희귀 변이를 해독했습니다."
         case .mythic:
-            return "이 동행체는 현재 시즌에서 가장 높은 단계까지 안정화됐습니다."
+            return "이 동행은 현재 시즌에서 가장 높은 단계까지 자랐습니다."
         }
     }
 
@@ -511,13 +792,13 @@ private enum ShareMilestone {
             return [
                 ("SPECIES", companion.pet.displayName),
                 ("ELEMENT", companion.pet.element.displayName),
-                ("STATUS", "HATCHED"),
+                ("상태", "부화 완료"),
             ]
         case .rareVariant(let companion):
             return [
-                ("VARIANT", companion.pet.rareVariant.flatMap { RareVariantMeta.labels[$0] } ?? "Rare"),
-                ("ELEMENT", companion.pet.element.displayName),
-                ("STATUS", "LOCKED"),
+                ("변이", companion.pet.rareVariant.flatMap { RareVariantMeta.labels[$0] } ?? "특별한 모습"),
+                ("속성", companion.pet.element.displayName),
+                ("상태", "획득"),
             ]
         case .mythic(let companion, let title):
             return [

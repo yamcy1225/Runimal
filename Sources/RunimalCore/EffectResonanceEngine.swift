@@ -112,14 +112,7 @@ public enum RunimalEffectResonanceEngine {
     }
 
     private static func speciesLabel(for species: PetSpecies) -> String {
-        switch species {
-        case .windrunner: return "Windrunner"
-        case .stoneback: return "Stoneback"
-        case .sparkfang: return "Sparkfang"
-        case .mosshop: return "Mosshop"
-        case .shadebit: return "Shadebit"
-        case .seedle: return "Seedle"
-        }
+        species.displayName
     }
 
     private static func headline(

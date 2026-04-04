@@ -16,6 +16,7 @@ extension PhoneDashboardStore {
 
     func ingestLatestWorkoutArchive() {
         guard let archive = connectivity.lastWorkoutArchive else { return }
+        let worldPack = contentCatalog.worldContentPack()
         let canonicalArchive = WorkoutArchiveCanonicalizer.canonicalize(archive)
         progress.append(workoutArchive: canonicalArchive)
         connectivity.lastWorkoutArchive = canonicalArchive
@@ -25,7 +26,7 @@ extension PhoneDashboardStore {
             : progress.completedRuns.first(where: { $0.id == canonicalArchive.runID })
         if let preferredRun {
             let canonicalRun = WorkoutArchiveCanonicalizer.update(preferredRun, with: canonicalArchive)
-            progress.append(completedRun: canonicalRun)
+            progress.append(completedRun: canonicalRun, pack: worldPack)
             connectivity.lastCompletedRun = canonicalRun
         }
 
@@ -41,7 +42,7 @@ extension PhoneDashboardStore {
 
     @discardableResult
     func deleteRunRecord(id: String) -> Bool {
-        guard progress.removeRun(id: id) else { return false }
+        guard progress.removeRun(id: id, pack: contentCatalog.worldContentPack()) else { return false }
 
         if connectivity.lastCompletedRun?.id == id {
             connectivity.lastCompletedRun = nil

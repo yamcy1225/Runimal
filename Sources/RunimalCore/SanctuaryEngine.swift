@@ -24,8 +24,8 @@ public enum RunimalSanctuaryEngine {
             essenceGained: foundItem ? baseEssence + 2 : baseEssence,
             itemLabel: foundItem ? "Gap Seed" : nil,
             logLine: foundItem
-                ? "메인 펫이 틈새 세계를 탐색해 정수와 Gap Seed를 회수했습니다."
-                : "메인 펫이 틈새 세계를 탐색해 소량의 정수를 회수했습니다."
+                ? "대표 동행이 틈새 세계를 탐색해 정수와 Gap Seed를 회수했습니다."
+                : "대표 동행이 틈새 세계를 탐색해 소량의 정수를 회수했습니다."
         )
     }
 

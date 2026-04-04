@@ -26,7 +26,51 @@
 - 동기화 구조: `WatchConnectivityManager` -> `PhoneConnectivityManager`의 `WCSession.transferUserInfo` 큐 기반
 - 저장 구조: `RunimalProgressSnapshot` / `UserDefaults` / vault / cloud mirror
 - 현재 강점: 코어 루프 구현 완료, 워치 단독 러닝 구조 존재, FIT 수동 가져오기, 디코딩 시네마틱/공유 쇼케이스 존재
-- 현재 위험: 기록 사용처 추적성 부족, `watch-healthkit`와 imported run UX 분리 미흡, Xcode 기본 DerivedData 잠금으로 generic build 재현성 저하, 아이콘 에셋 경고 잔존
+- 현재 위험: 기록 사용처 추적성 부족, `watch-healthkit`와 imported run UX 분리 미흡, Xcode 기본 DerivedData 잠금으로 병렬 generic build 재현성 저하
+
+### 23:31 KST — 루프 11: App Store 메타데이터/릴리즈 자동화/아이콘 경고 정리
+
+- 선택한 개선점:
+  - 우선순위 2, 3, 4번을 순차 완료
+- 우선 선택 이유:
+  - 워치 장시간 QA는 뒤로 미루고, 출시 준비물과 반복 배포 경로, 잔여 빌드 경고를 먼저 정리해 두는 편이 현재 단계에 더 직접적임
+- 실제 변경 파일:
+  - [docs/app-store-metadata.ko.md](./docs/app-store-metadata.ko.md)
+  - [app_store/metadata/ko-KR/subtitle.txt](./app_store/metadata/ko-KR/subtitle.txt)
+  - [app_store/metadata/ko-KR/description.txt](./app_store/metadata/ko-KR/description.txt)
+  - [app_store/metadata/ko-KR/keywords.txt](./app_store/metadata/ko-KR/keywords.txt)
+  - [app_store/metadata/ko-KR/promotional_text.txt](./app_store/metadata/ko-KR/promotional_text.txt)
+  - [app_store/metadata/ko-KR/release_notes.txt](./app_store/metadata/ko-KR/release_notes.txt)
+  - [app_store/metadata/ko-KR/review_notes.txt](./app_store/metadata/ko-KR/review_notes.txt)
+  - [app_store/metadata/ko-KR/privacy_url.txt](./app_store/metadata/ko-KR/privacy_url.txt)
+  - [app_store/metadata/ko-KR/support_url.txt](./app_store/metadata/ko-KR/support_url.txt)
+  - [app_store/metadata/ko-KR/marketing_url.txt](./app_store/metadata/ko-KR/marketing_url.txt)
+  - [.github/workflows/runimal-release.yml](./.github/workflows/runimal-release.yml)
+  - [scripts/release/upload_to_testflight.sh](./scripts/release/upload_to_testflight.sh)
+  - [project.yml](./project.yml)
+  - [SharedUI/AssetCatalog/RunimalAssets.xcassets/AppIcon.appiconset/Contents.json](./SharedUI/AssetCatalog/RunimalAssets.xcassets/AppIcon.appiconset/Contents.json)
+  - [SharedUI/AssetCatalog/RunimalAssets.xcassets/AppIconWatch.appiconset/Contents.json](./SharedUI/AssetCatalog/RunimalAssets.xcassets/AppIconWatch.appiconset/Contents.json)
+- 변경 내용 요약:
+  - App Store 입력용 한글 메타데이터 템플릿과 심사 메모 파일 추가
+  - GitHub Actions 릴리즈 워크플로우와 TestFlight 업로드 스크립트 초안 추가
+  - iPhone 타깃을 phone-only로 명시하고, `AppIconPhone` / `AppIconWatch`를 유지하면서 legacy `AppIcon` / `AppIconWatch` 세트를 Xcode 26 단일 1024 아이콘 방식으로 단순화
+  - 예전 슬롯 PNG를 정리해 `unassigned children` 및 orientation 경고를 제거
+- 검증 방법:
+  - `xcodegen generate`
+  - `xcodebuild -project RunimalApple.xcodeproj -scheme RunimalPhone -destination 'generic/platform=iOS' build`
+  - `xcodebuild -project RunimalApple.xcodeproj -scheme RunimalWatch -destination 'generic/platform=watchOS' build`
+- 검증 결과:
+  - `xcodegen generate` 성공
+  - iPhone generic build 성공
+  - Watch generic build 성공
+  - asset catalog 경고 및 iPhone orientation 경고 재현되지 않음
+- 남은 리스크:
+  - GitHub Actions/TestFlight 업로드 초안은 GitHub Secrets와 ASC API 키 실제 연결이 필요
+  - 워치 장시간 실러닝 QA는 아직 보류 상태
+- 다음 후보:
+  - 워치 실러닝 장시간 QA
+  - App Store 스크린샷/심사 메모 실제값 확정
+  - GitHub Secrets 및 ASC API 키 연결
 
 ## 루프 로그
 
@@ -278,3 +322,126 @@
   - 아이콘 에셋 / orientation 경고 정리
   - 워치 2페이지 수치 카드의 시선 우선순위 미세조정
   - 필요 시 `WATCH_UX_NOTES.md` 추가
+
+### 20:05 KST — 실기기 단계: 워치 sync/렌더 정합성 1차 안정화
+
+- 선택한 개선점:
+  - iPhone에서 메인 동행체를 바꿨을 때 Watch 반응 지연과 최신 외형 불일치를 줄이는 수정
+- 우선 선택 이유:
+  - 실기기에서 이름은 최신인데 외형은 구형처럼 보이는 문제가 실제 체감 완성도를 크게 떨어뜨렸음
+  - 문서상 코어 루프가 완성돼 있어도 실기 반응 속도와 시각 일치성이 흔들리면 출시 준비 판단이 어려움
+- 실제 변경 파일:
+  - `RunimalPhone/PhoneDashboardStore+CompanionArchive.swift`
+  - `RunimalPhone/PhoneDashboardStore+WatchCompanion.swift`
+  - `RunimalPhone/PhoneHomeView.swift`
+  - `RunimalPhone/PhoneInventoryView.swift`
+  - `RunimalPhone/PhoneCompanionRosterPanel.swift`
+  - `RunimalPhone/PhoneCollectionView.swift`
+  - `RunimalPhone/PhoneCompanionArchiveView.swift`
+  - `RunimalPhone/PhonePetDetailPanel.swift`
+  - `RunimalPhone/PhoneConnectivityManager.swift`
+  - `RunimalWatch/WatchConnectivityManager.swift`
+  - `SharedUI/PixelPetView.swift`
+- 변경 내용 요약:
+  - growth stage와 mutation visual state 계산 경로를 공통 helper 기반으로 단일화
+  - Watch가 불완전한 sync payload를 받아도 최신 외형 정보가 구형/기본형으로 덮이지 않도록 보강
+  - 워치 첫 화면 반영 지연을 줄이고, 이후 중앙 두 점 제거 요구에 맞춰 눈 하이라이트는 원복하고 중앙 두 점만 제거
+- 검증 방법:
+  - `xcodebuild -project RunimalApple.xcodeproj -scheme RunimalPhone -destination 'generic/platform=iOS' build`
+  - `xcodebuild -project RunimalApple.xcodeproj -scheme RunimalWatch -destination 'generic/platform=watchOS' build`
+  - `xcrun devicectl device install app`로 iPhone/Watch 직접 재설치
+- 검증 결과:
+  - iOS/watchOS 빌드 성공
+  - iPhone/Watch 실기기 재설치 완료
+  - 사용자 기준으로 캐릭터가 정상 상태로 복귀 확인
+- 남은 리스크:
+  - 최근 sync 이벤트를 장기적으로 추적하는 audit log는 아직 없음
+  - 문서 일부가 실제 번들 ID와 최신 수정 상태를 아직 완전히 반영하지 못했음
+- 다음 후보:
+  - 운영 문서 정합성 보수
+  - 워치 sync audit/log 추가
+  - 시각 규칙 사전화 직접 참조 범위 확장
+
+### 21:09 KST — 실기기 단계: 문서 정합성 보수 및 sync audit log 1차 반영
+
+- 선택한 개선점:
+  - 운영 문서를 현재 실기 상태에 맞게 갱신하고, 최근 워치 sync 이벤트를 앱 재실행 뒤에도 남는 audit log로 승격
+- 우선 선택 이유:
+  - 실제 구현이 문서보다 앞서 있어 배포/QA 기준이 흐려진 상태였음
+  - 최근 sync 지연 이슈를 다시 만났을 때, 세션 종료 후에도 바로 원인을 볼 수 있어야 다음 디버깅 비용이 낮아짐
+- 실제 변경 파일:
+  - `README.md`
+  - `IMPROVEMENT_BACKLOG.md`
+  - `docs/real-device-deploy-checklist.md`
+  - `docs/release-handoff.ko.md`
+  - `Sources/RunimalCore/Models.swift`
+  - `RunimalPhone/PhoneConnectivityManager.swift`
+  - `RunimalWatch/WatchConnectivityManager.swift`
+  - `RunimalPhone/PhoneDiagnosticsPanel.swift`
+  - `RunimalPhone/PhoneRunDeckView.swift`
+- 변경 내용 요약:
+  - 실제 Watch 번들 ID를 문서에 반영
+  - 워치 메인 동행체 반영 속도/렌더 일치성 확인 항목을 배포 체크리스트에 추가
+  - 최근 sync 이벤트를 `UserDefaults`에 보존하는 `SyncAuditTrail` 추가
+  - iPhone 러닝 화면에 `워치 동기화 로그` 패널을 연결해 최근 이벤트, 마지막 메시지, 유입 경로를 바로 확인 가능하게 정리
+- 검증 방법:
+  - `xcodebuild -project RunimalApple.xcodeproj -scheme RunimalWatch -destination 'generic/platform=watchOS' build`
+  - `xcodebuild -project RunimalApple.xcodeproj -scheme RunimalPhone -destination 'generic/platform=iOS' build`
+  - `xcrun devicectl device install app`로 iPhone/Watch 직접 재설치
+- 검증 결과:
+  - watchOS build 성공
+  - iOS build 성공
+  - iPhone/Watch 최신 앱 재설치 완료
+- 남은 리스크:
+  - audit log는 아직 1차 수준이라 전용 history/필터/실패 코드 분류는 없음
+  - 구조 리팩터링과 시각 사전화 직접 참조는 다음 단계로 남아 있음
+- 다음 후보:
+  - 시각 규칙 사전화 직접 참조 범위 확장
+  - `PhoneDashboardStore` 액션 분리
+  - 장시간 실러닝 QA
+
+### 21:24 KST — 구조 정리 단계: 시각 규칙 공통화 / 스토어 분리 / 릴리즈 플레이북 추가
+
+- 선택한 개선점:
+  - 3단계 시각 규칙 사전화 직접 참조 범위 확장
+  - 4단계 `PhoneDashboardStore` 액션 분리와 대시보드 뷰 비대화 완화
+  - 5단계 TestFlight 릴리즈 준비 문서와 archive/export 스크립트 정리
+- 우선 선택 이유:
+  - 최근 실기기 이슈를 다시 만들지 않으려면 렌더 기준 출처가 UI 내부가 아니라 공통 코어로 올라가야 했음
+  - 대시보드 스토어가 커질수록 이후 QA 수정 속도가 급격히 떨어져 지금 분리하는 편이 안전했음
+  - 자동화 파이프라인이 없더라도 반복 가능한 릴리즈 절차는 바로 확보해둘 필요가 있었음
+- 실제 변경 파일:
+  - `Sources/RunimalCore/SpeciesVisualBlueprints.swift`
+  - `SharedUI/PixelPetView.swift`
+  - `Tests/RunimalCoreTests/SpeciesVisualBlueprintsTests.swift`
+  - `RunimalPhone/PhoneDashboardView.swift`
+  - `RunimalPhone/PhoneDashboardView+Chrome.swift`
+  - `RunimalPhone/PhoneDashboardStore+LifecycleActions.swift`
+  - `RunimalPhone/PhoneDashboardStore+RunActions.swift`
+  - `RunimalPhone/PhoneDashboardStore+CompanionActions.swift`
+  - `RunimalPhone/PhoneDashboardStore+CloudActions.swift`
+  - `docs/testflight-release-playbook.ko.md`
+  - `scripts/release/testflight_archive.sh`
+  - `README.md`
+  - `IMPROVEMENT_BACKLOG.md`
+  - `docs/release-handoff.ko.md`
+- 변경 내용 요약:
+  - `SpeciesVisualRenderProfile`을 추가해 base/growth/mutation 오버레이 판정을 `RunimalCore` 공통 규칙으로 이동
+  - `PixelPetView`는 좌표 변환과 staged layer 적용만 담당하도록 슬림화
+  - 대시보드 스토어 액션을 lifecycle/run/companion/cloud 책임별 파일로 분리하고, 헤더/탭 크롬을 별도 뷰 파일로 이동
+  - `project.yml` 기반 프로젝트 재생성(`xcodegen generate`) 절차를 명시하고 TestFlight archive/export 스크립트와 릴리즈 플레이북을 추가
+- 검증 방법:
+  - `xcodegen generate`
+  - `xcodebuild -project RunimalApple.xcodeproj -scheme RunimalPhone -destination 'generic/platform=iOS' build`
+  - `xcodebuild -project RunimalApple.xcodeproj -scheme RunimalWatch -destination 'generic/platform=watchOS' build`
+- 검증 결과:
+  - iOS build 성공
+  - watchOS build 성공
+  - 기존 orientation 경고 외 신규 컴파일 오류 없음
+- 남은 리스크:
+  - TestFlight는 archive/export까지만 스크립트화되어 있고 App Store Connect 업로드 자동화는 아직 없음
+  - 장시간 워치 실러닝 QA와 메타데이터 작성은 별도 수행이 필요함
+- 다음 후보:
+  - iPhone / Watch 최신 앱 재설치 후 실기 검수
+  - 장시간 워치 실러닝 QA
+  - App Store 메타데이터 정리

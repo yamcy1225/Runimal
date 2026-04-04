@@ -4,6 +4,8 @@ import SwiftUI
 private struct InventoryHatchCinematicPayload: Identifiable {
     let egg: EggInventoryEntry
     let pet: PetCollectionEntry
+    let sourceRun: CompletedRunRecord?
+    let renderState: CompanionPixelRenderState
 
     var id: String { egg.id }
 }
@@ -35,7 +37,12 @@ struct PhoneInventoryView: View {
             }
         )
         .fullScreenCover(item: $hatchResult) { payload in
-            HatchCinematicView(egg: payload.egg, pet: payload.pet) {
+            HatchCinematicView(
+                egg: payload.egg,
+                pet: payload.pet,
+                sourceRun: payload.sourceRun,
+                renderState: payload.renderState
+            ) {
                 hatchResult = nil
             }
         }
@@ -60,11 +67,15 @@ struct PhoneInventoryView: View {
                                 resonance: store.mainEggResonance
                             )
                         } else {
+                            let selectedCompanion = store.watchPet ?? store.featuredCompanion
+                            let renderState = store.pixelRenderState(for: selectedCompanion)
                             PixelPetView(
-                                pet: store.watchPet?.pet ?? store.featuredCompanion.pet,
+                                pet: selectedCompanion.pet,
                                 pixelSize: 9,
-                                mutationForm: store.watchPet.flatMap { store.mutationForm(for: $0) },
-                                mutationHistory: store.watchPet.flatMap { store.mutationHistory(for: $0) },
+                                growthStageIndex: renderState.growthStageIndex,
+                                mutationForm: renderState.mutationForm,
+                                mutationHistory: renderState.mutationHistory,
+                                mutationVisualState: renderState.mutationVisualState,
                                 seasonalLayers: store.watchSelection?.kind == .pet ? store.seasonalLayers : []
                             )
                         }
@@ -100,7 +111,7 @@ struct PhoneInventoryView: View {
 
                         HStack(spacing: 8) {
                             TraitChip(
-                                label: store.watchSelection?.kind == .egg ? "알" : "동행체",
+                                label: store.watchSelection?.kind == .egg ? "알" : "동행",
                                 accent: store.watchAccentColor
                             )
                             TraitChip(
@@ -114,7 +125,7 @@ struct PhoneInventoryView: View {
                 HStack(spacing: 12) {
                     RunimalMetricTile(
                         icon: "shippingbox.fill",
-                        title: "동행체",
+                        title: "동행",
                         value: "\(store.activeInventoryCompanionCount)",
                         accent: store.pet.accentColor
                     )
@@ -144,7 +155,7 @@ struct PhoneInventoryView: View {
             )
 
             if store.eggInventory.isEmpty {
-                emptyCard("아직 가진 알이 없습니다", detail: "러닝 코어로 새 알을 만들면 여기에 들어옵니다.")
+                emptyCard("아직 가진 알이 없습니다", detail: "운동 기록으로 새 알을 만들면 여기에 들어옵니다.")
             } else {
                 LazyVGrid(columns: columns, spacing: 14) {
                     ForEach(store.eggInventory) { egg in
@@ -216,16 +227,17 @@ struct PhoneInventoryView: View {
     private var companionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             sectionHeader(
-                "동행체",
+                "동행",
                 detail: "현재 함께 데리고 나갈 후보만 남깁니다.",
                 support: "선택 버튼 하나로 워치 첫 화면 대상을 바꿉니다."
             )
 
             if store.collection.isEmpty {
-                emptyCard("현재 가진 동행체가 없습니다", detail: "알을 부화시키면 여기서 바로 선택할 수 있습니다.")
+                emptyCard("현재 가진 동행이 없습니다", detail: "알을 부화시키면 여기서 바로 선택할 수 있습니다.")
             } else {
                 LazyVGrid(columns: columns, spacing: 14) {
                     ForEach(store.collection) { entry in
+                        let renderState = store.pixelRenderState(for: entry)
                         GameSurface(
                             accent: entry.pet.accentColor,
                             eyebrow: store.watchSelection?.kind == .pet && store.watchSelection?.targetID == entry.id ? "워치 선택됨" : "보유 중"
@@ -242,13 +254,15 @@ struct PhoneInventoryView: View {
                                     PixelPetView(
                                         pet: entry.pet,
                                         pixelSize: 8,
-                                        mutationForm: store.mutationForm(for: entry),
-                                        mutationHistory: store.mutationHistory(for: entry),
+                                        growthStageIndex: renderState.growthStageIndex,
+                                        mutationForm: renderState.mutationForm,
+                                        mutationHistory: renderState.mutationHistory,
+                                        mutationVisualState: renderState.mutationVisualState,
                                         seasonalLayers: store.watchSelection?.kind == .pet && store.watchSelection?.targetID == entry.id ? store.seasonalLayers : []
                                     )
 
                                     if store.watchSelection?.kind == .pet && store.watchSelection?.targetID == entry.id {
-                                        RunimalSignalBadge(icon: "star.fill", label: "WATCH", accent: .green)
+                                        RunimalSignalBadge(icon: "star.fill", label: "워치", accent: .green)
                                     }
                                 }
                                 .frame(height: 106)
@@ -257,7 +271,7 @@ struct PhoneInventoryView: View {
                                     .font(.subheadline.monospaced().weight(.black))
                                     .foregroundStyle(GameBoyPalette.darkest)
 
-                                if let form = store.mutationForm(for: entry) {
+                                if let form = renderState.mutationForm {
                                     Text(form.displayTitle)
                                         .font(.caption2.monospaced().weight(.black))
                                         .foregroundStyle(GameBoyPalette.mediumDark)
@@ -407,7 +421,13 @@ struct PhoneInventoryView: View {
 
     private func handleHatch(_ eggID: String) {
         guard let egg = store.eggInventory.first(where: { $0.id == eggID }) else { return }
+        let sourceRun = store.completedRuns.first(where: { $0.id == egg.sourceRunID })
         guard let pet = store.hatchEgg(eggID) else { return }
-        hatchResult = InventoryHatchCinematicPayload(egg: egg, pet: pet)
+        hatchResult = InventoryHatchCinematicPayload(
+            egg: egg,
+            pet: pet,
+            sourceRun: sourceRun,
+            renderState: store.pixelRenderState(for: pet)
+        )
     }
 }

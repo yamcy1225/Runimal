@@ -2,19 +2,19 @@ import Foundation
 
 public enum RareVariantMeta {
     public static let labels: [RareVariant: String] = [
-        .tempoSurge: "Tempo Surge",
-        .zenBloom: "Zen Bloom",
-        .summitHeart: "Summit Heart",
-        .eclipseMark: "Eclipse Mark",
-        .loopSigil: "Loop Sigil",
+        .tempoSurge: "빠른 질주",
+        .zenBloom: "편안한 호흡",
+        .summitHeart: "언덕 돌파",
+        .eclipseMark: "밤의 흔적",
+        .loopSigil: "익숙한 길",
     ]
 
     public static let badges: [RareVariant: String] = [
-        .tempoSurge: "TEMPO",
-        .zenBloom: "ZEN",
-        .summitHeart: "SUMMIT",
-        .eclipseMark: "ECLIPSE",
-        .loopSigil: "LOOP",
+        .tempoSurge: "질주",
+        .zenBloom: "호흡",
+        .summitHeart: "언덕",
+        .eclipseMark: "야간",
+        .loopSigil: "반복",
     ]
 
     public static let passives: [RareVariant: String] = [

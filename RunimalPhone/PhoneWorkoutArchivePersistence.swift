@@ -42,6 +42,21 @@ struct PhoneWorkoutArchivePersistence {
         try saveArray(archives, filename: "workout-archives.json")
     }
 
+    func hasPersistedData() -> Bool {
+        let completedRunsURL = directoryURL.appendingPathComponent("completed-runs.json")
+        let workoutArchivesURL = directoryURL.appendingPathComponent("workout-archives.json")
+        let packagesDirectoryURL = directoryURL.appendingPathComponent("WorkoutPackages", isDirectory: true)
+
+        return fileManager.fileExists(atPath: completedRunsURL.path) ||
+            fileManager.fileExists(atPath: workoutArchivesURL.path) ||
+            fileManager.fileExists(atPath: packagesDirectoryURL.path)
+    }
+
+    func clearAll() throws {
+        guard fileManager.fileExists(atPath: directoryURL.path) else { return }
+        try fileManager.removeItem(at: directoryURL)
+    }
+
     func removeWorkoutPackageFiles(forRunID runID: String) throws {
         let packagesDirectoryURL = directoryURL.appendingPathComponent("WorkoutPackages", isDirectory: true)
         guard fileManager.fileExists(atPath: packagesDirectoryURL.path) else { return }

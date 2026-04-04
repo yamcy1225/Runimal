@@ -4,6 +4,8 @@ import SwiftUI
 struct PhoneFeedCinematicPanel: View {
     let pet: GeneratedPet
     let outcome: CompanionFeedOutcome
+    let season: WeeklySeason
+    let renderState: CompanionPixelRenderState
     let onDismiss: () -> Void
 
     @State private var shownProgress = 0.0
@@ -16,7 +18,7 @@ struct PhoneFeedCinematicPanel: View {
     }
 
     private var mythicReached: Bool {
-        outcome.stageAdvanced && outcome.afterProgress.stageLabel == "Mythic"
+        outcome.stageAdvanced && outcome.afterProgress.stageLabel == RunimalBalanceConfig.finalStageLabel
     }
 
     private var mythicTitle: String {
@@ -25,16 +27,28 @@ struct PhoneFeedCinematicPanel: View {
 
     private var stageHeadline: String {
         if mythicReached {
-            return "최종형 신호 고정"
+            return "성년기 도달"
         }
 
         return outcome.stageAdvanced
-            ? "\(outcome.afterProgress.stageLabel) 진화 임계점 돌파"
-            : "성장 에너지 흡수 완료"
+            ? "\(outcome.afterProgress.stageLabel) 단계 도달"
+            : "성장 반영 완료"
+    }
+
+    private var momentNarrative: CompanionMomentNarrative {
+        RunimalGameEngine.growthMomentNarrative(pet: pet, outcome: outcome)
+    }
+
+    private var followUpTarget: EvolutionTarget {
+        RunimalGameEngine.postGrowthTarget(
+            pet: pet,
+            outcome: outcome,
+            season: season
+        )
     }
 
     var body: some View {
-        GameSurface(title: "성장 연출", accent: accent, eyebrow: "에너지 흡수") {
+        GameSurface(title: "성장 연출", accent: accent, eyebrow: "기록 반영") {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .center, spacing: 16) {
                     ZStack {
@@ -45,10 +59,17 @@ struct PhoneFeedCinematicPanel: View {
                             .frame(width: 110, height: 110)
                             .blur(radius: 14)
 
-                        PixelPetView(pet: pet, pixelSize: 10)
+                        PixelPetView(
+                            pet: pet,
+                            pixelSize: 10,
+                            growthStageIndex: renderState.growthStageIndex,
+                            mutationForm: renderState.mutationForm,
+                            mutationHistory: renderState.mutationHistory,
+                            mutationVisualState: renderState.mutationVisualState
+                        )
 
                         if showEvolutionCut {
-                            Text(mythicReached ? "MYTHIC" : "진화")
+                            Text(mythicReached ? "성년기" : "성장")
                                 .font(.caption.weight(.black))
                                 .tracking(1.8)
                                 .foregroundStyle(.black)
@@ -75,14 +96,16 @@ struct PhoneFeedCinematicPanel: View {
                             .font(.title3.weight(.black))
                             .foregroundStyle(.white)
 
-                        Text("\(outcome.coreLabel)을 흡수해서 \(outcome.beforeProgress.totalExperience) XP에서 \(outcome.afterProgress.totalExperience) XP로 상승했습니다.")
+                        Text("\(outcome.coreLabel)을 반영해 Lv.\(outcome.beforeSnapshot.level)에서 Lv.\(outcome.afterSnapshot.level), \(outcome.beforeProgress.totalExperience) XP에서 \(outcome.afterProgress.totalExperience) XP로 올랐습니다.")
                             .font(.footnote)
                             .foregroundStyle(.white.opacity(0.76))
 
                         HStack {
+                            TraitChip(label: "Lv.\(outcome.beforeSnapshot.level)", accent: .white.opacity(0.14))
                             TraitChip(label: outcome.beforeProgress.stageLabel, accent: .white.opacity(0.2))
                             Image(systemName: "arrow.right")
                                 .foregroundStyle(.white.opacity(0.45))
+                            TraitChip(label: "Lv.\(outcome.afterSnapshot.level)", accent: accent.opacity(0.22))
                             TraitChip(label: outcome.afterProgress.stageLabel, accent: accent)
                             if outcome.stageAdvanced {
                                 TraitChip(label: mythicReached ? mythicTitle : "연출 발동", accent: .orange.opacity(0.82))
@@ -93,6 +116,30 @@ struct PhoneFeedCinematicPanel: View {
                             Text(RunimalGameEngine.mythicSignalLine(for: pet))
                                 .font(.caption)
                                 .foregroundStyle(.orange.opacity(0.86))
+                        }
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(momentNarrative.title)
+                                .font(.caption.weight(.black))
+                                .foregroundStyle(.white.opacity(0.9))
+
+                            Text(momentNarrative.detail)
+                                .font(.caption2)
+                                .foregroundStyle(.white.opacity(0.72))
+                                .lineSpacing(2)
+
+                            HStack(spacing: 8) {
+                                Text(momentNarrative.emphasis)
+                                    .font(.caption2.monospaced().weight(.black))
+                                    .foregroundStyle(.black)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(Capsule().fill(.white.opacity(0.92)))
+
+                                ForEach(Array(momentNarrative.badges.prefix(2)), id: \.self) { badge in
+                                    breakdownChip(badge, accent: .white.opacity(0.14))
+                                }
+                            }
                         }
                     }
                 }
@@ -108,6 +155,16 @@ struct PhoneFeedCinematicPanel: View {
                         .font(.footnote)
                         .foregroundStyle(.white.opacity(0.72))
 
+                    if outcome.potentialExperienceSpent > 0 {
+                        Text(
+                            outcome.remainingStoredPotentialExperience > 0
+                                ? "저장 잠재 \(outcome.potentialExperienceSpent) XP 사용 · \(outcome.remainingStoredPotentialExperience) XP 남음"
+                                : "저장 잠재 \(outcome.potentialExperienceSpent) XP 모두 사용"
+                        )
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.orange.opacity(0.92))
+                    }
+
                     if !outcome.bonusLabels.isEmpty {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 8) {
@@ -118,6 +175,9 @@ struct PhoneFeedCinematicPanel: View {
                             .padding(.horizontal, 1)
                         }
                     }
+
+                    growthBreakdownCard
+                    followUpCard
                 }
             }
         }
@@ -167,5 +227,119 @@ struct PhoneFeedCinematicPanel: View {
                 onDismiss()
             }
         }
+    }
+
+    private var growthBreakdownCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("이번 반영")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white.opacity(0.72))
+
+            HStack(spacing: 8) {
+                breakdownChip("기본 +\(outcome.baseExperience)", accent: .white.opacity(0.16))
+                if outcome.supportBonusExperience > 0 {
+                    breakdownChip("추가 보너스 +\(outcome.supportBonusExperience)", accent: .purple.opacity(0.24))
+                }
+                if outcome.dataBonusExperience > 0 {
+                    breakdownChip("기록 밀도 +\(outcome.dataBonusExperience)", accent: .cyan.opacity(0.24))
+                }
+                if outcome.potentialExperienceSpent > 0 {
+                    breakdownChip("잠재 +\(outcome.potentialExperienceSpent)", accent: .orange.opacity(0.26))
+                }
+            }
+
+            Text(
+                outcome.potentialExperienceSpent > 0
+                    ? "저장 잠재 \(outcome.storedPotentialExperienceBefore) XP 중 \(outcome.potentialExperienceSpent) XP를 이번에 사용했습니다."
+                    : "이번 반영은 기록 XP와 일반 보너스만으로 진행됐습니다."
+            )
+            .font(.caption)
+            .foregroundStyle(.white.opacity(0.72))
+
+            if let nextMilestone = outcome.afterSnapshot.nextEvolutionMilestone {
+                Text("다음 진화 기준은 Lv.\(nextMilestone.requiredLevel) · \(nextMilestone.requiredExperience) XP입니다.")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.58))
+            } else if let nextLateGrowth = outcome.afterSnapshot.lateGrowthWindow.last,
+                      outcome.afterSnapshot.level < nextLateGrowth.requiredLevel {
+                Text("다음 후반 해금은 Lv.\(nextLateGrowth.requiredLevel) \(nextLateGrowth.title)입니다.")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.58))
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.white.opacity(0.06))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(.white.opacity(0.1), lineWidth: 1)
+                )
+        )
+    }
+
+    private var followUpCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("다음 진행")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white.opacity(0.72))
+
+            Text(followUpTarget.title)
+                .font(.headline.weight(.black))
+                .foregroundStyle(.white)
+
+            Text(followUpTarget.detail)
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.72))
+                .lineSpacing(2)
+
+            guidanceRow(title: followUpTarget.focusTitle, detail: followUpTarget.focusDetail)
+            guidanceRow(title: followUpTarget.actionTitle, detail: followUpTarget.actionDetail)
+            guidanceRow(title: followUpTarget.checkpointTitle, detail: followUpTarget.checkpointDetail)
+
+            if followUpTarget.badges.isEmpty == false {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(followUpTarget.badges, id: \.self) { badge in
+                            breakdownChip(badge, accent: accent.opacity(0.22))
+                        }
+                    }
+                    .padding(.horizontal, 1)
+                }
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.white.opacity(0.06))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(.white.opacity(0.1), lineWidth: 1)
+                )
+        )
+    }
+
+    private func guidanceRow(title: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption2.weight(.black))
+                .foregroundStyle(accent.opacity(0.94))
+            Text(detail)
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.74))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func breakdownChip(_ title: String, accent: Color) -> some View {
+        Text(title)
+            .font(.caption2.monospaced().weight(.black))
+            .foregroundStyle(.white.opacity(0.92))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(accent)
+            )
     }
 }

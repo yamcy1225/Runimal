@@ -2,6 +2,35 @@ import Foundation
 import Observation
 import RunimalCore
 
+struct CompanionFeedProjection {
+    let runID: String
+    let coreLabel: String
+    let baseExperience: Int
+    let supportBonusExperience: Int
+    let dataBonusExperience: Int
+    let storedPotentialExperience: Int
+    let potentialExperienceSpent: Int
+    let projectedRemainingStoredPotentialExperience: Int
+    let projectedTotalExperience: Int
+    let beforeSnapshot: CompanionProgressionSnapshot
+    let projectedSnapshot: CompanionProgressionSnapshot
+    let beforeProgress: EvolutionProgress
+    let projectedProgress: EvolutionProgress
+    let bonusLabels: [String]
+
+    var hasPotentialSpend: Bool {
+        potentialExperienceSpent > 0
+    }
+
+    var levelGain: Int {
+        projectedSnapshot.level - beforeSnapshot.level
+    }
+
+    var stageAdvanced: Bool {
+        beforeSnapshot.stageIndex != projectedSnapshot.stageIndex
+    }
+}
+
 @MainActor
 @Observable
 final class PhoneProgressStore {
@@ -31,6 +60,7 @@ final class PhoneProgressStore {
         static let duplicatePriority = "runimal.phone.duplicatePriority"
         static let workoutArchives = "runimal.phone.workoutArchives"
         static let autoPauseEnabled = "runimal.phone.autoPauseEnabled"
+        static let worldProgress = "runimal.phone.worldProgress"
     }
 
     private let defaults: UserDefaults
@@ -61,6 +91,7 @@ final class PhoneProgressStore {
     var lastSanctuaryReward: SanctuaryRewardEvent?
     var workoutArchives: [WorkoutSessionArchive] = []
     var autoPauseEnabled = true
+    var worldProgressSnapshot: WorldProgressSnapshot = .empty
 
     init(
         defaults: UserDefaults = .standard,
@@ -172,13 +203,19 @@ final class PhoneProgressStore {
         } else {
             autoPauseEnabled = defaults.bool(forKey: Keys.autoPauseEnabled)
         }
+
+        if let data = defaults.data(forKey: Keys.worldProgress) {
+            worldProgressSnapshot = (try? JSONDecoder().decode(WorldProgressSnapshot.self, from: data)) ?? .empty
+        } else {
+            worldProgressSnapshot = .empty
+        }
+
+        if worldProgressSnapshot == .empty, completedRuns.isEmpty == false {
+            worldProgressSnapshot = RunimalWorldProgressEngine.rebuild(from: completedRuns)
+        }
     }
 
     func seedIfNeeded(from summaries: [RunSummary]) {
-        if ownedCompanions.isEmpty {
-            ownedCompanions = RunimalGameEngine.buildCollection(from: summaries)
-        }
-
         if journal.isEmpty {
             let seededEntries = summaries.enumerated().map { index, summary in
                 let reward = RunimalGameEngine.evaluateReward(for: summary)
@@ -196,35 +233,44 @@ final class PhoneProgressStore {
         }
 
         if completedRuns.isEmpty, let summary = summaries.first {
-            let reward = RunimalGameEngine.evaluateReward(for: summary)
-            let endedAt = Date().addingTimeInterval(-3600)
-            let startedAt = endedAt.addingTimeInterval(-summary.distanceKm * Double(summary.averagePaceSeconds))
-            let snapshot = LiveRunSnapshot(
-                elapsedSeconds: Int(summary.distanceKm * Double(summary.averagePaceSeconds)),
-                distanceMeters: summary.distanceKm * 1000,
-                currentHeartRate: 152,
-                cadence: summary.cadence,
-                elevationGainM: summary.elevationGainM,
-                averagePaceSeconds: summary.averagePaceSeconds
-            )
+            completedRuns = [makeSeededArchiveRun(from: summary)]
+        }
 
-            completedRuns = [
-                RunimalGameEngine.makeCompletedRunRecord(
-                    reward: reward,
-                    snapshot: snapshot,
-                    startedAt: startedAt,
-                    endedAt: endedAt,
-                    averageHeartRate: 152,
-                    route: [],
-                    source: "seeded-archive",
-                    id: "seeded-archive-run"
+        if ownedCompanions.isEmpty,
+           eggInventory.isEmpty,
+           let seededRun = completedRuns.first {
+            let shell = RunimalEggEngine.shell(for: seededRun)
+            eggInventory = [
+                EggInventoryEntry(
+                    id: "starter-egg-\(seededRun.id)",
+                    shell: shell,
+                    title: RunimalEggEngine.title(for: shell),
+                    createdAt: seededRun.endedAt,
+                    sourceRunID: seededRun.id,
+                    storedExperience: RunimalEggEngine.initialExperience(
+                        for: seededRun,
+                        starterBoosted: true
+                    ),
+                    hatchThreshold: RunimalEggEngine.hatchThreshold(
+                        for: shell,
+                        run: seededRun,
+                        starterBoosted: true
+                    ),
+                    incubationRunIDs: [],
+                    unlockedAchievementIDs: [],
+                    starterBoosted: true
                 )
             ]
         }
 
-        if mainCompanionSelection == nil, let firstCompanion = ownedCompanions.first {
-            mainCompanionSelection = MainCompanionSelection(kind: .pet, targetID: firstCompanion.id)
-            activeCompanionID = activeCompanionID ?? firstCompanion.id
+        if mainCompanionSelection == nil {
+            if let firstEgg = eggInventory.first {
+                mainCompanionSelection = MainCompanionSelection(kind: .egg, targetID: firstEgg.id)
+                activeCompanionID = nil
+            } else if let firstCompanion = ownedCompanions.first {
+                mainCompanionSelection = MainCompanionSelection(kind: .pet, targetID: firstCompanion.id)
+                activeCompanionID = activeCompanionID ?? firstCompanion.id
+            }
         }
 
         if watchCompanionSelection == nil {
@@ -254,6 +300,24 @@ final class PhoneProgressStore {
         return runs.filter { !assigned.contains($0.id) && !eggConsumed.contains($0.id) }
     }
 
+    func feedProjection(
+        run: CompletedRunRecord,
+        to companion: PetCollectionEntry,
+        activeEffects: [WeeklyRewardEffect],
+        season: WeeklySeason
+    ) -> CompanionFeedProjection? {
+        guard let computation = makeFeedComputation(
+            run: run,
+            to: companion,
+            activeEffects: activeEffects,
+            season: season
+        ) else {
+            return nil
+        }
+
+        return computation.projection
+    }
+
     @discardableResult
     func feed(
         run: CompletedRunRecord,
@@ -261,18 +325,66 @@ final class PhoneProgressStore {
         activeEffects: [WeeklyRewardEffect],
         season: WeeklySeason
     ) -> CompanionFeedOutcome? {
+        guard let computation = makeFeedComputation(
+            run: run,
+            to: companion,
+            activeEffects: activeEffects,
+            season: season
+        ) else {
+            return nil
+        }
+
+        growthRecords.removeAll(where: { $0.companionID == companion.id })
+        growthRecords.append(computation.updatedRecord)
+        activeCompanionID = companion.id
+        if computation.forgeBonus.consumeOverdrive {
+            overdriveCharges = max(overdriveCharges - 1, 0)
+        }
+        if computation.forgeBonus.consumeSeasonSigil {
+            seasonSigils = max(seasonSigils - 1, 0)
+        }
+        save()
+        return CompanionFeedOutcome(
+            runID: run.id,
+            coreLabel: run.reward.coreLabel,
+            gainedExperience: computation.gainedExperience,
+            baseExperience: computation.baseExperience,
+            supportBonusExperience: computation.supportBonusExperience,
+            dataBonusExperience: computation.dataBonusExperience,
+            storedPotentialExperienceBefore: computation.storedPotentialExperience,
+            potentialExperienceSpent: computation.potentialExperienceSpent,
+            remainingStoredPotentialExperience: computation.remainingStoredPotentialExperience,
+            bonusLabels: computation.bonusLabels,
+            beforeSnapshot: computation.beforeSnapshot,
+            afterSnapshot: computation.afterSnapshot,
+            beforeProgress: computation.beforeProgress,
+            afterProgress: computation.afterProgress,
+            stageAdvanced: computation.beforeProgress.stageLabel != computation.afterProgress.stageLabel
+        )
+    }
+
+    private func makeFeedComputation(
+        run: CompletedRunRecord,
+        to companion: PetCollectionEntry,
+        activeEffects: [WeeklyRewardEffect],
+        season: WeeklySeason
+    ) -> CompanionFeedComputation? {
         if growthRecords.flatMap(\.assignedRunIDs).contains(run.id) {
             return nil
         }
 
         let currentRecord = growthRecord(for: companion.id)
-        let beforeProgress = RunimalCompanionGrowthEngine.evolutionProgress(for: currentRecord)
+        let beforeSnapshot = RunimalCompanionGrowthEngine.progressionSnapshot(
+            for: currentRecord,
+            species: companion.pet.species
+        )
+        let beforeProgress = beforeSnapshot.progress
         let resonance = RunimalEffectResonanceEngine.effectResonance(
             for: companion,
             progress: beforeProgress,
             activeEffects: activeEffects
         )
-        let bonusExperience = RunimalCompanionGrowthEngine.feedBonusExperience(
+        let resonanceBonus = RunimalCompanionGrowthEngine.feedBonusExperience(
             baseExperience: run.reward.experience,
             resonance: resonance
         )
@@ -286,50 +398,193 @@ final class PhoneProgressStore {
             run: run,
             companion: companion
         )
-        let rawExperience = run.reward.experience + bonusExperience + forgeBonus.bonus + buildBonus
+        var interactionEvents: [CompanionProgressionEvent] = []
+        if let lastFedAt = currentRecord?.lastFedAt {
+            if Calendar.current.isDate(lastFedAt, inSameDayAs: Date()) == false {
+                interactionEvents.append(.firstFeedOfDay)
+            }
+        } else {
+            interactionEvents.append(.firstFeedOfDay)
+        }
+        if canonicalProgressionSpeciesID(for: run.reward.pet.species) == canonicalProgressionSpeciesID(for: companion.pet.species) {
+            interactionEvents.append(.matchingSpecies)
+        }
+        if let runVariant = run.reward.pet.rareVariant,
+           runVariant == companion.pet.rareVariant {
+            interactionEvents.append(.matchingVariant)
+        }
+        if RunimalGameEngine.seasonAffinity(for: companion.pet, season: season) {
+            interactionEvents.append(.seasonAffinity)
+        }
+        if run.reward.completedQuestCount >= 2 {
+            interactionEvents.append(.masteryLink)
+        }
+        if let latestAssignedRun = currentRecord
+            .flatMap({ record in completedRuns.filter { record.assignedRunIDs.contains($0.id) }.sorted { $0.endedAt < $1.endedAt }.last }),
+           latestAssignedRun.worldImpact?.regionID == run.worldImpact?.regionID {
+            interactionEvents.append(.homeRegion)
+        }
+        if run.worldImpact?.episodeID != nil {
+            interactionEvents.append(.episodeSignal)
+        }
+        if run.worldImpact?.unlockedRegion == true {
+            interactionEvents.append(.regionUnlock)
+        }
+        if run.worldImpact?.unlockedSeason == true {
+            interactionEvents.append(.seasonUnlock)
+        }
+        if run.worldImpact?.unlockedEpisode == true {
+            interactionEvents.append(.episodeUnlock)
+        }
+        let interactionBonus = RunimalCompanionProgressionEngine.interactionBonus(
+            baseExperience: run.reward.experience,
+            events: interactionEvents,
+            stageIndex: beforeSnapshot.stageIndex
+        )
+        let dataProfile = RunimalRunCoreGrowthBalanceEngine.dataProfile(for: run)
+        let levelBefore = beforeSnapshot.level
+        let seasonAligned = RunimalGameEngine.seasonAffinity(for: companion.pet, season: season)
+        let storedPotential = currentRecord?.storedPotentialExperience ?? 0
+        let potentialSpend = min(
+            storedPotential,
+            RunimalRunCoreGrowthBalanceEngine.potentialSpendCap(
+                baseExperience: run.reward.experience,
+                level: levelBefore
+            )
+        )
+        let lateGrowthBonus = RunimalCompanionProgressionEngine.lateGrowthBonus(
+            level: levelBefore,
+            dataProfile: dataProfile,
+            potentialSpend: potentialSpend,
+            seasonAligned: seasonAligned,
+            worldImpact: run.worldImpact
+        )
+        let retainedGrowthLabels = RunimalCompanionProgressionEngine.lateGrowthRetentionLabels(
+            level: levelBefore,
+            run: run,
+            dataProfile: dataProfile,
+            seasonTitle: season.title,
+            seasonAligned: seasonAligned
+        )
+        let rawExperience = run.reward.experience +
+            dataProfile.bonusExperience +
+            resonanceBonus +
+            forgeBonus.bonus +
+            buildBonus +
+            interactionBonus.bonusExperience +
+            lateGrowthBonus.bonusExperience +
+            potentialSpend
         let starterStageGuarantee = (currentRecord?.feedCount ?? 0) == 0 &&
             (currentRecord?.totalExperience ?? 0) >= 100 &&
-            beforeProgress.stageLabel == "Trace Egg"
+            beforeProgress.stageLabel == RunimalBalanceConfig.eggStageLabel
         let stageLock = RunimalRewardPulseEngine.stageLock(
             currentProgress: beforeProgress,
             proposedExperience: rawExperience
         )
-        let gainedExperience: Int
+        let uncappedExperience: Int
 
         if starterStageGuarantee {
-            gainedExperience = max(rawExperience + stageLock.bonusExperience, max(0, 160 - (currentRecord?.totalExperience ?? 0)))
+            let firstThreshold = RunimalBalanceConfig.evolutionThresholds(for: companion.pet.species)[1]
+            uncappedExperience = max(
+                rawExperience + stageLock.bonusExperience,
+                max(0, firstThreshold - (currentRecord?.totalExperience ?? 0))
+            )
         } else {
-            gainedExperience = rawExperience + stageLock.bonusExperience
+            uncappedExperience = rawExperience + stageLock.bonusExperience
         }
 
-        let updated = CompanionGrowthRecord(
+        let currentExperience = currentRecord?.totalExperience ?? 0
+        let gainedExperience = RunimalBalanceConfig.cappedExperienceGain(
+            currentExperience: currentExperience,
+            proposedGain: uncappedExperience,
+            currentLevel: levelBefore,
+            runDistanceKm: run.distanceMeters / 1000
+        )
+        let growthCapApplied = gainedExperience < uncappedExperience
+
+        let remainingStoredPotentialExperience = max(storedPotential - potentialSpend, 0)
+        let updatedRecord = CompanionGrowthRecord(
             companionID: companion.id,
-            totalExperience: (currentRecord?.totalExperience ?? 0) + gainedExperience,
+            totalExperience: currentExperience + gainedExperience,
+            storedPotentialExperience: remainingStoredPotentialExperience,
             feedCount: (currentRecord?.feedCount ?? 0) + 1,
             assignedRunIDs: (currentRecord?.assignedRunIDs ?? []) + [run.id],
             lastFedAt: run.endedAt
         )
-        let afterProgress = RunimalCompanionGrowthEngine.evolutionProgress(for: updated)
+        let afterSnapshot = RunimalCompanionGrowthEngine.progressionSnapshot(
+            for: updatedRecord,
+            species: companion.pet.species
+        )
+        let afterProgress = afterSnapshot.progress
+        let supportBonusExperience = resonanceBonus +
+            forgeBonus.bonus +
+            buildBonus +
+            interactionBonus.bonusExperience +
+            lateGrowthBonus.bonusExperience +
+            stageLock.bonusExperience
+        let bonusLabels = stageLock.bonusLabels +
+            interactionBonus.labels +
+            lateGrowthBonus.labels +
+            (growthCapApplied ? ["10km 미만 1레벨 상한"] : []) +
+            retainedGrowthLabels +
+            (potentialSpend > 0 ? ["동행 잠재 사용 +\(potentialSpend)"] : [])
 
-        growthRecords.removeAll(where: { $0.companionID == companion.id })
-        growthRecords.append(updated)
-        activeCompanionID = companion.id
-        if forgeBonus.consumeOverdrive {
-            overdriveCharges = max(overdriveCharges - 1, 0)
-        }
-        if forgeBonus.consumeSeasonSigil {
-            seasonSigils = max(seasonSigils - 1, 0)
-        }
-        save()
-        return CompanionFeedOutcome(
+        return CompanionFeedComputation(
             runID: run.id,
             coreLabel: run.reward.coreLabel,
+            baseExperience: run.reward.experience,
+            supportBonusExperience: supportBonusExperience,
+            dataBonusExperience: dataProfile.bonusExperience,
+            storedPotentialExperience: storedPotential,
+            potentialExperienceSpent: potentialSpend,
+            remainingStoredPotentialExperience: remainingStoredPotentialExperience,
             gainedExperience: gainedExperience,
-            bonusLabels: stageLock.bonusLabels,
+            beforeSnapshot: beforeSnapshot,
+            afterSnapshot: afterSnapshot,
             beforeProgress: beforeProgress,
             afterProgress: afterProgress,
-            stageAdvanced: beforeProgress.stageLabel != afterProgress.stageLabel
+            bonusLabels: bonusLabels,
+            updatedRecord: updatedRecord,
+            forgeBonus: forgeBonus
         )
+    }
+
+    private struct CompanionFeedComputation {
+        let runID: String
+        let coreLabel: String
+        let baseExperience: Int
+        let supportBonusExperience: Int
+        let dataBonusExperience: Int
+        let storedPotentialExperience: Int
+        let potentialExperienceSpent: Int
+        let remainingStoredPotentialExperience: Int
+        let gainedExperience: Int
+        let beforeSnapshot: CompanionProgressionSnapshot
+        let afterSnapshot: CompanionProgressionSnapshot
+        let beforeProgress: EvolutionProgress
+        let afterProgress: EvolutionProgress
+        let bonusLabels: [String]
+        let updatedRecord: CompanionGrowthRecord
+        let forgeBonus: (bonus: Int, consumeOverdrive: Bool, consumeSeasonSigil: Bool)
+
+        var projection: CompanionFeedProjection {
+            CompanionFeedProjection(
+                runID: runID,
+                coreLabel: coreLabel,
+                baseExperience: baseExperience,
+                supportBonusExperience: supportBonusExperience,
+                dataBonusExperience: dataBonusExperience,
+                storedPotentialExperience: storedPotentialExperience,
+                potentialExperienceSpent: potentialExperienceSpent,
+                projectedRemainingStoredPotentialExperience: remainingStoredPotentialExperience,
+                projectedTotalExperience: gainedExperience,
+                beforeSnapshot: beforeSnapshot,
+                projectedSnapshot: afterSnapshot,
+                beforeProgress: beforeProgress,
+                projectedProgress: afterProgress,
+                bonusLabels: bonusLabels
+            )
+        }
     }
 
     @discardableResult
@@ -359,11 +614,46 @@ final class PhoneProgressStore {
         save()
     }
 
-    func append(completedRun: CompletedRunRecord) {
+    func append(
+        completedRun: CompletedRunRecord,
+        pack: WorldContentPack = DefaultWorldContent.pack
+    ) {
         completedRuns.removeAll(where: { $0.id == completedRun.id })
-        let recalculatedRun = completedRunWithMutationForm(completedRun)
+        let recalculatedRun = completedRunWithDerivedState(completedRun, pack: pack)
         completedRuns.insert(recalculatedRun, at: 0)
+        worldProgressSnapshot = RunimalWorldProgressEngine.applying(
+            run: recalculatedRun,
+            to: worldProgressSnapshot,
+            pack: pack
+        )
         save()
+    }
+
+    @discardableResult
+    func storeLiveCompanionPotential(from run: CompletedRunRecord, companionID: String) -> LiveCompanionPotentialProfile {
+        let profile = RunimalRunCoreGrowthBalanceEngine.livePotential(for: run)
+        guard profile.storedPotentialExperience > 0 else { return profile }
+
+        let existing = growthRecord(for: companionID)
+        let currentLevel = RunimalBalanceConfig.companionLevel(
+            forExperience: existing?.totalExperience ?? 0
+        )
+        let updated = CompanionGrowthRecord(
+            companionID: companionID,
+            totalExperience: existing?.totalExperience ?? 0,
+            storedPotentialExperience: min(
+                (existing?.storedPotentialExperience ?? 0) + profile.storedPotentialExperience,
+                RunimalRunCoreGrowthBalanceEngine.storedPotentialCap(forLevel: currentLevel)
+            ),
+            feedCount: existing?.feedCount ?? 0,
+            assignedRunIDs: existing?.assignedRunIDs ?? [],
+            lastFedAt: existing?.lastFedAt
+        )
+
+        growthRecords.removeAll(where: { $0.companionID == companionID })
+        growthRecords.append(updated)
+        save()
+        return profile
     }
 
     func append(workoutArchive: WorkoutSessionArchive) {
@@ -372,14 +662,48 @@ final class PhoneProgressStore {
         save()
     }
 
-    private func completedRunWithMutationForm(_ run: CompletedRunRecord) -> CompletedRunRecord {
+    private func completedRunWithDerivedState(
+        _ run: CompletedRunRecord,
+        pack: WorldContentPack
+    ) -> CompletedRunRecord {
         let speciesRuns = runsForMutationProgress(species: run.reward.pet.species, including: run)
-        guard let mutationForm = SpeciesMutationUnlockEngine.resolveForm(
+        let mutationForm = SpeciesMutationUnlockEngine.resolveForm(
             for: speciesRuns,
             preferredSpecies: run.reward.pet.species
-        )?.snapshot else {
-            return run
-        }
+        )?.snapshot
+        let mutationContribution = run.mutationContribution ?? SpeciesMutationContributionEngine.runContribution(
+            for: run,
+            preferredSpecies: run.reward.pet.species
+        )
+        let baseRun = CompletedRunRecord(
+            id: run.id,
+            startedAt: run.startedAt,
+            endedAt: run.endedAt,
+            distanceMeters: run.distanceMeters,
+            durationSeconds: run.durationSeconds,
+            averageHeartRate: run.averageHeartRate,
+            averagePaceSeconds: run.averagePaceSeconds,
+            cadence: run.cadence,
+            elevationGainM: run.elevationGainM,
+            reward: run.reward,
+            route: run.route,
+            source: run.source,
+            sourceLabel: run.sourceLabel,
+            raidContribution: run.raidContribution,
+            environmentCondition: run.environmentCondition,
+            rareEventCompleted: run.rareEventCompleted,
+            liveCompanionID: run.liveCompanionID,
+            liveCompanionName: run.liveCompanionName,
+            livePotentialProfile: run.livePotentialProfile,
+            mutationForm: mutationForm,
+            mutationContribution: mutationContribution,
+            worldImpact: run.worldImpact
+        )
+        let worldImpact = RunimalWorldProgressEngine.impact(
+            for: baseRun,
+            current: worldProgressSnapshot,
+            pack: pack
+        ) ?? run.worldImpact
 
         return CompletedRunRecord(
             id: run.id,
@@ -398,11 +722,12 @@ final class PhoneProgressStore {
             raidContribution: run.raidContribution,
             environmentCondition: run.environmentCondition,
             rareEventCompleted: run.rareEventCompleted,
+            liveCompanionID: run.liveCompanionID,
+            liveCompanionName: run.liveCompanionName,
+            livePotentialProfile: run.livePotentialProfile,
             mutationForm: mutationForm,
-            mutationContribution: run.mutationContribution ?? SpeciesMutationContributionEngine.runContribution(
-                for: run,
-                preferredSpecies: run.reward.pet.species
-            )
+            mutationContribution: mutationContribution,
+            worldImpact: worldImpact
         )
     }
 
@@ -414,6 +739,15 @@ final class PhoneProgressStore {
     }
 
     private func canonicalMutationSpeciesID(for species: PetSpecies) -> String {
+        switch species {
+        case .shadebit:
+            return PetSpecies.sparkfang.rawValue
+        default:
+            return species.rawValue
+        }
+    }
+
+    private func canonicalProgressionSpeciesID(for species: PetSpecies) -> String {
         switch species {
         case .shadebit:
             return PetSpecies.sparkfang.rawValue
@@ -441,6 +775,7 @@ final class PhoneProgressStore {
             CompanionGrowthRecord(
                 companionID: record.companionID,
                 totalExperience: record.totalExperience,
+                storedPotentialExperience: record.storedPotentialExperience,
                 feedCount: record.feedCount,
                 assignedRunIDs: record.assignedRunIDs.filter { !importedIDs.contains($0) },
                 lastFedAt: record.lastFedAt
@@ -468,6 +803,7 @@ final class PhoneProgressStore {
             mainCompanionSelection = activeCompanionID.map { MainCompanionSelection(kind: .pet, targetID: $0) }
         }
 
+        rebuildWorldProgress()
         save()
     }
 
@@ -479,7 +815,10 @@ final class PhoneProgressStore {
     }
 
     @discardableResult
-    func removeRun(id: String) -> Bool {
+    func removeRun(
+        id: String,
+        pack: WorldContentPack = DefaultWorldContent.pack
+    ) -> Bool {
         guard canDeleteRun(id: id) else { return false }
 
         completedRuns.removeAll(where: { $0.id == id })
@@ -492,8 +831,13 @@ final class PhoneProgressStore {
             // The persisted arrays remain canonical even if package file cleanup fails.
         }
 
+        rebuildWorldProgress(pack: pack)
         save()
         return true
+    }
+
+    func rebuildWorldProgress(pack: WorldContentPack = DefaultWorldContent.pack) {
+        worldProgressSnapshot = RunimalWorldProgressEngine.rebuild(from: completedRuns, pack: pack)
     }
 
     func claimWeeklyReward(id: String) {
@@ -601,6 +945,7 @@ final class PhoneProgressStore {
                 let updated = CompanionGrowthRecord(
                     companionID: existing.companionID,
                     totalExperience: existing.totalExperience + (branchReward?.extraEssence ?? 0) + (branchReward?.extraSigils ?? 0) * 18 + (branchReward?.extraOverdrive ?? 0) * 24,
+                    storedPotentialExperience: existing.storedPotentialExperience,
                     feedCount: existing.feedCount,
                     assignedRunIDs: existing.assignedRunIDs,
                     lastFedAt: existing.lastFedAt
@@ -675,7 +1020,8 @@ final class PhoneProgressStore {
             claimedSeasonRewardIDs: claimedSeasonRewardIDs,
             claimedRaidRewardIDs: claimedRaidRewardIDs,
             raidShardBalance: raidShardBalance,
-            raidContributionTotal: completedRuns.reduce(0) { $0 + $1.raidContribution }
+            raidContributionTotal: completedRuns.reduce(0) { $0 + $1.raidContribution },
+            worldProgress: worldProgressSnapshot
         )
     }
 
@@ -700,6 +1046,7 @@ final class PhoneProgressStore {
         claimedSeasonRewardIDs = snapshot.claimedSeasonRewardIDs
         claimedRaidRewardIDs = snapshot.claimedRaidRewardIDs
         raidShardBalance = snapshot.raidShardBalance
+        worldProgressSnapshot = snapshot.worldProgress
         if deviceID.isEmpty {
             deviceID = snapshot.originDeviceID
         }
@@ -765,6 +1112,11 @@ final class PhoneProgressStore {
     }
 
     func resetProgress(from summaries: [RunSummary]) {
+        do {
+            try archivePersistence.clearAll()
+        } catch {
+            // Save will recreate canonical storage after reset.
+        }
         journal = []
         completedRuns = []
         workoutArchives = []
@@ -788,8 +1140,45 @@ final class PhoneProgressStore {
         verificationRecords = []
         conflictPolicy = .merged
         duplicatePriority = .newestWins
+        worldProgressSnapshot = .empty
         save()
         seedIfNeeded(from: summaries)
+    }
+
+    var hasPersistedState: Bool {
+        let keyedDefaults = [
+            Keys.journal,
+            Keys.completedRuns,
+            Keys.ownedCompanions,
+            Keys.eggInventory,
+            Keys.unlockedEggAchievementIDs,
+            Keys.claimedWeeklyRewards,
+            Keys.activeCompanionID,
+            Keys.mainCompanionSelection,
+            Keys.watchCompanionSelection,
+            Keys.growthRecords,
+            Keys.retiredCompanionIDs,
+            Keys.essenceBalance,
+            Keys.overdriveCharges,
+            Keys.seasonSigils,
+            Keys.buildStates,
+            Keys.claimedSeasonRewardIDs,
+            Keys.claimedRaidRewardIDs,
+            Keys.raidShardBalance,
+            Keys.lastRaidResolution,
+            Keys.conflictPolicy,
+            Keys.verificationRecords,
+            Keys.duplicatePriority,
+            Keys.workoutArchives,
+            Keys.autoPauseEnabled,
+            Keys.worldProgress,
+        ]
+
+        if keyedDefaults.contains(where: { defaults.object(forKey: $0) != nil }) {
+            return true
+        }
+
+        return archivePersistence.hasPersistedData()
     }
 
     func save() {
@@ -870,6 +1259,11 @@ final class PhoneProgressStore {
         defaults.set(conflictPolicy.rawValue, forKey: Keys.conflictPolicy)
         defaults.set(duplicatePriority.rawValue, forKey: Keys.duplicatePriority)
         defaults.set(autoPauseEnabled, forKey: Keys.autoPauseEnabled)
+        if let data = try? JSONEncoder().encode(worldProgressSnapshot) {
+            defaults.set(data, forKey: Keys.worldProgress)
+        } else {
+            defaults.removeObject(forKey: Keys.worldProgress)
+        }
         if let data = try? JSONEncoder().encode(verificationRecords) {
             defaults.set(data, forKey: Keys.verificationRecords)
         } else {
@@ -882,5 +1276,30 @@ final class PhoneProgressStore {
         } else {
             defaults.removeObject(forKey: Keys.lastRaidResolution)
         }
+    }
+
+    private func makeSeededArchiveRun(from summary: RunSummary) -> CompletedRunRecord {
+        let reward = RunimalGameEngine.evaluateReward(for: summary)
+        let endedAt = Date().addingTimeInterval(-3600)
+        let startedAt = endedAt.addingTimeInterval(-summary.distanceKm * Double(summary.averagePaceSeconds))
+        let snapshot = LiveRunSnapshot(
+            elapsedSeconds: Int(summary.distanceKm * Double(summary.averagePaceSeconds)),
+            distanceMeters: summary.distanceKm * 1000,
+            currentHeartRate: 152,
+            cadence: summary.cadence,
+            elevationGainM: summary.elevationGainM,
+            averagePaceSeconds: summary.averagePaceSeconds
+        )
+
+        return RunimalGameEngine.makeCompletedRunRecord(
+            reward: reward,
+            snapshot: snapshot,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            averageHeartRate: 152,
+            route: [],
+            source: "seeded-archive",
+            id: "seeded-archive-run"
+        )
     }
 }

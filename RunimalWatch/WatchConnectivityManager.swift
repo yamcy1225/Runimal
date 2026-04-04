@@ -6,6 +6,10 @@ import WatchConnectivity
 @MainActor
 @Observable
 final class WatchConnectivityManager: NSObject, WCSessionDelegate {
+    private enum StorageKeys {
+        static let syncAuditTrail = "runimal.watch.syncAuditTrail"
+    }
+
     static let shared = WatchConnectivityManager()
 
     private enum Keys {
@@ -42,6 +46,31 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
 
     override init() {
         super.init()
+        loadPersistedAuditTrail()
+    }
+
+    private func loadPersistedAuditTrail() {
+        guard let data = UserDefaults.standard.data(forKey: StorageKeys.syncAuditTrail),
+              let trail = try? JSONDecoder().decode(SyncAuditTrail.self, from: data) else {
+            return
+        }
+
+        lastInboundRoute = trail.lastInboundRoute
+        lastInboundPayloadKeys = trail.lastInboundPayloadKeys
+        recentEvents = trail.recentEvents
+        lastSyncedWorkoutTitle = trail.lastMessage
+    }
+
+    private func persistAuditTrail() {
+        let trail = SyncAuditTrail(
+            lastMessage: lastSyncedWorkoutTitle,
+            lastInboundRoute: lastInboundRoute,
+            lastInboundPayloadKeys: lastInboundPayloadKeys,
+            recentEvents: recentEvents
+        )
+
+        guard let data = try? JSONEncoder().encode(trail) else { return }
+        UserDefaults.standard.set(data, forKey: StorageKeys.syncAuditTrail)
     }
 
     private func refreshSessionState(_ session: WCSession) {
@@ -72,16 +101,61 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
     }
 
     private func applyMainCompanionContextIfNewer(_ context: WatchMainCompanionContext) {
-        if let current = mainCompanionContext, current.updatedAt > context.updatedAt {
+        if let current = mainCompanionContext,
+           current.selection == context.selection,
+           current.updatedAt > context.updatedAt {
             logEvent("main companion ignored", context.displayName)
             return
         }
 
-        mainCompanionContext = context
-        if let data = try? JSONEncoder().encode(context) {
+        mainCompanionRetryTask?.cancel()
+        mainCompanionPollingTask?.cancel()
+        let mergedContext = mergeMainCompanionContext(current: mainCompanionContext, incoming: context)
+        mainCompanionContext = mergedContext
+        if let data = try? JSONEncoder().encode(mergedContext) {
             UserDefaults.standard.set(data, forKey: Keys.mainCompanionContext)
         }
-        logEvent("main companion", context.displayName)
+        logEvent("main companion", mergedContext.displayName)
+    }
+
+    private func mergeMainCompanionContext(
+        current: WatchMainCompanionContext?,
+        incoming: WatchMainCompanionContext
+    ) -> WatchMainCompanionContext {
+        guard let current, current.selection == incoming.selection else {
+            return incoming
+        }
+
+        switch incoming.selection.kind {
+        case .pet:
+            return WatchMainCompanionContext(
+                selection: incoming.selection,
+                pet: incoming.pet ?? current.pet,
+                petName: incoming.petName ?? current.petName,
+                petHeadline: incoming.petHeadline ?? current.petHeadline,
+                detailText: incoming.detailText ?? current.detailText,
+                companionLevel: incoming.companionLevel ?? current.companionLevel,
+                companionStageLabel: incoming.companionStageLabel ?? current.companionStageLabel,
+                growthStageIndex: incoming.growthStageIndex ?? current.growthStageIndex,
+                mutationBodyStage: incoming.mutationBodyStage ?? current.mutationBodyStage,
+                mutationEcologyStage: incoming.mutationEcologyStage ?? current.mutationEcologyStage,
+                mutationRhythmStage: incoming.mutationRhythmStage ?? current.mutationRhythmStage,
+                mutationBodyBranchID: incoming.mutationBodyBranchID ?? current.mutationBodyBranchID,
+                mutationEcologyBranchID: incoming.mutationEcologyBranchID ?? current.mutationEcologyBranchID,
+                mutationRhythmBranchID: incoming.mutationRhythmBranchID ?? current.mutationRhythmBranchID,
+                updatedAt: incoming.updatedAt
+            )
+        case .egg:
+            return WatchMainCompanionContext(
+                selection: incoming.selection,
+                detailText: incoming.detailText ?? current.detailText,
+                eggShell: incoming.eggShell ?? current.eggShell,
+                eggTitle: incoming.eggTitle ?? current.eggTitle,
+                eggProgressRatio: incoming.eggProgressRatio ?? current.eggProgressRatio,
+                eggReadyToHatch: incoming.eggReadyToHatch || current.eggReadyToHatch,
+                updatedAt: incoming.updatedAt
+            )
+        }
     }
 
     private func minimalMainCompanionContext(from payload: [String: Any]) -> WatchMainCompanionContext? {
@@ -101,6 +175,8 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
                 petName: payload["mainCompanion_petName"] as? String,
                 petHeadline: payload["mainCompanion_petHeadline"] as? String,
                 detailText: payload["mainCompanion_detailText"] as? String,
+                companionLevel: payload["mainCompanion_companionLevel"] as? Int,
+                companionStageLabel: payload["mainCompanion_companionStageLabel"] as? String,
                 updatedAt: updatedAt
             )
         case .egg:
@@ -520,6 +596,7 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
             }
 
             self.refreshSessionState(WCSession.default)
+            self.persistAuditTrail()
         }
     }
 
@@ -566,10 +643,8 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
                     self.logEvent("watch ping failed", error.localizedDescription)
                 }
             }
-        } else {
-            session.transferUserInfo(payload)
-            refreshSessionState(session)
         }
+        refreshSessionState(session)
         logEvent("watch ping", "\(reason):\(session.isReachable ? "live" : "queued")")
     }
 
@@ -619,7 +694,8 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate {
 
     private func logEvent(_ title: String, _ detail: String) {
         recentEvents.insert(SyncDiagnosticEvent(title: title, detail: detail), at: 0)
-        recentEvents = Array(recentEvents.prefix(6))
+        recentEvents = Array(recentEvents.prefix(12))
+        persistAuditTrail()
     }
 }
 

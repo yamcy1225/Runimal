@@ -22,7 +22,7 @@ let sampleRun = RunSummary(
 let samplePet = RunimalGameEngine.generatePet(from: sampleRun)
 assert(samplePet.species == .windrunner, "expected windrunner species")
 assert(samplePet.rareVariant == .zenBloom, "expected zen-bloom rare variant")
-assert(samplePet.palette == "Ember Dash Zen", "expected Ember Dash Zen palette")
+assert(samplePet.palette == "Sky Teal Zen", "expected Sky Teal Zen palette")
 
 let tempoRun = RunSummary(
     distanceKm: 5.5,

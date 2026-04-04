@@ -6,6 +6,8 @@ struct WatchRunStatsPanel: View {
     let gpsAccuracyMeters: Double?
     let lastGPSUpdateAt: Date?
     let locationStatusLabel: String
+    let interactionPreview: LiveCompanionInteractionPreview
+    let companion: WatchMainCompanionContext?
     let accent: Color
 
     var body: some View {
@@ -27,6 +29,8 @@ struct WatchRunStatsPanel: View {
                     secondaryStatCard(title: "심박", value: heartRateText)
                     secondaryStatCard(title: "케이던스", value: cadenceText)
                 }
+
+                interactionSummaryCard
             }
         }
     }
@@ -125,6 +129,71 @@ struct WatchRunStatsPanel: View {
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(GameBoyPalette.mediumLight.opacity(0.72))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(GameBoyPalette.darkest, lineWidth: 1)
+                )
+        )
+    }
+
+    private var interactionSummaryCard: some View {
+        let primaryCue = interactionPreview.cues.first(where: \.isActive) ?? interactionPreview.cues.first
+        let nextPotentialCue = interactionPreview.cues.first {
+            $0.category == .potential && $0.isActive == false
+        }
+        let projectedPotentialLabel: String = {
+            guard interactionPreview.projectedPotentialExperience > 0 else { return "잠재 대기" }
+            if let level = companion?.companionLevel {
+                let cap = RunimalRunCoreGrowthBalanceEngine.storedPotentialCap(forLevel: level)
+                return "예상 +\(interactionPreview.projectedPotentialExperience) / 저장 \(cap)"
+            }
+            return "잠재 +\(interactionPreview.projectedPotentialExperience)"
+        }()
+        let companionGrowthLabel: String? = {
+            guard let level = companion?.companionLevel,
+                  let stageLabel = companion?.companionStageLabel else {
+                return nil
+            }
+            return "Lv.\(level) · \(stageLabel)"
+        }()
+
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Text("동행 성장")
+                    .font(.caption2.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.mediumDark)
+                Spacer(minLength: 6)
+                Text(projectedPotentialLabel)
+                    .font(.caption2.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.darkest)
+            }
+
+            Text(companionGrowthLabel ?? interactionPreview.headline)
+                .font(.caption.monospaced().weight(.black))
+                .foregroundStyle(GameBoyPalette.darkest)
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+
+            Text(primaryCue.map { "\($0.title) · \($0.statusLabel)" } ?? interactionPreview.detail)
+                .font(.caption2.monospaced())
+                .foregroundStyle(GameBoyPalette.mediumDark)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+
+            if let nextPotentialCue {
+                Text("다음 반응: \(nextPotentialCue.title)")
+                    .font(.caption2.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.mediumDark.opacity(0.86))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, minHeight: 46, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(GameBoyPalette.lightest)
                 .overlay(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .stroke(GameBoyPalette.darkest, lineWidth: 1)

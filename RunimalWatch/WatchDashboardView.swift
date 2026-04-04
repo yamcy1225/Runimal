@@ -10,7 +10,7 @@ struct WatchDashboardView: View {
     @State private var countdownValue: Int?
 
     private var mainCompanionContext: WatchMainCompanionContext? {
-        displayedMainCompanionContext ?? connectivityManager.mainCompanionContext
+        connectivityManager.mainCompanionContext ?? displayedMainCompanionContext
     }
 
     private var livePet: GeneratedPet {
@@ -66,17 +66,6 @@ struct WatchDashboardView: View {
         )
     }
 
-    private var liveGoals: [LiveGoalTarget] {
-        RunimalGameEngine.liveGoals(
-            for: runSessionManager.latestSnapshot,
-            claimedRewardIDs: runSessionManager.claimedWeeklyRewardIDs
-        )
-    }
-
-    private var primaryGoal: LiveGoalTarget? {
-        liveGoals.max(by: { $0.progress < $1.progress })
-    }
-
     var body: some View {
         WatchDashboardPages(
             runtimeAlert: runSessionManager.runtimeAlert,
@@ -91,9 +80,8 @@ struct WatchDashboardView: View {
             locationStatusLabel: runSessionManager.locationStatusLabel,
             liveFeedback: liveFeedback,
             mutationReaction: runSessionManager.mutationReaction,
+            liveInteractionPreview: runSessionManager.liveInteractionPreview,
             stageBadges: stageBadges,
-            liveGoals: liveGoals,
-            primaryGoalDetail: primaryGoal?.detail ?? liveFeedback.detail,
             offlineMapPacks: offlineMapCatalog.packs,
             selectedOfflineMapPackID: offlineMapCatalog.selectedPackID,
             storedOfflineMapPackIDs: connectivityManager.offlineMapStorage.storedPackIDs,
@@ -129,6 +117,7 @@ struct WatchDashboardView: View {
         .task {
             runSessionManager.setAutoPauseEnabled(connectivityManager.autoPauseEnabled)
             runSessionManager.prepareGPSPreview()
+            displayedMainCompanionContext = connectivityManager.resolvedMainCompanionContext()
             runSessionManager.applyMainCompanionContext(mainCompanionContext)
             offlineMapCatalog.replace(
                 with: connectivityManager.offlineMapPacks,
@@ -137,18 +126,16 @@ struct WatchDashboardView: View {
             connectivityManager.offlineMapStorage.reloadFromDisk()
             runSessionManager.autoplayDemoIfNeeded()
         }
-        .task {
-            while Task.isCancelled == false {
-                displayedMainCompanionContext = connectivityManager.resolvedMainCompanionContext()
-                try? await Task.sleep(for: .seconds(1))
-            }
-        }
         .onChange(of: connectivityManager.claimedRewardIDs) { _, rewardIDs in
             let context = CompanionEffectContext(
                 claimedRewardIDs: Array(rewardIDs).sorted(),
                 activeEffects: connectivityManager.activeEffects
             )
             runSessionManager.applyCompanionContext(context)
+        }
+        .onChange(of: connectivityManager.mainCompanionContext) { _, context in
+            guard let context else { return }
+            displayedMainCompanionContext = context
         }
         .onChange(of: mainCompanionContext) { _, context in
             runSessionManager.applyMainCompanionContext(context)
@@ -245,9 +232,8 @@ private struct WatchDashboardPages: View {
     let locationStatusLabel: String
     let liveFeedback: LiveRunFeedback
     let mutationReaction: MutationRuntimeReactionSnapshot?
+    let liveInteractionPreview: LiveCompanionInteractionPreview
     let stageBadges: [String]
-    let liveGoals: [LiveGoalTarget]
-    let primaryGoalDetail: String
     let offlineMapPacks: [OfflineMapPackSummary]
     let selectedOfflineMapPackID: String?
     let storedOfflineMapPackIDs: Set<String>
@@ -276,6 +262,7 @@ private struct WatchDashboardPages: View {
                         gpsAccuracyMeters: latestGPSAccuracyMeters,
                         lastGPSUpdateAt: gpsLastUpdatedAt,
                         locationStatusLabel: locationStatusLabel,
+                        mutationReaction: mutationReaction,
                         countdownValue: countdownValue,
                         onPrimaryAction: sessionStateLabel == "running" ? onEndRun : onStartRun,
                         onRefreshCompanion: onRefreshCompanion
@@ -290,6 +277,8 @@ private struct WatchDashboardPages: View {
                     gpsAccuracyMeters: latestGPSAccuracyMeters,
                     lastGPSUpdateAt: gpsLastUpdatedAt,
                     locationStatusLabel: locationStatusLabel,
+                    interactionPreview: liveInteractionPreview,
+                    companion: mainCompanionContext,
                     accent: stageAccent
                 )
             }
@@ -299,10 +288,10 @@ private struct WatchDashboardPages: View {
                 WatchRunPulseCard(
                     feedback: liveFeedback,
                     accent: stageAccent,
-                    reaction: mutationReaction,
+                    interactionPreview: liveInteractionPreview,
+                    companion: mainCompanionContext,
                     badges: Array(stageBadges.prefix(2)),
-                    goalTitle: liveGoals.first?.title,
-                    goalDetail: primaryGoalDetail
+                    reaction: mutationReaction
                 )
             }
             .tag(2)

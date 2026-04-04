@@ -80,7 +80,7 @@ public enum RunimalEggEngine {
         starterBoosted: Bool = false
     ) -> Int {
         if starterBoosted {
-            return 92
+            return 44
         }
 
         let base = max(180, run.reward.experience + 120)
@@ -98,7 +98,7 @@ public enum RunimalEggEngine {
         starterBoosted: Bool = false
     ) -> Int {
         if starterBoosted {
-            return max(52, run.reward.experience / 2)
+            return max(18, run.reward.experience)
         }
         return max(20, run.reward.experience / 3)
     }
@@ -107,14 +107,11 @@ public enum RunimalEggEngine {
         for run: CompletedRunRecord,
         egg: EggInventoryEntry
     ) -> Int {
-        if egg.starterBoosted && egg.incubationRunIDs.isEmpty {
-            return max(run.reward.experience, egg.hatchThreshold - egg.storedExperience)
-        }
         return run.reward.experience
     }
 
     public static func starterGrowthSeed(for egg: EggInventoryEntry) -> Int {
-        egg.starterBoosted ? 110 : 0
+        egg.starterBoosted ? 12 : 0
     }
 
     public static func title(for shell: EggShellType) -> String {

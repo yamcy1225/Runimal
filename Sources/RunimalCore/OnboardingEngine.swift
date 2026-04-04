@@ -19,14 +19,14 @@ public enum RunimalOnboardingEngine {
             ),
             StarterLoopStep(
                 id: "day-2",
-                title: "Step 2 · 첫 디코딩 완료",
-                detail: "둘째 러닝으로 알을 부화시켜 첫 동행체를 메인 슬롯에 세웁니다.",
+                title: "Step 2 · 첫 부화 완료",
+                detail: "둘째 러닝으로 알을 부화시켜 첫 동행을 대표로 세웁니다.",
                 completed: hasFirstHatch
             ),
             StarterLoopStep(
                 id: "day-3",
-                title: "Step 3 · 첫 Stage Up",
-                detail: "셋째 러닝 코어를 먹여 첫 진화 구간을 돌파합니다.",
+                title: "Step 3 · 첫 단계 상승",
+                detail: "셋째 운동 기록을 먹여 첫 성장 단계를 넘깁니다.",
                 completed: hasStageAdvance
             ),
         ]

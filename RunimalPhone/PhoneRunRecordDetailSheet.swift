@@ -64,6 +64,29 @@ struct PhoneRunRecordDetailSheet: View {
         }
     }
 
+    private var runCoreProfile: RunCoreDataProfile? {
+        guard let run else { return nil }
+        return RunimalRunCoreGrowthBalanceEngine.dataProfile(for: run)
+    }
+
+    private var livePotentialProfile: LiveCompanionPotentialProfile? {
+        run?.livePotentialProfile
+    }
+
+    private var featuredLateGrowthFeatures: CompanionLateGrowthFeatures {
+        RunimalBalanceConfig.lateGrowthFeatures(forLevel: store.featuredCompanion.level)
+    }
+
+    private var narrativeBeat: RunNarrativeBeat? {
+        guard let run else { return nil }
+        return store.narrativeBeat(for: run)
+    }
+
+    private var routingSummary: PhoneRunCoreRoutingSummary? {
+        guard let run else { return nil }
+        return store.runCoreRoutingSummary(for: run)
+    }
+
     private struct RunUsageSummary {
         let title: String
         let detail: String
@@ -108,7 +131,7 @@ struct PhoneRunRecordDetailSheet: View {
                         Image(systemName: "exclamationmark.circle.fill")
                             .font(.system(size: 36, weight: .black))
                             .foregroundStyle(GameBoyPalette.mediumDark)
-                        Text("러닝 기록을 찾을 수 없습니다")
+                        Text("운동 기록을 찾을 수 없습니다")
                             .font(.headline.monospaced().weight(.black))
                             .foregroundStyle(GameBoyPalette.darkest)
                         Text("삭제되었거나 이미 정리된 기록입니다.")
@@ -141,7 +164,7 @@ struct PhoneRunRecordDetailSheet: View {
                 }
 
                 ToolbarItem(placement: .principal) {
-                    Text("러닝 기록")
+                    Text("운동 기록")
                         .font(.headline.monospaced().weight(.black))
                         .foregroundStyle(GameBoyPalette.darkest)
                 }
@@ -165,7 +188,7 @@ struct PhoneRunRecordDetailSheet: View {
             .sheet(item: $exportDocument) { document in
                 ShareSheet(items: [document.url])
             }
-            .alert("이 러닝 기록을 삭제할까요?", isPresented: $showDeleteConfirmation) {
+            .alert("이 운동 기록을 삭제할까요?", isPresented: $showDeleteConfirmation) {
                 Button("삭제", role: .destructive) {
                     guard let run else { return }
                     if store.deleteRunRecord(id: run.id) {
@@ -209,6 +232,12 @@ struct PhoneRunRecordDetailSheet: View {
 
                     VStack(alignment: .leading, spacing: 6) {
                         RunimalSignalBadge(icon: "flame.fill", label: "+\(run.reward.experience) XP", accent: .green)
+                        if let runCoreProfile, runCoreProfile.bonusExperience > 0 {
+                            RunimalSignalBadge(icon: "square.stack.3d.up.fill", label: "기록 밀도 +\(runCoreProfile.bonusExperience)", accent: .cyan)
+                        }
+                        if let livePotentialProfile, livePotentialProfile.storedPotentialExperience > 0 {
+                            RunimalSignalBadge(icon: "bolt.heart.fill", label: "동행 잠재 +\(livePotentialProfile.storedPotentialExperience)", accent: .orange)
+                        }
                         TraitChip(
                             label: canUseRunCore ? "사용 가능" : "사용 완료",
                             accent: canUseRunCore ? .green : .white.opacity(0.18)
@@ -277,6 +306,69 @@ struct PhoneRunRecordDetailSheet: View {
                         .foregroundStyle(GameBoyPalette.mediumDark)
                 }
 
+                if let runCoreProfile {
+                    infoValueCard(
+                        title: "기록 가치",
+                        headline: dataProfileHeadline(runCoreProfile),
+                        detail: "이 기록은 \(runCoreProfile.informationScore)점 정보량으로 계산되며, 먹이 반영 시 추가 보너스가 붙습니다.",
+                        badges: runCoreProfile.labels,
+                        accent: .cyan
+                    )
+                }
+
+                if let livePotentialProfile,
+                   let liveCompanionName = run.liveCompanionName,
+                   livePotentialProfile.storedPotentialExperience > 0 {
+                    infoValueCard(
+                        title: "동행 잠재치",
+                        headline: "\(liveCompanionName) 잠재 성장 · \(livePotentialProfile.eventScore)건",
+                        detail: "이 러닝에서 감지된 실시간 반응이 저장형 잠재치로 남았습니다. 아래 이벤트가 많을수록 나중에 같은 동행에게 기록을 먹일 때 보너스가 더 크게 붙습니다.",
+                        badges: livePotentialProfile.labels,
+                        accent: .orange
+                    )
+                }
+
+                if store.mainSelection?.kind == .pet,
+                   store.featuredCompanion.level >= 31 {
+                    infoValueCard(
+                        title: "후반 성장 해금",
+                        headline: "\(store.featuredCompanion.pet.displayName) Lv.\(store.featuredCompanion.level)",
+                        detail: "지금 선택한 동행에게 이 기록을 주면 후반부 해금 기준에 따라 보관 태그와 잠재 반영 폭이 함께 달라집니다.",
+                        badges: featuredLateGrowthBadges(for: run),
+                        accent: .green
+                    )
+                }
+
+                if let narrativeBeat {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text(narrativeBeat.title)
+                                .font(.caption.monospaced().weight(.black))
+                                .foregroundStyle(GameBoyPalette.darkest)
+                            Spacer()
+                            HStack(spacing: 6) {
+                                ForEach(Array(narrativeBeat.badges.prefix(2)), id: \.self) { badge in
+                                    TraitChip(label: badge, accent: accent.opacity(0.18))
+                                }
+                            }
+                        }
+
+                        Text(narrativeBeat.detail)
+                            .font(.caption.monospaced())
+                            .foregroundStyle(GameBoyPalette.mediumDark)
+                            .lineSpacing(3)
+                    }
+                    .padding(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(GameBoyPalette.mediumLight.opacity(0.12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(GameBoyPalette.darkest.opacity(0.14), lineWidth: 1)
+                            )
+                    )
+                }
+
                 if let contribution = run.mutationContribution {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("이번 러닝 기여")
@@ -299,6 +391,17 @@ struct PhoneRunRecordDetailSheet: View {
                                     .foregroundStyle(GameBoyPalette.mediumDark)
                             }
                         }
+
+                        if let pivot = mutationPivotSummary(for: run) {
+                            HStack(spacing: 8) {
+                                TraitChip(label: pivot.stageTitle, accent: accent.opacity(0.2))
+                                TraitChip(label: pivot.axisTitle, accent: .mint.opacity(0.18))
+                                Text(pivot.summary)
+                                    .font(.caption2.monospaced())
+                                    .foregroundStyle(GameBoyPalette.mediumDark)
+                                    .lineLimit(1)
+                            }
+                        }
                     }
                 }
 
@@ -311,21 +414,42 @@ struct PhoneRunRecordDetailSheet: View {
 
     @ViewBuilder
     private func actionCard(for run: CompletedRunRecord) -> some View {
-        GameSurface(title: "코어 액션", accent: accent, eyebrow: "성장 연결") {
+        GameSurface(title: "운동 기록 사용", accent: accent, eyebrow: "성장 연결") {
             VStack(alignment: .leading, spacing: 12) {
                 if canUseRunCore {
-                    Text("이 러닝 코어를 바로 성장 재료로 전환할 수 있습니다.")
+                    Text(actionIntroLine(for: run))
                         .font(.footnote.monospaced())
                         .foregroundStyle(GameBoyPalette.mediumDark)
 
+                    if let routingSummary {
+                        infoValueCard(
+                            title: routingSummary.title,
+                            headline: routingSummary.headline,
+                            detail: routingSummary.detail,
+                            badges: routingSummary.badges,
+                            accent: routingSummary.accent
+                        )
+                    }
+
+                    if store.mainSelection?.kind == .pet,
+                       let preview = store.feedProjection(for: run) {
+                        infoValueCard(
+                            title: "성장 예상",
+                            headline: "Lv.\(preview.beforeSnapshot.level) -> Lv.\(preview.projectedSnapshot.level)",
+                            detail: growthPreviewDetail(for: preview),
+                            badges: growthPreviewBadges(for: preview),
+                            accent: .green
+                        )
+                    }
+
                     if store.mainSelection?.kind == .egg, store.mainEgg != nil {
-                        pixelActionButton(title: "메인 알 주입", detail: "알 게이지를 올립니다.", filled: true) {
+                        pixelActionButton(title: "지금 선택한 알 부화 준비", detail: "이 운동 기록을 알 게이지에 반영합니다.", filled: true) {
                             if let updatedEgg = store.incubateMainEgg(with: run.id) {
                                 actionFeedback = .incubated(updatedEgg)
                             }
                         }
                     } else {
-                        pixelActionButton(title: "메인 동행체 성장", detail: "\(store.featuredCompanion.pet.displayName) XP로 변환합니다.", filled: true) {
+                        pixelActionButton(title: "지금 선택한 동행 성장", detail: growthActionDetail(for: run), filled: true) {
                             if let outcome = store.feedActiveCompanion(with: run.id) {
                                 actionFeedback = .fed(outcome)
                             }
@@ -344,7 +468,7 @@ struct PhoneRunRecordDetailSheet: View {
                         Text(usageSummary?.title ?? "이미 사용한 코어")
                             .font(.headline.monospaced().weight(.black))
                             .foregroundStyle(GameBoyPalette.darkest)
-                        Text(usageSummary?.detail ?? "이 러닝 코어는 이미 성장 또는 알 생성에 사용되었습니다.")
+                        Text(usageSummary?.detail ?? "이 운동 기록은 이미 성장이나 알 생성에 사용되었습니다.")
                             .font(.footnote.monospaced())
                             .foregroundStyle(GameBoyPalette.mediumDark)
                     }
@@ -364,16 +488,17 @@ struct PhoneRunRecordDetailSheet: View {
     private func feedbackCard(_ feedback: ActionFeedback) -> some View {
         switch feedback {
         case .fed(let outcome):
-            GameSurface(title: "성장 결과", accent: accent, eyebrow: "코어 전환 완료") {
+            GameSurface(title: "성장 결과", accent: accent, eyebrow: "기록 반영 완료") {
                 VStack(alignment: .leading, spacing: 12) {
                     resultHero(
                         icon: outcome.stageAdvanced ? "arrow.up.right.circle.fill" : "bolt.fill",
                         title: outcome.stageAdvanced ? "단계 상승" : "성장 흡수 완료",
-                        detail: "\(outcome.beforeProgress.stageLabel) -> \(outcome.afterProgress.stageLabel)"
+                        detail: "Lv.\(outcome.beforeSnapshot.level) \(outcome.beforeProgress.stageLabel) -> Lv.\(outcome.afterSnapshot.level) \(outcome.afterProgress.stageLabel)"
                     )
 
                     HStack(spacing: 8) {
                         TraitChip(label: "+\(outcome.gainedExperience) XP", accent: .green)
+                        TraitChip(label: "Lv.\(outcome.afterSnapshot.level)", accent: .green.opacity(0.22))
                         TraitChip(label: outcome.afterProgress.stageLabel, accent: accent)
                         if outcome.stageAdvanced {
                             TraitChip(label: "진화 발생", accent: .orange.opacity(0.82))
@@ -387,6 +512,21 @@ struct PhoneRunRecordDetailSheet: View {
                         detail: outcome.afterProgress.headline
                     )
 
+                    if outcome.potentialExperienceSpent > 0 {
+                        infoValueCard(
+                            title: "잠재 반영",
+                            headline: "저장 잠재 \(outcome.potentialExperienceSpent) XP 사용",
+                            detail: outcome.remainingStoredPotentialExperience > 0
+                                ? "이번 반영에서 저장 잠재를 사용했고, \(outcome.remainingStoredPotentialExperience) XP가 다음 기록을 위해 남았습니다."
+                                : "이번 반영에서 저장 잠재를 모두 사용했습니다. 다음에는 함께 달리며 새 잠재치를 쌓을 수 있습니다.",
+                            badges: [
+                                "잠재 사용 +\(outcome.potentialExperienceSpent)",
+                                "잔여 \(outcome.remainingStoredPotentialExperience)"
+                            ],
+                            accent: .orange
+                        )
+                    }
+
                     if !outcome.bonusLabels.isEmpty {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 8) {
@@ -397,7 +537,7 @@ struct PhoneRunRecordDetailSheet: View {
                         }
                     }
 
-                    resultNextStep("다음 추천", detail: outcome.stageAdvanced ? "보관함에서 최종 단계 경로와 새로운 역할 변화를 확인하세요." : "다음 러닝 코어를 더 먹이면 진화 임계점까지 더 빨리 도달할 수 있습니다.")
+                    resultNextStep("다음 추천", detail: outcome.stageAdvanced ? "보관함에서 완성 경로와 새로운 역할 변화를 확인하세요." : "다음 운동 기록을 더 먹이면 다음 단계에 더 빨리 도달할 수 있습니다.")
                 }
             }
 
@@ -429,16 +569,16 @@ struct PhoneRunRecordDetailSheet: View {
                         accent: egg.shell.accentColor,
                         detail: "임계치 \(egg.hatchThreshold) XP · 현재 \(egg.storedExperience) XP"
                     )
-                    resultNextStep("다음 행동", detail: "메인 알로 지정하고 다음 코어를 더 주입하세요.")
+                    resultNextStep("다음 행동", detail: "지금 선택한 알로 바꾸고 다음 기록을 더 주세요.")
                 }
             }
 
         case .incubated(let egg):
-            GameSurface(title: "알 디코딩 진행", accent: accent, eyebrow: "메인 알 주입 완료") {
+            GameSurface(title: "알 성장 진행", accent: accent, eyebrow: "지금 선택한 알 반영 완료") {
                 VStack(alignment: .leading, spacing: 12) {
                     resultHero(
                         icon: egg.readyToHatch ? "checkmark.seal.fill" : "waveform.badge.plus",
-                        title: egg.readyToHatch ? "부화 준비 완료" : "디코딩 안정화",
+                        title: egg.readyToHatch ? "부화 준비 완료" : "부화 준비 중",
                         detail: egg.readyToHatch ? "이제 바로 부화할 수 있습니다." : "다음 코어를 넣으면 부화에 가까워집니다."
                     )
 
@@ -457,7 +597,7 @@ struct PhoneRunRecordDetailSheet: View {
                     }
 
                     pixelProgressPanel(
-                        title: "디코딩 게이지",
+                        title: "부화 게이지",
                         progress: egg.progressRatio,
                         accent: accent,
                         detail: "\(egg.storedExperience) / \(egg.hatchThreshold) XP"
@@ -534,6 +674,45 @@ struct PhoneRunRecordDetailSheet: View {
         .background(GameBoyPalette.mediumLight.opacity(0.18), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
+    private func infoValueCard(title: String, headline: String, detail: String, badges: [String], accent: Color) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(title)
+                    .font(.caption.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.darkest)
+                Spacer()
+                Rectangle()
+                    .fill(accent.opacity(0.8))
+                    .frame(width: 14, height: 4)
+            }
+
+            Text(headline)
+                .font(.subheadline.monospaced().weight(.black))
+                .foregroundStyle(GameBoyPalette.darkest)
+
+            Text(detail)
+                .font(.caption.monospaced())
+                .foregroundStyle(GameBoyPalette.mediumDark)
+                .lineSpacing(3)
+
+            if badges.isEmpty == false {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(badges, id: \.self) { badge in
+                            TraitChip(label: badge, accent: accent.opacity(0.18))
+                        }
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .background(GameBoyPalette.mediumLight.opacity(0.12), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(GameBoyPalette.darkest.opacity(0.14), lineWidth: 1)
+        )
+    }
+
     private func pixelActionButton(title: String, detail: String, filled: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 4) {
@@ -556,6 +735,109 @@ struct PhoneRunRecordDetailSheet: View {
             )
         }
         .buttonStyle(.plain)
+    }
+
+    private func dataProfileHeadline(_ profile: RunCoreDataProfile) -> String {
+        switch profile.informationScore {
+        case ..<4:
+            return "가벼운 기록"
+        case 4...7:
+            return "균형 잡힌 기록"
+        case 8...10:
+            return "풍부한 기록"
+        default:
+            return "매우 풍부한 기록"
+        }
+    }
+
+    private func actionIntroLine(for run: CompletedRunRecord) -> String {
+        let dataBonus = runCoreProfile?.bonusExperience ?? 0
+        let feedPreview = store.feedProjection(for: run)
+        if let livePotentialProfile,
+           let liveCompanionName = run.liveCompanionName,
+           livePotentialProfile.storedPotentialExperience > 0 {
+            if let feedPreview, feedPreview.potentialExperienceSpent > 0 {
+                return "이 운동 기록은 기록 밀도 +\(dataBonus) 보너스를 갖고 있고, 함께 달린 \(liveCompanionName)에게는 잠재치가 따로 저장돼 있습니다. 지금 선택한 동행 성장에 반영하면 저장 잠재 \(feedPreview.potentialExperienceSpent) XP도 함께 사용됩니다."
+            }
+            return "이 운동 기록은 기록 밀도 +\(dataBonus) 보너스를 갖고 있고, 함께 달린 \(liveCompanionName)에게는 잠재치가 따로 저장돼 있습니다."
+        }
+        if let feedPreview, feedPreview.potentialExperienceSpent > 0 {
+            return "이 운동 기록은 기본 XP 외에 기록 밀도 +\(dataBonus) 보너스를 갖고 있고, 지금 선택한 동행에게 저장된 잠재 \(feedPreview.potentialExperienceSpent) XP도 이번에 함께 반영됩니다."
+        }
+        return "이 운동 기록은 기본 XP 외에 기록 밀도 +\(dataBonus) 보너스를 함께 갖고 있습니다."
+    }
+
+    private func growthActionDetail(for run: CompletedRunRecord) -> String {
+        let dataBonus = runCoreProfile?.bonusExperience ?? 0
+        if let preview = store.feedProjection(for: run), preview.potentialExperienceSpent > 0 {
+            return "\(store.featuredCompanion.pet.displayName) 성장에 반영합니다. Lv.\(preview.beforeSnapshot.level)에서 Lv.\(preview.projectedSnapshot.level)로 올라가고, 기록 밀도 +\(dataBonus), 저장 잠재 \(preview.storedPotentialExperience) 중 \(preview.potentialExperienceSpent) XP를 이번에 사용합니다."
+        }
+        if let preview = store.feedProjection(for: run) {
+            return "\(store.featuredCompanion.pet.displayName) 성장에 반영합니다. Lv.\(preview.beforeSnapshot.level)에서 Lv.\(preview.projectedSnapshot.level)로 올라가며 기록 밀도 +\(dataBonus) 보너스가 붙습니다."
+        }
+        return "\(store.featuredCompanion.pet.displayName) 성장에 반영합니다. 기록 밀도 +\(dataBonus) 보너스가 붙습니다."
+    }
+
+    private func growthPreviewDetail(for preview: CompanionFeedProjection) -> String {
+        if let nextMilestone = preview.projectedSnapshot.nextEvolutionMilestone {
+            return "\(preview.beforeProgress.stageLabel)에서 \(preview.projectedProgress.stageLabel) 흐름으로 이동합니다. 다음 진화 기준은 Lv.\(nextMilestone.requiredLevel) · \(nextMilestone.requiredExperience) XP입니다."
+        }
+        if let nextLateGrowth = preview.projectedSnapshot.lateGrowthWindow.last,
+           preview.projectedSnapshot.level < nextLateGrowth.requiredLevel {
+            return "\(preview.projectedProgress.stageLabel) 이후에는 Lv.\(nextLateGrowth.requiredLevel) \(nextLateGrowth.title) 해금이 다음 목표입니다."
+        }
+        return "\(preview.projectedProgress.stageLabel) 상태가 더 깊어지고, 이후에는 후반 기록 운영이 중심이 됩니다."
+    }
+
+    private func growthPreviewBadges(for preview: CompanionFeedProjection) -> [String] {
+        var badges = ["예상 +\(preview.projectedTotalExperience) XP"]
+        if preview.stageAdvanced {
+            badges.append("\(preview.projectedProgress.stageLabel) 도달")
+        }
+        if preview.levelGain > 0 {
+            badges.append("레벨 +\(preview.levelGain)")
+        }
+        if preview.potentialExperienceSpent > 0 {
+            badges.append("잠재 사용 +\(preview.potentialExperienceSpent)")
+        }
+        return badges
+    }
+
+    private func potentialSpendPreview(for run: CompletedRunRecord) -> (stored: Int, spend: Int, remaining: Int)? {
+        guard let preview = store.feedProjection(for: run),
+              preview.potentialExperienceSpent > 0 else {
+            return nil
+        }
+        return (
+            stored: preview.storedPotentialExperience,
+            spend: preview.potentialExperienceSpent,
+            remaining: preview.projectedRemainingStoredPotentialExperience
+        )
+    }
+
+    private func featuredLateGrowthBadges(for run: CompletedRunRecord) -> [String] {
+        var badges = ["기록 태그 \(featuredLateGrowthFeatures.insightLabelLimit)개"]
+
+        if featuredLateGrowthFeatures.potentialSpendCapBonus > 0 {
+            badges.append("잠재 저장 \(featuredLateGrowthFeatures.storedPotentialCap)")
+            badges.append("잠재 사용 상한 +\(featuredLateGrowthFeatures.potentialSpendCapBonus)")
+        }
+
+        if featuredLateGrowthFeatures.seasonRecordEcho,
+           RunimalGameEngine.seasonAffinity(for: store.featuredCompanion.pet, season: store.weeklyBoard.season) {
+            badges.append("\(store.weeklyBoard.season.title) 기록 보관")
+        }
+
+        if featuredLateGrowthFeatures.preservesWorldSignals, run.worldImpact != nil {
+            badges.append("이야기 표식 보관")
+        }
+
+        if featuredLateGrowthFeatures.completedRecordMark,
+           (run.worldImpact != nil || (runCoreProfile?.informationScore ?? 0) >= 10) {
+            badges.append("완성 기록 보관")
+        }
+
+        return badges
     }
 
     private func exportButtons(for run: CompletedRunRecord) -> some View {
@@ -674,6 +956,25 @@ struct PhoneRunRecordDetailSheet: View {
             )
             exportDocument = ExportDocument(url: url)
         }
+    }
+
+    private func mutationPivotSummary(for run: CompletedRunRecord) -> (stageTitle: String, axisTitle: String, summary: String)? {
+        guard let contribution = run.mutationContribution,
+              let topAxis = contribution.axes.max(by: { $0.progress < $1.progress }),
+              let bridge = SpeciesGrowthMutationBridgeEngine.bridge(
+                for: run.reward.pet.species,
+                axis: topAxis.axis,
+                branchID: topAxis.branchID
+              ) else {
+            return nil
+        }
+
+        let keyPart = bridge.redirectedParts.first?.title ?? bridge.inheritedParts.first?.title ?? topAxis.branchTitle
+        return (
+            stageTitle: bridge.startStageTitle,
+            axisTitle: axisLabel(topAxis.axis),
+            summary: "\(keyPart) 갈래를 밀었습니다"
+        )
     }
 
     private func sourceEyebrow(for run: CompletedRunRecord) -> String {

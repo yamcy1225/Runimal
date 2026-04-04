@@ -8,7 +8,7 @@ public enum WorldContentPackComposer {
             sortKey(for: lhs) < sortKey(for: rhs)
         }
 
-        let speciesBible = mergeEntries(orderedPacks.flatMap(\.speciesBible), by: \.speciesID)
+        let speciesBible = mergeSpeciesBible(orderedPacks.flatMap(\.speciesBible))
         let mutationFamilies = mergeEntries(orderedPacks.flatMap(\.mutationFamilies), by: \.familyID)
         let rareVariants = mergeEntries(orderedPacks.flatMap(\.rareVariants), by: \.variantID)
         let regions = mergeEntries(orderedPacks.flatMap(\.regions), by: \.regionID)
@@ -51,6 +51,32 @@ public enum WorldContentPackComposer {
                 orderedKeys.append(key)
             }
             lookup[key] = entry
+        }
+
+        return orderedKeys.compactMap { lookup[$0] }
+    }
+
+    private static func mergeSpeciesBible(_ entries: [SpeciesBibleEntry]) -> [SpeciesBibleEntry] {
+        var orderedKeys: [String] = []
+        var lookup: [String: SpeciesBibleEntry] = [:]
+
+        for entry in entries {
+            if let current = lookup[entry.speciesID] {
+                lookup[entry.speciesID] = SpeciesBibleEntry(
+                    speciesID: current.speciesID,
+                    displayName: current.displayName,
+                    baseElement: current.baseElement,
+                    fantasy: current.fantasy,
+                    metricBias: current.metricBias,
+                    habitatTags: uniqueValues(current.habitatTags + entry.habitatTags),
+                    visualKeywords: uniqueValues(current.visualKeywords + entry.visualKeywords),
+                    narrativeHooks: uniqueValues(current.narrativeHooks + entry.narrativeHooks),
+                    defaultMutationFamilyIDs: uniqueValues(current.defaultMutationFamilyIDs + entry.defaultMutationFamilyIDs)
+                )
+            } else {
+                orderedKeys.append(entry.speciesID)
+                lookup[entry.speciesID] = entry
+            }
         }
 
         return orderedKeys.compactMap { lookup[$0] }

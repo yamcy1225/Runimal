@@ -15,7 +15,7 @@ public enum RunimalSelectiveMergeEngine {
         return cloudOnlyRuns.map {
             MergeCandidate(
                 id: $0.id,
-                label: String(format: "%@ · %.1fkm", $0.reward.pet.species.rawValue, $0.distanceMeters / 1000),
+                label: String(format: "%@ · %.1fkm", $0.reward.pet.species.displayName, $0.distanceMeters / 1000),
                 source: "cloud",
                 type: "run"
             )

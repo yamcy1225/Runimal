@@ -73,13 +73,13 @@ public enum RunimalCompanionBuildEngine {
             return [
                 ("surge-link", "Surge Link", "고케이던스 러닝을 먹일 때 추가 XP를 줍니다.", 24),
                 ("draft-lane", "Draft Lane", "페이스 안정성이 좋은 러닝의 성장 변환율을 높입니다.", 34),
-                ("pace-weave", "Pace Weave", "5:30/km 이내 페이스를 유지한 코어를 먹일 때 추가 보너스를 얻습니다.", 42),
+                ("pace-weave", "Pace Weave", "5:30/km 이내 페이스를 유지한 운동 기록을 먹일 때 추가 보너스를 얻습니다.", 42),
             ]
         case .oracle:
             return [
-                ("oracle-window", "Oracle Window", "희귀 변이 개체가 러닝 코어를 더 잘 흡수합니다.", 24),
+                ("oracle-window", "Oracle Window", "희귀 변이 개체가 운동 기록을 더 잘 받아들입니다.", 24),
                 ("echo-lens", "Echo Lens", "퀘스트를 많이 끝낸 러닝일수록 성장 보너스를 얻습니다.", 34),
-                ("lunar-index", "Lunar Index", "심박이 충분히 오른 러닝 코어를 읽어 추가 성장치를 해석합니다.", 42),
+                ("lunar-index", "Lunar Index", "심박이 충분히 오른 운동 기록을 읽어 추가 성장치를 해석합니다.", 42),
             ]
         }
     }

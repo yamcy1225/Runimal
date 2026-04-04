@@ -63,15 +63,15 @@ struct PhoneRareVariantShowcasePanel: View {
     private func showcasePet(for variant: RareVariant) -> GeneratedPet {
         switch variant {
         case .tempoSurge:
-            return GeneratedPet(species: .sparkfang, element: .flame, palette: "tempo", rareVariant: .tempoSurge, explanation: [], stats: PetStats(vitality: 10, agility: 14, dexterity: 15, focus: 9, defense: 8))
+            return GeneratedPet(species: .sparkfang, element: .flame, palette: PetSpecies.sparkfang.paletteName(rareVariant: .tempoSurge), rareVariant: .tempoSurge, explanation: [], stats: PetStats(vitality: 10, agility: 14, dexterity: 15, focus: 9, defense: 8))
         case .zenBloom:
-            return GeneratedPet(species: .mosshop, element: .leaf, palette: "zen", rareVariant: .zenBloom, explanation: [], stats: PetStats(vitality: 14, agility: 8, dexterity: 9, focus: 14, defense: 10))
+            return GeneratedPet(species: .mosshop, element: .leaf, palette: PetSpecies.mosshop.paletteName(rareVariant: .zenBloom), rareVariant: .zenBloom, explanation: [], stats: PetStats(vitality: 14, agility: 8, dexterity: 9, focus: 14, defense: 10))
         case .summitHeart:
-            return GeneratedPet(species: .stoneback, element: .earth, palette: "summit", rareVariant: .summitHeart, explanation: [], stats: PetStats(vitality: 15, agility: 8, dexterity: 8, focus: 10, defense: 15))
+            return GeneratedPet(species: .stoneback, element: .earth, palette: PetSpecies.stoneback.paletteName(rareVariant: .summitHeart), rareVariant: .summitHeart, explanation: [], stats: PetStats(vitality: 15, agility: 8, dexterity: 8, focus: 10, defense: 15))
         case .eclipseMark:
-            return GeneratedPet(species: .shadebit, element: .lunar, palette: "eclipse", rareVariant: .eclipseMark, explanation: [], stats: PetStats(vitality: 9, agility: 13, dexterity: 12, focus: 15, defense: 8))
+            return GeneratedPet(species: .shadebit, element: .lunar, palette: PetSpecies.shadebit.paletteName(rareVariant: .eclipseMark), rareVariant: .eclipseMark, explanation: [], stats: PetStats(vitality: 9, agility: 13, dexterity: 12, focus: 15, defense: 8))
         case .loopSigil:
-            return GeneratedPet(species: .windrunner, element: .light, palette: "loop", rareVariant: .loopSigil, explanation: [], stats: PetStats(vitality: 10, agility: 15, dexterity: 12, focus: 13, defense: 9))
+            return GeneratedPet(species: .windrunner, element: .light, palette: PetSpecies.windrunner.paletteName(rareVariant: .loopSigil), rareVariant: .loopSigil, explanation: [], stats: PetStats(vitality: 10, agility: 15, dexterity: 12, focus: 13, defense: 9))
         }
     }
 

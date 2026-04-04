@@ -426,7 +426,7 @@ public enum SpeciesMutationUnlockEngine {
         case ("seedle", "first-step"):
             return score(profile, [
                 (profile.runCount <= 2, 3, "초기 러닝"),
-                (profile.averageDistanceKm < 4.5, 1, "첫걸음 거리"),
+                (profile.averageDistanceKm < 4.5, 1, "탄생 거리"),
             ], fallback: "초기 러닝")
         case ("seedle", "steady-root"):
             return score(profile, [

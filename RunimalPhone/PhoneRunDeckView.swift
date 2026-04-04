@@ -62,14 +62,25 @@ struct PhoneRunDeckView: View {
                     if let latestWatchSync = store.latestWatchSyncedRun {
                         watchSyncHighlightCard(for: latestWatchSync)
                     }
+                    if shouldShowSyncDiagnostics {
+                        PhoneDiagnosticsPanel(
+                            events: store.connectivity.recentEvents,
+                            reachabilityLabel: store.connectivity.reachabilityLabel,
+                            activationStateLabel: store.connectivity.activationStateLabel,
+                            queuedTransferCount: store.connectivity.queuedTransferCount,
+                            lastMessage: store.connectivity.lastMessage,
+                            lastInboundRoute: store.connectivity.lastInboundRoute,
+                            lastInboundPayloadKeys: store.connectivity.lastInboundPayloadKeys
+                        )
+                    }
                     summaryCard
                     runToolsSection
                     archiveFilterStrip
                     if shouldShowRunimalArchive {
                         PhoneRunSyncHistoryPanel(
-                            title: "Runimal 러닝 기록",
+                            title: "Runimal 운동 기록",
                             eyebrow: "워치 시작 기록",
-                            description: "워치에서 `러닝 시작하기`를 눌러 측정한 기록은 여기 쌓입니다.",
+                            description: "워치에서 `러닝 시작하기`를 눌러 측정한 운동 기록은 여기 쌓입니다.",
                             runs: store.runimalRunArchive,
                             accent: store.pet.accentColor,
                             canUseRunCore: { store.canUseRunCore($0) },
@@ -83,9 +94,9 @@ struct PhoneRunDeckView: View {
                     }
                     if shouldShowImportedArchive {
                         PhoneRunSyncHistoryPanel(
-                            title: "가져온 러닝 기록",
+                            title: "가져온 운동 기록",
                             eyebrow: "최근 5개",
-                            description: "HealthKit 또는 FIT로 가져온 외부 러닝 기록입니다.",
+                            description: "HealthKit 또는 FIT에서 가져온 운동 기록입니다. Runimal 기록과 같은 규칙으로 쓸 수 있습니다.",
                             runs: store.importedRunArchive,
                             accent: store.pet.accentColor,
                             canUseRunCore: { store.canUseRunCore($0) },
@@ -105,6 +116,7 @@ struct PhoneRunDeckView: View {
                             run: latestCompletedRun,
                             accent: store.pet.accentColor,
                             targetCompanion: store.featuredCompanion,
+                            renderState: store.pixelRenderState(for: store.featuredCompanion),
                             canFeed: store.availableRunCores.contains(where: { $0.id == latestCompletedRun.id }),
                             onFeed: {
                                 store.feedActiveCompanion(with: latestCompletedRun.id)
@@ -248,6 +260,12 @@ struct PhoneRunDeckView: View {
         case .imported:
             return store.importedRunArchive.isEmpty
         }
+    }
+
+    private var shouldShowSyncDiagnostics: Bool {
+        store.connectivity.recentEvents.isEmpty == false ||
+        store.connectivity.queuedTransferCount > 0 ||
+        store.connectivity.lastMessage != "No watch sync yet"
     }
 
     private var archiveFilterStrip: some View {

@@ -17,7 +17,7 @@ public enum RunimalCollectionEconomyEngine {
             return RetirableCompanionOffer(
                 companion: companion,
                 essenceReward: reward,
-                reason: "\(companion.pet.species.rawValue) 계열 중복 개체를 Essence로 환원합니다."
+                reason: "\(companion.pet.species.displayName) 계열 중복 개체를 Essence로 환원합니다."
             )
         }
         .sorted { lhs, rhs in

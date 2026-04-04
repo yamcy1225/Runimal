@@ -1,0 +1,10 @@
+이 앱은 iPhone과 Apple Watch를 함께 사용하는 러닝 동행체 앱입니다.
+
+심사 시 확인 포인트
+1. iPhone에서 Runimal 실행
+2. Apple Watch에서 RunimalWatch 실행
+3. 워치에서 러닝 시작 후 종료
+4. iPhone에서 기록 반영 및 동행체 상태 갱신 확인
+
+HealthKit 사용 목적
+- 운동 거리, 시간, 심박, 케이던스, 경로를 러닝 기록과 동행체 성장 계산에 사용합니다.

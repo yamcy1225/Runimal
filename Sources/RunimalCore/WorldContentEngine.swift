@@ -15,6 +15,14 @@ public struct RunWorldProfile: Equatable, Sendable {
     public let episodeLine: String?
 }
 
+public struct RunWorldResolution: Equatable, Sendable {
+    public let region: RegionPackEntry
+    public let season: SeasonPackEntry?
+    public let primaryEpisode: NarrativeEpisodeEntry?
+    public let candidateEpisodes: [NarrativeEpisodeEntry]
+    public let timeAura: RunTimeAura
+}
+
 public enum RunimalWorldContentEngine {
     public static func profile(for pet: GeneratedPet) -> CompanionWorldProfile? {
         profile(for: pet, pack: DefaultWorldContent.pack)
@@ -53,25 +61,43 @@ public enum RunimalWorldContentEngine {
     }
 
     public static func profile(for run: CompletedRunRecord, pack: WorldContentPack) -> RunWorldProfile? {
+        guard let resolution = resolve(for: run, pack: pack) else {
+            return nil
+        }
+
+        return RunWorldProfile(
+            regionTitle: resolution.region.title,
+            seasonTitle: resolution.season?.title,
+            summaryLine: resolution.region.narrativeSummary,
+            episodeLine: resolution.primaryEpisode?.playerFacingText
+        )
+    }
+
+    public static func resolve(for run: CompletedRunRecord, pack: WorldContentPack) -> RunWorldResolution? {
         guard let region = matchedRegion(for: run, pack: pack) else {
             return nil
         }
 
         let speciesID = canonicalSpeciesID(for: run.reward.pet.species)
-        let season = pack.seasons.first { $0.featuredRegionIDs.contains(region.regionID) } ??
-            pack.seasons.first { $0.featuredSpeciesIDs.contains(speciesID) }
-
-        let episode = pack.narrativeEpisodes.first { episode in
+        let season = matchedSeason(
+            forRegionID: region.regionID,
+            speciesID: speciesID,
+            pack: pack
+        )
+        let candidateEpisodes = pack.narrativeEpisodes.filter { episode in
             episode.regionID == region.regionID &&
-            (season == nil || episode.seasonID == season?.seasonID) &&
+                (season == nil || episode.seasonID == season?.seasonID)
+        }
+        let primaryEpisode = candidateEpisodes.first { episode in
             episodeMatches(episode.triggerRules, run: run)
         }
 
-        return RunWorldProfile(
-            regionTitle: region.title,
-            seasonTitle: season?.title,
-            summaryLine: region.narrativeSummary,
-            episodeLine: episode?.playerFacingText
+        return RunWorldResolution(
+            region: region,
+            season: season,
+            primaryEpisode: primaryEpisode,
+            candidateEpisodes: candidateEpisodes,
+            timeAura: inferredTimeAura(from: run.startedAt)
         )
     }
 
@@ -109,7 +135,33 @@ public enum RunimalWorldContentEngine {
         return true
     }
 
-    private static func inferredTimeAura(from date: Date) -> RunTimeAura {
+    private static func matchedSeason(
+        forRegionID regionID: String,
+        speciesID: String,
+        pack: WorldContentPack
+    ) -> SeasonPackEntry? {
+        let candidates = pack.seasons.filter {
+            $0.featuredRegionIDs.contains(regionID) || $0.featuredSpeciesIDs.contains(speciesID)
+        }
+
+        return candidates.sorted {
+            let lhsRegionMatch = $0.featuredRegionIDs.contains(regionID)
+            let rhsRegionMatch = $1.featuredRegionIDs.contains(regionID)
+            if lhsRegionMatch != rhsRegionMatch { return lhsRegionMatch && !rhsRegionMatch }
+            let lhsSpeciesMatch = $0.featuredSpeciesIDs.contains(speciesID)
+            let rhsSpeciesMatch = $1.featuredSpeciesIDs.contains(speciesID)
+            if lhsSpeciesMatch != rhsSpeciesMatch { return lhsSpeciesMatch && !rhsSpeciesMatch }
+            if $0.featuredRegionIDs.count != $1.featuredRegionIDs.count {
+                return $0.featuredRegionIDs.count < $1.featuredRegionIDs.count
+            }
+            if $0.featuredSpeciesIDs.count != $1.featuredSpeciesIDs.count {
+                return $0.featuredSpeciesIDs.count < $1.featuredSpeciesIDs.count
+            }
+            return $0.seasonID < $1.seasonID
+        }.first
+    }
+
+    static func inferredTimeAura(from date: Date) -> RunTimeAura {
         let hour = Calendar.current.component(.hour, from: date)
         switch hour {
         case 5..<8:
@@ -153,7 +205,7 @@ public enum RunimalWorldContentEngine {
         return CompanionWorldProfile(
             fantasyLine: "밤의 전류와 그림자 경로를 머금은 황혼 계열 form",
             habitatLine: "야간 구간 · 골목 · 터널에서 강하게 반응",
-            hookLine: "Sparkfang과 Seedle의 황혼 분기에서 Shadebit form이 드러난다",
+            hookLine: "신더래시와 던스프리그의 황혼 분기에서 셰이드빗의 형태가 드러난다",
             mutationLine: familyNames.isEmpty ? nil : "황혼 축 · " + familyNames.joined(separator: " / "),
             variantLine: variantLine
         )

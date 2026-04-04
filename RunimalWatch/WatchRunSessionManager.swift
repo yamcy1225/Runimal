@@ -70,8 +70,10 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     private var rareEventCompleted = false
     private var environmentCondition: EnvironmentCondition = .unknown
     private var companionVisualState: MutationVisualState = .none
+    private var mutationBridgeSnapshots: [MutationRuntimeReactionSnapshot.Axis: MutationBranchBridgeSnapshot] = [:]
     private var lastMutationReactionID: String?
     private var lastMutationReactionAt: Date?
+    private var highestProjectedPotentialExperience = 0
     var autoPauseEnabled = true
 
     var authorizationStatus = "not requested"
@@ -95,6 +97,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     var recentSessionEvents: [SyncDiagnosticEvent] = []
     var runtimeAlert: WatchRuntimeAlert?
     var mutationReaction: MutationRuntimeReactionSnapshot?
+    var liveInteractionPreview: LiveCompanionInteractionPreview = .empty
     var isDemoMode: Bool {
         ProcessInfo.processInfo.environment["RUNIMAL_AUTOPLAY_DEMO"] == "1"
     }
@@ -212,6 +215,8 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             mutationReaction = nil
             lastMutationReactionID = nil
             lastMutationReactionAt = nil
+            highestProjectedPotentialExperience = 0
+            liveInteractionPreview = .empty
             logSessionEvent("run start", "HealthKit session started")
 
             startLocationCaptureIfAuthorized()
@@ -317,6 +322,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     func applyCompanionContext(_ context: CompanionEffectContext) {
         claimedWeeklyRewardIDs = Set(context.claimedRewardIDs)
         activeWeeklyEffects = context.activeEffects
+        updateLiveInteractionPreview()
     }
 
     func applyMainCompanionContext(_ context: WatchMainCompanionContext?) {
@@ -325,12 +331,15 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             ecologyStage: context?.mutationEcologyStage ?? 0,
             rhythmStage: context?.mutationRhythmStage ?? 0
         )
+        mutationBridgeSnapshots = bridgeSnapshots(from: context)
 
         if companionVisualState == .none {
             mutationReaction = nil
             lastMutationReactionID = nil
             lastMutationReactionAt = nil
         }
+
+        updateLiveInteractionPreview()
     }
 
     func setAutoPauseEnabled(_ enabled: Bool) {
@@ -377,6 +386,8 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         mutationReaction = nil
         lastMutationReactionID = nil
         lastMutationReactionAt = nil
+        highestProjectedPotentialExperience = 0
+        liveInteractionPreview = .empty
 
         demoTask?.cancel()
         demoTask = Task { @MainActor in
@@ -568,6 +579,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
 
         evaluateMutationReaction()
         evaluateSuddenEventProgress()
+        updateLiveInteractionPreview()
     }
 
     private func evaluateMutationReaction() {
@@ -580,7 +592,8 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             for: companionVisualState,
             snapshot: latestSnapshot,
             gpsAccuracyMeters: latestGPSAccuracyMeters,
-            isGPSFresh: gpsLastUpdatedAt.map { Date().timeIntervalSince($0) <= 8 } ?? false
+            isGPSFresh: gpsLastUpdatedAt.map { Date().timeIntervalSince($0) <= 8 } ?? false,
+            bridgeSnapshots: mutationBridgeSnapshots
         )
 
         guard let reaction else {
@@ -611,6 +624,29 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         }
     }
 
+    private func bridgeSnapshots(
+        from context: WatchMainCompanionContext?
+    ) -> [MutationRuntimeReactionSnapshot.Axis: MutationBranchBridgeSnapshot] {
+        guard let species = context?.pet?.species else { return [:] }
+
+        var snapshots: [MutationRuntimeReactionSnapshot.Axis: MutationBranchBridgeSnapshot] = [:]
+
+        if let bodyBranchID = context?.mutationBodyBranchID,
+           let bridge = SpeciesGrowthMutationBridgeEngine.bridge(for: species, axis: .body, branchID: bodyBranchID) {
+            snapshots[.body] = bridge
+        }
+        if let ecologyBranchID = context?.mutationEcologyBranchID,
+           let bridge = SpeciesGrowthMutationBridgeEngine.bridge(for: species, axis: .ecology, branchID: ecologyBranchID) {
+            snapshots[.ecology] = bridge
+        }
+        if let rhythmBranchID = context?.mutationRhythmBranchID,
+           let bridge = SpeciesGrowthMutationBridgeEngine.bridge(for: species, axis: .rhythm, branchID: rhythmBranchID) {
+            snapshots[.rhythm] = bridge
+        }
+
+        return snapshots
+    }
+
     private func emitRuntimeAlert(title: String, detail: String, kind: WatchRuntimeAlert.Kind) {
         runtimeAlert = WatchRuntimeAlert(title: title, detail: detail, kind: kind)
 
@@ -629,6 +665,78 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
                 runtimeAlert = nil
             }
         }
+    }
+
+    private func updateLiveInteractionPreview() {
+        let preview = RunimalRunCoreGrowthBalanceEngine.liveInteractionPreview(
+            snapshot: latestSnapshot,
+            routePointCount: routePreview.count,
+            gpsAccuracyMeters: latestGPSAccuracyMeters,
+            isGPSFresh: gpsLastUpdatedAt.map { Date().timeIntervalSince($0) <= 8 } ?? false,
+            environmentCondition: environmentCondition,
+            rareEventCompleted: rareEventCompleted,
+            isNightWindow: isNightWindow(),
+            mutationReaction: mutationReaction,
+            objective: liveObjectiveSnapshot()
+        )
+        liveInteractionPreview = preview
+
+        guard sessionStateLabel == "running" else { return }
+        guard preview.projectedPotentialExperience > 0 else { return }
+        guard preview.projectedPotentialExperience > highestProjectedPotentialExperience else { return }
+
+        highestProjectedPotentialExperience = preview.projectedPotentialExperience
+        guard runtimeAlert == nil else { return }
+        emitRuntimeAlert(
+            title: "잠재 상승",
+            detail: "지금 종료하면 저장 잠재 +\(preview.projectedPotentialExperience) XP 예상",
+            kind: .goal
+        )
+    }
+
+    private func liveObjectiveSnapshot() -> LiveCompanionObjectiveSnapshot? {
+        guard let activeSuddenEvent else { return nil }
+
+        let progress: Double
+        if rareEventCompleted {
+            progress = 1
+        } else if let suddenEventProgressStartedAt {
+            progress = min(Date().timeIntervalSince(suddenEventProgressStartedAt) / Double(activeSuddenEvent.requiredSeconds), 1)
+        } else {
+            progress = objectiveWarmupProgress(for: activeSuddenEvent)
+        }
+
+        let detail: String
+        if rareEventCompleted {
+            detail = "돌발 목표를 확보했습니다."
+        } else if progress > 0.01 {
+            detail = activeSuddenEvent.detail
+        } else {
+            detail = "조건이 맞는 순간부터 시간이 쌓입니다."
+        }
+
+        return LiveCompanionObjectiveSnapshot(
+            title: activeSuddenEvent.title,
+            detail: detail,
+            progress: progress
+        )
+    }
+
+    private func objectiveWarmupProgress(for event: WatchSuddenEvent) -> Double {
+        switch event.metric {
+        case .cadence:
+            let cadence = latestSnapshot.cadence ?? 0
+            return min(Double(cadence) / Double(max(event.targetValue, 1)), 1) * 0.35
+        case .pace:
+            guard let pace = latestSnapshot.averagePaceSeconds, pace > 0 else { return 0 }
+            let ratio = Double(event.targetValue) / Double(pace)
+            return min(max(ratio, 0), 1) * 0.35
+        }
+    }
+
+    private func isNightWindow(referenceDate: Date = Date()) -> Bool {
+        let hour = Calendar.current.component(.hour, from: referenceDate)
+        return (5...6).contains(hour) || (18...23).contains(hour) || (0...4).contains(hour)
     }
 
     private func cumulativeStatisticsValue(for identifier: HKQuantityTypeIdentifier, unit: HKUnit) -> Double {
@@ -994,6 +1102,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             guard self.sessionStateLabel == "running" else { return }
             self.absorbRouteLocations(validLocations)
             self.routePreview = self.sampleRoutePreview(from: self.routeLocations)
+            self.updateLiveInteractionPreview()
         }
     }
 

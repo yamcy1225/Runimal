@@ -82,6 +82,23 @@ struct PhoneContentCatalog {
         RunimalWorldContentEngine.profile(for: pet, pack: worldContentPack())
     }
 
+    func speciesBibleEntry(for pet: GeneratedPet) -> SpeciesBibleEntry? {
+        let speciesID: String
+        switch pet.species {
+        case .shadebit:
+            speciesID = PetSpecies.sparkfang.rawValue
+        default:
+            speciesID = pet.species.rawValue
+        }
+
+        return worldContentPack().speciesBible.first { $0.speciesID == speciesID }
+    }
+
+    func variantNarrative(for pet: GeneratedPet) -> VariantNarrativeEntry? {
+        guard let variantID = pet.rareVariant?.rawValue else { return nil }
+        return worldContentPack().rareVariants.first { $0.variantID == variantID }
+    }
+
     func runWorldProfile(for run: CompletedRunRecord) -> RunWorldProfile? {
         RunimalWorldContentEngine.profile(for: run, pack: worldContentPack())
     }

@@ -38,6 +38,13 @@ final class PhoneCloudMirrorManager {
         }
     }
 
+    func clearSnapshot() {
+        store.removeObject(forKey: snapshotKey)
+        store.synchronize()
+        lastMirroredAt = nil
+        statusLabel = "Cloud cleared"
+    }
+
     func validateRuntime() {
         hasIdentity = FileManager.default.ubiquityIdentityToken != nil
         let syncResult = store.synchronize()

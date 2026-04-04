@@ -6,6 +6,7 @@ struct WatchCompanionActionField: View {
     let accent: Color
     let heartResonance: Double
     let isRunning: Bool
+    var reaction: MutationRuntimeReactionSnapshot? = nil
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 18.0)) { timeline in
@@ -13,13 +14,16 @@ struct WatchCompanionActionField: View {
 
             GeometryReader { geometry in
                 let size = geometry.size
-                let spriteSize = min(size.width * 0.3, size.height * 0.66, 40)
+                let spriteSize = min(size.width * 0.36, size.height * 0.74, 46)
                 let spritePosition = companion.selection.kind == .egg
                     ? eggPosition(in: size, spriteSize: spriteSize, phase: phase)
                     : roamingPosition(in: size, spriteSize: spriteSize, phase: phase)
                 let spriteRotation = companion.selection.kind == .egg
                     ? eggRotation(for: phase)
                     : roamingRotation(for: phase)
+                let spriteScale: CGFloat = companion.selection.kind == .egg
+                    ? 1.0
+                    : roamingScale(for: phase)
 
                 ZStack {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -39,12 +43,13 @@ struct WatchCompanionActionField: View {
 
                     spriteView
                         .frame(width: spriteSize, height: spriteSize)
+                        .scaleEffect(spriteScale)
                         .rotationEffect(.degrees(spriteRotation))
                         .position(spritePosition)
                 }
             }
         }
-        .frame(height: 62)
+        .frame(height: 68)
         .clipped()
     }
 
@@ -53,7 +58,9 @@ struct WatchCompanionActionField: View {
             if companion.selection.kind == .pet, let pet = companion.pet {
                 PixelPetView(
                     pet: pet,
-                    pixelSize: 3.2,
+                    pixelSize: 3.7,
+                    growthStageIndex: companion.growthStageIndex,
+                    mutationForm: watchMutationForm,
                     mutationVisualState: visualState
                 )
             } else if let shell = companion.eggShell {
@@ -83,15 +90,38 @@ struct WatchCompanionActionField: View {
         )
     }
 
+    private var watchMutationForm: MutationFormSnapshot? {
+        guard companion.selection.kind == .pet,
+              let pet = companion.pet,
+              let bodyBranchID = companion.mutationBodyBranchID,
+              let ecologyBranchID = companion.mutationEcologyBranchID,
+              let rhythmBranchID = companion.mutationRhythmBranchID else {
+            return nil
+        }
+
+        let shortLabel = companion.petHeadline ?? companion.displayName
+        return MutationFormSnapshot(
+            speciesID: pet.species.rawValue,
+            formID: [pet.species.rawValue, bodyBranchID, ecologyBranchID, rhythmBranchID].joined(separator: "."),
+            shortLabel: shortLabel,
+            bodyBranchID: bodyBranchID,
+            ecologyBranchID: ecologyBranchID,
+            rhythmBranchID: rhythmBranchID,
+            confidence: 1
+        )
+    }
+
     private func roamingPosition(in size: CGSize, spriteSize: CGFloat, phase: TimeInterval) -> CGPoint {
         let rhythmBoost = CGFloat(Double(visualState?.rhythmStage ?? 0) * 0.018)
-        let xAmplitude = max((size.width - spriteSize) * ((isRunning ? 0.26 : 0.2) + rhythmBoost), 10)
-        let yAmplitude = max((size.height - spriteSize) * ((isRunning ? 0.18 : 0.12) + rhythmBoost * 0.7), 6)
+        let reactionRhythmBoost = reaction?.axis == .rhythm ? CGFloat(0.05) : 0
+        let speedBoost = reaction?.axis == .rhythm ? 0.26 : 0
+        let xAmplitude = max((size.width - spriteSize) * ((isRunning ? 0.26 : 0.2) + rhythmBoost + reactionRhythmBoost), 10)
+        let yAmplitude = max((size.height - spriteSize) * ((isRunning ? 0.18 : 0.12) + rhythmBoost * 0.7 + reactionRhythmBoost * 0.8), 6)
         let x = size.width / 2
-            + CGFloat(sin(phase * (isRunning ? 1.15 : 0.84))) * xAmplitude
+            + CGFloat(sin(phase * ((isRunning ? 1.15 : 0.84) + speedBoost))) * xAmplitude
             + CGFloat(sin(phase * 2.1)) * 5
         let y = size.height / 2
-            + CGFloat(cos(phase * (isRunning ? 1.42 : 1.08))) * yAmplitude
+            + CGFloat(cos(phase * ((isRunning ? 1.42 : 1.08) + speedBoost * 0.8))) * yAmplitude
             + CGFloat(sin(phase * 2.6)) * 3
         return CGPoint(
             x: min(max(x, spriteSize / 2 + 8), size.width - spriteSize / 2 - 8),
@@ -107,7 +137,8 @@ struct WatchCompanionActionField: View {
     }
 
     private func roamingRotation(for phase: TimeInterval) -> Double {
-        isRunning ? sin(phase * 2.2) * 5.0 : sin(phase * 1.8) * 2.8
+        let reactionBoost = reaction?.axis == .body ? 2.2 : reaction?.axis == .rhythm ? 1.2 : 0
+        return isRunning ? sin(phase * 2.2) * (5.0 + reactionBoost) : sin(phase * 1.8) * (2.8 + reactionBoost * 0.45)
     }
 
     private func eggRotation(for phase: TimeInterval) -> Double {
@@ -115,7 +146,9 @@ struct WatchCompanionActionField: View {
     }
 
     private func roamingBackdrop(size: CGSize, phase: TimeInterval) -> some View {
-        ZStack {
+        let ecologyBoost = reaction?.axis == .ecology ? 0.18 : 0
+
+        return ZStack {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(GameBoyPalette.lightest.opacity(0.7))
                 .frame(width: size.width * 0.88, height: size.height * 0.72)
@@ -140,11 +173,11 @@ struct WatchCompanionActionField: View {
             HStack(spacing: 6) {
                 ForEach(0..<6, id: \.self) { index in
                     Circle()
-                        .fill(accent.opacity(0.18 + Double(index) * 0.08))
+                        .fill(accent.opacity(0.18 + Double(index) * 0.08 + ecologyBoost))
                         .frame(width: 3.5, height: 3.5)
                         .offset(
                             x: CGFloat(index - 3) * 11,
-                            y: CGFloat(sin(phase * 1.4 + Double(index)) * 4)
+                            y: CGFloat(sin(phase * (1.4 + ecologyBoost) + Double(index)) * (4 + ecologyBoost * 8))
                         )
                 }
             }
@@ -173,11 +206,26 @@ struct WatchCompanionActionField: View {
     private func standbyPulse(size: CGSize, phase: TimeInterval) -> some View {
         let bodyStage = Double(visualState?.bodyStage ?? 0)
         let ecologyStage = Double(visualState?.ecologyStage ?? 0)
-        let glow = 0.18 + (sin(phase * 2.4) + 1) * 0.08 + bodyStage * 0.015 + ecologyStage * 0.01
-        let widthScale = 0.7 + bodyStage * 0.03
+        let reactionBodyBoost = reaction?.axis == .body ? 0.05 : 0
+        let reactionEcologyBoost = reaction?.axis == .ecology ? 0.035 : 0
+        let glow = 0.18 + (sin(phase * 2.4) + 1) * 0.08 + bodyStage * 0.015 + ecologyStage * 0.01 + reactionBodyBoost + reactionEcologyBoost
+        let widthScale = 0.7 + bodyStage * 0.03 + reactionBodyBoost
 
         return RoundedRectangle(cornerRadius: 10, style: .continuous)
             .stroke(accent.opacity(glow), lineWidth: 2)
             .frame(width: size.width * widthScale, height: 24 + ecologyStage * 0.8)
+    }
+
+    private func roamingScale(for phase: TimeInterval) -> CGFloat {
+        guard let reaction else { return 1.0 }
+        let transitionBoost: CGFloat = reaction.transitionStageTitle == nil ? 0 : 0.012
+        switch reaction.axis {
+        case .body:
+            return 1.02 + transitionBoost + CGFloat((sin(phase * 2.0) + 1) * 0.025)
+        case .ecology:
+            return 1.0 + transitionBoost + CGFloat((cos(phase * 1.6) + 1) * 0.018)
+        case .rhythm:
+            return 1.01 + transitionBoost + CGFloat((sin(phase * 3.2) + 1) * 0.022)
+        }
     }
 }

@@ -250,7 +250,7 @@ struct PhoneRunSyncHistoryPanel: View {
         if let usage = usageSummary(run), canUseRunCore(run) == false {
             return "\(cadenceText) · \(usage.detail)"
         }
-        return "\(cadenceText) · 코어 대기 중"
+        return "\(cadenceText) · 기록 대기 중"
     }
 
     private func compactUsageLabel(for run: CompletedRunRecord) -> String {

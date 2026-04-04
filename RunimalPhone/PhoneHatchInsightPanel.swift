@@ -7,39 +7,65 @@ struct PhoneHatchInsightPanel: View {
     let accent: Color
 
     var body: some View {
-        GameSurface(title: "Hatch Analysis") {
+        GameSurface(title: "기록 해석", accent: accent, eyebrow: "최근 러닝") {
             VStack(alignment: .leading, spacing: 12) {
                 ForEach(insights) { insight in
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
                             Text(insight.title)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.white)
+                                .font(.subheadline.monospaced().weight(.black))
+                                .foregroundStyle(GameBoyPalette.darkest)
                             Spacer()
                             TraitChip(label: insight.emphasis, accent: accent)
                         }
 
                         Text(insight.detail)
-                            .font(.caption)
-                            .foregroundStyle(.white.opacity(0.72))
+                            .font(.caption.monospaced())
+                            .foregroundStyle(GameBoyPalette.mediumDark)
+                            .lineSpacing(2)
                     }
                 }
 
                 Divider()
-                    .overlay(.white.opacity(0.12))
+                    .overlay(GameBoyPalette.darkest.opacity(0.12))
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text(target.title)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .font(.subheadline.monospaced().weight(.black))
+                        .foregroundStyle(GameBoyPalette.darkest)
                     Text(target.detail)
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.72))
-                    Text(target.status.uppercased())
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(accent)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(GameBoyPalette.mediumDark)
+                        .lineSpacing(2)
+
+                    guidanceRow(title: target.focusTitle, detail: target.focusDetail)
+                    guidanceRow(title: target.actionTitle, detail: target.actionDetail)
+                    guidanceRow(title: target.checkpointTitle, detail: target.checkpointDetail)
+
+                    if target.badges.isEmpty == false {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(target.badges, id: \.self) { badge in
+                                    TraitChip(label: badge, accent: accent.opacity(0.18))
+                                }
+                            }
+                            .padding(.horizontal, 1)
+                        }
+                    }
                 }
             }
+        }
+    }
+
+    private func guidanceRow(title: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption2.monospaced().weight(.black))
+                .foregroundStyle(accent.opacity(0.9))
+            Text(detail)
+                .font(.caption.monospaced())
+                .foregroundStyle(GameBoyPalette.mediumDark)
+                .lineSpacing(2)
         }
     }
 }

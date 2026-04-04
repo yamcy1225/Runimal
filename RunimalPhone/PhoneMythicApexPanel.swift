@@ -3,8 +3,10 @@ import SwiftUI
 
 struct PhoneMythicApexPanel: View {
     let pet: GeneratedPet
+    let target: EvolutionTarget
     let progress: EvolutionProgress
     let season: WeeklySeason
+    let renderState: CompanionPixelRenderState
 
     private var tree: [EvolutionTreeNode] {
         RunimalGameEngine.evolutionTree(for: pet, progress: progress, season: season)
@@ -15,7 +17,7 @@ struct PhoneMythicApexPanel: View {
     }
 
     private var isMythic: Bool {
-        progress.stageLabel == "Mythic"
+        progress.stageLabel == RunimalBalanceConfig.finalStageLabel
     }
 
     private var mythicTitle: String {
@@ -39,9 +41,9 @@ struct PhoneMythicApexPanel: View {
 
     var body: some View {
         GameSurface(
-            title: isMythic ? "최종 진화 고정" : "Mythic 경로",
+            title: isMythic ? "성년기 도달" : "성년기 경로",
             accent: pet.accentColor,
-            eyebrow: isMythic ? "APEX" : "FINAL STAGE"
+            eyebrow: isMythic ? "최종 단계" : "다음 목표"
         ) {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .center, spacing: 14) {
@@ -55,7 +57,14 @@ struct PhoneMythicApexPanel: View {
                             .stroke(pet.accentColor.opacity(0.82), lineWidth: 2)
                             .frame(width: 72, height: 72)
 
-                        PixelPetView(pet: pet, pixelSize: 8)
+                        PixelPetView(
+                            pet: pet,
+                            pixelSize: 8,
+                            growthStageIndex: renderState.growthStageIndex,
+                            mutationForm: renderState.mutationForm,
+                            mutationHistory: renderState.mutationHistory,
+                            mutationVisualState: renderState.mutationVisualState
+                        )
                     }
                     .frame(width: 92, height: 92)
 
@@ -66,7 +75,7 @@ struct PhoneMythicApexPanel: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
 
-                        Text(isMythic ? "최종 형태가 활성화되었습니다." : "다음 목표는 최종 진화 해금입니다.")
+                        Text(isMythic ? "성년기가 열렸습니다." : "다음 목표는 성년기 도달입니다.")
                             .font(.footnote.weight(.semibold))
                             .foregroundStyle(.white.opacity(0.72))
 
@@ -96,12 +105,26 @@ struct PhoneMythicApexPanel: View {
                 }
 
                 HStack(spacing: 10) {
-                    compactNode(title: tree[safe: 0]?.title ?? "Trace", state: currentIndex >= 0, accent: pet.accentColor)
-                    compactNode(title: tree[safe: 1]?.title ?? "Stage 1", state: currentIndex >= 1, accent: pet.accentColor)
-                    compactNode(title: tree[safe: 2]?.title ?? "Stage 2", state: currentIndex >= 2, accent: pet.accentColor)
-                    compactNode(title: tree[safe: 3]?.title ?? "Ascended", state: currentIndex >= 3, accent: pet.accentColor)
-                    compactNode(title: "Mythic", state: isMythic, accent: .orange)
+                    compactNode(title: tree[safe: 0]?.title ?? "알", state: currentIndex >= 0, accent: pet.accentColor)
+                    compactNode(title: tree[safe: 1]?.title ?? "유아기", state: currentIndex >= 1, accent: pet.accentColor)
+                    compactNode(title: tree[safe: 2]?.title ?? "유년기", state: currentIndex >= 2, accent: pet.accentColor)
+                    compactNode(title: tree[safe: 3]?.title ?? "청소년기", state: currentIndex >= 3, accent: pet.accentColor)
+                    compactNode(title: RunimalBalanceConfig.finalStageLabel, state: isMythic, accent: .orange)
                 }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    apexRow(title: target.actionTitle, detail: target.actionDetail)
+                    apexRow(title: target.checkpointTitle, detail: target.checkpointDetail)
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(.white.opacity(0.06))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(.white.opacity(0.1), lineWidth: 1)
+                        )
+                )
             }
         }
     }
@@ -119,6 +142,18 @@ struct PhoneMythicApexPanel: View {
                 .minimumScaleFactor(0.72)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private func apexRow(title: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption2.monospaced().weight(.black))
+                .foregroundStyle(pet.accentColor.opacity(0.9))
+            Text(detail)
+                .font(.caption.monospaced())
+                .foregroundStyle(.white.opacity(0.72))
+                .lineSpacing(2)
+        }
     }
 }
 

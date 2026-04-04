@@ -133,7 +133,7 @@ extension PhoneProgressStore {
             level: 1,
             bond: 18,
             totalDistanceKm: contributingRuns.reduce(0) { $0 + ($1.distanceMeters / 1000) },
-            headline: "숨겨진 알에서 깨어난 동행체"
+            headline: "숨겨진 알에서 깨어난 동행"
         )
 
         ownedCompanions.insert(companion, at: 0)
@@ -142,6 +142,7 @@ extension PhoneProgressStore {
             CompanionGrowthRecord(
                 companionID: companion.id,
                 totalExperience: RunimalEggEngine.starterGrowthSeed(for: egg),
+                storedPotentialExperience: 0,
                 feedCount: 0,
                 assignedRunIDs: runIDs,
                 lastFedAt: egg.createdAt

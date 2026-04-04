@@ -95,7 +95,7 @@ struct PhoneWeeklyBoardPanel: View {
                                         .foregroundStyle(.white)
                                     Spacer()
                                     TraitChip(
-                                        label: claimed ? "CLAIMED" : (unlocked ? "READY" : "LOCKED"),
+                                        label: claimed ? "받음" : (unlocked ? "받기 가능" : "잠김"),
                                         accent: claimed ? .green : (unlocked ? accent : .white.opacity(0.18))
                                     )
                                 }

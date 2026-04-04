@@ -3,11 +3,14 @@ import SwiftUI
 
 struct PhoneRewardStagePanel: View {
     let pet: GeneratedPet
+    let target: EvolutionTarget
     let progress: EvolutionProgress
     let activeEffects: [WeeklyRewardEffect]
     let season: WeeklySeason
     let claimableReward: WeeklyReward?
     let onClaim: (() -> Void)?
+    let renderState: CompanionPixelRenderState
+    let seasonalLayers: [SeasonalVisualLayer]
 
     @State private var energized = false
     @State private var burstScale: CGFloat = 0.92
@@ -19,12 +22,12 @@ struct PhoneRewardStagePanel: View {
     }
 
     private var stageTitle: String {
-        if progress.stageLabel == "Mythic" {
-            return "최종형 고정"
+        if progress.stageLabel == RunimalBalanceConfig.finalStageLabel {
+            return "성년기 도달"
         }
 
         if claimableReward != nil {
-            return "디코딩 보상"
+            return "부화 보상"
         }
 
         if activeEffects.isEmpty == false {
@@ -35,11 +38,11 @@ struct PhoneRewardStagePanel: View {
             return "진화 임계"
         }
 
-        return "디지털 챔버"
+        return "성장 준비"
     }
 
     private var stageDetail: String {
-        if progress.stageLabel == "Mythic" {
+        if progress.stageLabel == RunimalBalanceConfig.finalStageLabel {
             return RunimalGameEngine.mythicSignalLine(for: pet, season: season)
         }
 
@@ -55,11 +58,11 @@ struct PhoneRewardStagePanel: View {
             return "다음 러닝 한 번이면 진화 임계점입니다."
         }
 
-        return "디코딩 보상과 성장 효과가 다음 루프로 이어집니다."
+        return "이번 보상과 성장 효과가 다음 러닝으로 이어집니다."
     }
 
     private var primaryBadgeLabel: String {
-        if progress.stageLabel == "Mythic" { return "최종형" }
+        if progress.stageLabel == RunimalBalanceConfig.finalStageLabel { return "성년기" }
         if claimableReward != nil { return "수령 가능" }
         if pet.rareVariant != nil { return "희귀 경로" }
         return progress.stageLabel
@@ -71,7 +74,7 @@ struct PhoneRewardStagePanel: View {
     }
 
     private var variantLabel: String {
-        pet.rareVariant.map { RareVariantMeta.labels[$0] ?? $0.rawValue } ?? "기본 궤적"
+        pet.rareVariant.map { RareVariantMeta.labels[$0] ?? $0.rawValue } ?? "기본 흐름"
     }
 
     private var stageAccent: Color {
@@ -87,7 +90,7 @@ struct PhoneRewardStagePanel: View {
     }
 
     var body: some View {
-        GameSurface(title: "디코딩 챔버", accent: stageAccent, eyebrow: "신호 고정") {
+        GameSurface(title: "성장 단계", accent: stageAccent, eyebrow: "지금 상태") {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .center, spacing: 16) {
                     ZStack {
@@ -104,7 +107,15 @@ struct PhoneRewardStagePanel: View {
                             .rotationEffect(.degrees(energized ? 12 : -8))
 
                         if revealPet {
-                            PixelPetView(pet: pet, pixelSize: 10)
+                            PixelPetView(
+                                pet: pet,
+                                pixelSize: 10,
+                                growthStageIndex: renderState.growthStageIndex,
+                                mutationForm: renderState.mutationForm,
+                                mutationHistory: renderState.mutationHistory,
+                                mutationVisualState: renderState.mutationVisualState,
+                                seasonalLayers: seasonalLayers
+                            )
                                 .transition(.scale(scale: 0.86).combined(with: .opacity))
                         } else {
                             TraceEggView(accent: stageAccent, pixelSize: 10, cracked: crackEgg, resonance: energized ? 0.74 : 0.38)
@@ -130,7 +141,7 @@ struct PhoneRewardStagePanel: View {
                             .font(.caption.weight(.bold))
                             .foregroundStyle(stageAccent.opacity(0.94))
 
-                        if progress.stageLabel == "Mythic" {
+                        if progress.stageLabel == RunimalBalanceConfig.finalStageLabel {
                             Text(mythicTitle)
                                 .font(.headline.weight(.black))
                                 .foregroundStyle(.orange.opacity(0.96))
@@ -159,10 +170,12 @@ struct PhoneRewardStagePanel: View {
                 HStack(spacing: 12) {
                     RunimalMetricTile(icon: "sparkles", title: "경로", value: variantLabel, accent: stageAccent)
                     RunimalMetricTile(icon: "arrow.up.forward.circle.fill", title: "진화", value: progress.stageLabel, accent: .orange)
-                    if progress.stageLabel == "Mythic" {
+                    if progress.stageLabel == RunimalBalanceConfig.finalStageLabel {
                         RunimalMetricTile(icon: "crown.fill", title: "칭호", value: mythicTitle, accent: .orange)
                     }
                 }
+
+                guidanceCard
 
                 if activeEffects.isEmpty == false {
                     badgeRail {
@@ -200,7 +213,7 @@ struct PhoneRewardStagePanel: View {
                 Text(season.title.uppercased())
                     .font(.caption2.weight(.black))
                     .tracking(1.2)
-                Text("READY")
+                Text("지금 가능")
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(.white.opacity(0.62))
             }
@@ -223,6 +236,47 @@ struct PhoneRewardStagePanel: View {
             RunimalCuePlayer.playEvolutionCue(for: pet)
         }
         .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: energized)
+    }
+
+    private var guidanceCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("다음 진행 양식")
+                .font(.caption.monospaced().weight(.black))
+                .foregroundStyle(.white.opacity(0.78))
+
+            guidanceRow(title: target.focusTitle, detail: target.focusDetail)
+            guidanceRow(title: target.actionTitle, detail: target.actionDetail)
+            guidanceRow(title: target.checkpointTitle, detail: target.checkpointDetail)
+
+            if target.badges.isEmpty == false {
+                badgeRail {
+                    ForEach(target.badges, id: \.self) { badge in
+                        TraitChip(label: badge, accent: stageAccent.opacity(0.18))
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.white.opacity(0.06))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(.white.opacity(0.1), lineWidth: 1)
+                )
+        )
+    }
+
+    private func guidanceRow(title: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption2.monospaced().weight(.black))
+                .foregroundStyle(stageAccent.opacity(0.92))
+            Text(detail)
+                .font(.caption.monospaced())
+                .foregroundStyle(.white.opacity(0.72))
+                .lineSpacing(2)
+        }
     }
 
     private func badgeRail<Content: View>(@ViewBuilder content: () -> Content) -> some View {

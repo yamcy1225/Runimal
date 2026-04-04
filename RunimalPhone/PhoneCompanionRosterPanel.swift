@@ -9,12 +9,13 @@ struct PhoneCompanionRosterPanel: View {
     let eggs: [EggInventoryEntry]
     let mutationForm: (PetCollectionEntry) -> MutationFormSnapshot?
     let mutationHistory: (PetCollectionEntry) -> MutationHistorySnapshot?
+    let pixelRenderState: (PetCollectionEntry) -> CompanionPixelRenderState
     let onSelectPet: (String) -> Void
     let onSelectEgg: (String) -> Void
     let onHatchEgg: (String) -> Void
 
     var body: some View {
-        GameSurface(title: "메인 슬롯", accent: GameBoyPalette.mediumDark, eyebrow: "함께 달릴 동행체") {
+        GameSurface(title: "대표 선택", accent: GameBoyPalette.mediumDark, eyebrow: "함께 달릴 동행") {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 10) {
                     RunimalSignalBadge(icon: "star.fill", label: mainLabel, accent: GameBoyPalette.mediumDark)
@@ -23,7 +24,7 @@ struct PhoneCompanionRosterPanel: View {
 
                 if eggs.isEmpty == false {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("메인 알 후보")
+                        Text("고를 수 있는 알")
                             .font(.caption.monospaced().weight(.black))
                             .tracking(1.1)
                             .foregroundStyle(GameBoyPalette.mediumDark)
@@ -61,14 +62,14 @@ struct PhoneCompanionRosterPanel: View {
 
                                 VStack(spacing: 8) {
                                     pixelActionButton(
-                                        title: mainSelection?.targetID == egg.id && mainSelection?.kind == .egg ? "메인 알" : "선택",
+                                        title: mainSelection?.targetID == egg.id && mainSelection?.kind == .egg ? "지금 선택" : "선택",
                                         accent: egg.shell.accentColor
                                     ) {
                                         onSelectEgg(egg.id)
                                     }
 
                                     pixelActionButton(
-                                        title: "디코딩",
+                                        title: "부화",
                                         accent: egg.readyToHatch ? GameBoyPalette.mediumDark : GameBoyPalette.mediumLight,
                                         filled: egg.readyToHatch
                                     ) {
@@ -82,19 +83,22 @@ struct PhoneCompanionRosterPanel: View {
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("메인 펫 후보")
+                    Text("고를 수 있는 동행")
                         .font(.caption.monospaced().weight(.black))
                         .tracking(1.1)
                         .foregroundStyle(GameBoyPalette.mediumDark)
 
                     ForEach(companions) { companion in
+                        let renderState = pixelRenderState(companion)
                         HStack(alignment: .center, spacing: 12) {
                             portraitTile(accent: companion.pet.accentColor, supportAccent: companion.pet.accentColor.opacity(0.24)) {
                                 PixelPetView(
                                     pet: companion.pet,
                                     pixelSize: 6.6,
-                                    mutationForm: mutationForm(companion),
-                                    mutationHistory: mutationHistory(companion)
+                                    growthStageIndex: renderState.growthStageIndex,
+                                    mutationForm: renderState.mutationForm,
+                                    mutationHistory: renderState.mutationHistory,
+                                    mutationVisualState: renderState.mutationVisualState
                                 )
                             }
 
@@ -102,7 +106,7 @@ struct PhoneCompanionRosterPanel: View {
                                 Text(companion.pet.displayName)
                                     .font(.subheadline.monospaced().weight(.black))
                                     .foregroundStyle(GameBoyPalette.darkest)
-                                if let form = mutationForm(companion) {
+                                if let form = renderState.mutationForm {
                                     Text(form.displayTitle)
                                         .font(.caption2.monospaced().weight(.black))
                                         .foregroundStyle(GameBoyPalette.mediumDark)
@@ -118,7 +122,7 @@ struct PhoneCompanionRosterPanel: View {
                             Spacer()
 
                             pixelActionButton(
-                                title: mainSelection?.targetID == companion.id && mainSelection?.kind == .pet ? "메인 펫" : "선택",
+                                title: mainSelection?.targetID == companion.id && mainSelection?.kind == .pet ? "지금 선택" : "선택",
                                 accent: companion.pet.accentColor
                             ) {
                                 onSelectPet(companion.id)

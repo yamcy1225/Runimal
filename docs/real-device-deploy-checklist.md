@@ -8,7 +8,7 @@
 4. Keep signing style as `Automatic`.
 5. Confirm bundle identifiers are unique and valid:
    - `com.jaw.runimal.phone`
-   - `com.jaw.runimal.watch`
+   - `com.jaw.runimal.phone.watch`
 
 ## Device Pairing
 
@@ -33,6 +33,8 @@
 6. Confirm the result syncs to the phone.
 7. Feed the active companion on the phone.
 8. Confirm XP gain, feed cinematic, and evolution pulse all appear.
+9. Confirm the watch companion card updates quickly after main companion changes on the phone.
+10. Confirm the watch title/name and actual sprite appearance match the latest evolution form.
 
 ## iCloud Validation
 
@@ -52,5 +54,7 @@
    - live watch coaching
    - run save
    - phone sync
+   - watch companion sync speed
+   - phone/watch sprite consistency
    - feed cinematic
    - iCloud mirror

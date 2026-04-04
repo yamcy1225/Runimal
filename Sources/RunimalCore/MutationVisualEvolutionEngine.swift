@@ -15,6 +15,10 @@ public struct MutationVisualState: Equatable, Sendable {
 }
 
 public enum MutationVisualEvolutionEngine {
+    public static func allowsMutationIdentity(growthStageIndex: Int) -> Bool {
+        growthStageIndex >= 2
+    }
+
     public static func state(
         for history: MutationHistorySnapshot?,
         fallbackForm: MutationFormSnapshot?
@@ -32,6 +36,29 @@ public enum MutationVisualEvolutionEngine {
             bodyStage: stage(for: body),
             ecologyStage: stage(for: ecology),
             rhythmStage: stage(for: rhythm)
+        )
+    }
+
+    public static func visibleState(
+        for state: MutationVisualState,
+        growthStageIndex: Int
+    ) -> MutationVisualState {
+        let maxVisibleStage: Int
+        switch growthStageIndex {
+        case ...1:
+            maxVisibleStage = 0
+        case 2:
+            maxVisibleStage = 1
+        case 3:
+            maxVisibleStage = 2
+        default:
+            maxVisibleStage = 3
+        }
+
+        return MutationVisualState(
+            bodyStage: min(state.bodyStage, maxVisibleStage),
+            ecologyStage: min(state.ecologyStage, maxVisibleStage),
+            rhythmStage: min(state.rhythmStage, maxVisibleStage)
         )
     }
 

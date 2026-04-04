@@ -61,6 +61,9 @@ extension PhoneDashboardStore {
         case .pet:
             return watchPet?.pet.displayName ?? featuredCompanion.pet.displayName
         case nil:
+            if let watchEgg {
+                return watchEgg.title
+            }
             return featuredCompanion.pet.displayName
         }
     }
@@ -73,7 +76,10 @@ extension PhoneDashboardStore {
         case .pet:
             return watchPet.flatMap { metricSummary(for: $0)?.primaryLine } ?? featuredCompanion.headline
         case nil:
-            return "워치에 들고 나갈 동행체를 고르세요."
+            if let watchEgg {
+                return metricSummary(for: watchEgg)?.primaryLine ?? (watchEgg.readyToHatch ? "워치에서 바로 부화 상호작용이 가능합니다." : watchEgg.shell.hatchHint)
+            }
+            return "워치에 들고 나갈 동행을 고르세요."
         }
     }
 
@@ -117,39 +123,51 @@ extension PhoneDashboardStore {
             case .pet:
                 if let companion = collection.first(where: { $0.id == selection.targetID }) {
                     let lore = contentCatalog.companionWorldProfile(for: companion.pet)
-                    let form = mutationForm(for: companion)
-                    let visualState = MutationVisualEvolutionEngine.state(
-                        for: mutationHistory(for: companion),
-                        fallbackForm: form
+                    let renderState = pixelRenderState(for: companion)
+                    let progression = RunimalCompanionGrowthEngine.progressionSnapshot(
+                        for: progress.growthRecord(for: companion.id),
+                        species: companion.pet.species
                     )
                     return WatchMainCompanionContext(
                         selection: selection,
                         pet: companion.pet,
                         petName: companion.pet.displayName,
-                        petHeadline: form?.displayTitle ?? lore?.fantasyLine ?? companion.headline,
+                        petHeadline: renderState.mutationForm?.displayTitle ?? lore?.fantasyLine ?? companion.headline,
                         detailText: lore?.habitatLine,
-                        mutationBodyStage: visualState.bodyStage,
-                        mutationEcologyStage: visualState.ecologyStage,
-                        mutationRhythmStage: visualState.rhythmStage
+                        companionLevel: companion.level,
+                        companionStageLabel: progression.progress.stageLabel,
+                        growthStageIndex: renderState.growthStageIndex,
+                        mutationBodyStage: renderState.mutationVisualState.bodyStage,
+                        mutationEcologyStage: renderState.mutationVisualState.ecologyStage,
+                        mutationRhythmStage: renderState.mutationVisualState.rhythmStage,
+                        mutationBodyBranchID: renderState.mutationForm?.bodyBranchID,
+                        mutationEcologyBranchID: renderState.mutationForm?.ecologyBranchID,
+                        mutationRhythmBranchID: renderState.mutationForm?.rhythmBranchID
                     )
                 }
 
                 if let companion = progress.ownedCompanions.first(where: { $0.id == selection.targetID }) {
                     let lore = contentCatalog.companionWorldProfile(for: companion.pet)
-                    let form = mutationForm(for: companion)
-                    let visualState = MutationVisualEvolutionEngine.state(
-                        for: mutationHistory(for: companion),
-                        fallbackForm: form
+                    let renderState = pixelRenderState(for: companion)
+                    let progression = RunimalCompanionGrowthEngine.progressionSnapshot(
+                        for: progress.growthRecord(for: companion.id),
+                        species: companion.pet.species
                     )
                     return WatchMainCompanionContext(
                         selection: selection,
                         pet: companion.pet,
                         petName: companion.pet.displayName,
-                        petHeadline: form?.displayTitle ?? lore?.fantasyLine ?? companion.headline,
+                        petHeadline: renderState.mutationForm?.displayTitle ?? lore?.fantasyLine ?? companion.headline,
                         detailText: lore?.habitatLine,
-                        mutationBodyStage: visualState.bodyStage,
-                        mutationEcologyStage: visualState.ecologyStage,
-                        mutationRhythmStage: visualState.rhythmStage
+                        companionLevel: companion.level,
+                        companionStageLabel: progression.progress.stageLabel,
+                        growthStageIndex: renderState.growthStageIndex,
+                        mutationBodyStage: renderState.mutationVisualState.bodyStage,
+                        mutationEcologyStage: renderState.mutationVisualState.ecologyStage,
+                        mutationRhythmStage: renderState.mutationVisualState.rhythmStage,
+                        mutationBodyBranchID: renderState.mutationForm?.bodyBranchID,
+                        mutationEcologyBranchID: renderState.mutationForm?.ecologyBranchID,
+                        mutationRhythmBranchID: renderState.mutationForm?.rhythmBranchID
                     )
                 }
             }
@@ -168,25 +186,36 @@ extension PhoneDashboardStore {
 
         let companion = watchPet ?? featuredCompanion
         let lore = contentCatalog.companionWorldProfile(for: companion.pet)
-        let form = mutationForm(for: companion)
-        let visualState = MutationVisualEvolutionEngine.state(
-            for: mutationHistory(for: companion),
-            fallbackForm: form
+        let renderState = pixelRenderState(for: companion)
+        let progression = RunimalCompanionGrowthEngine.progressionSnapshot(
+            for: progress.growthRecord(for: companion.id),
+            species: companion.pet.species
         )
         return WatchMainCompanionContext(
             selection: MainCompanionSelection(kind: .pet, targetID: companion.id),
             pet: companion.pet,
             petName: companion.pet.displayName,
-            petHeadline: form?.displayTitle ?? lore?.fantasyLine ?? companion.headline,
+            petHeadline: renderState.mutationForm?.displayTitle ?? lore?.fantasyLine ?? companion.headline,
             detailText: lore?.habitatLine,
-            mutationBodyStage: visualState.bodyStage,
-            mutationEcologyStage: visualState.ecologyStage,
-            mutationRhythmStage: visualState.rhythmStage
+            companionLevel: companion.level,
+            companionStageLabel: progression.progress.stageLabel,
+            growthStageIndex: renderState.growthStageIndex,
+            mutationBodyStage: renderState.mutationVisualState.bodyStage,
+            mutationEcologyStage: renderState.mutationVisualState.ecologyStage,
+            mutationRhythmStage: renderState.mutationVisualState.rhythmStage,
+            mutationBodyBranchID: renderState.mutationForm?.bodyBranchID,
+            mutationEcologyBranchID: renderState.mutationForm?.ecologyBranchID,
+            mutationRhythmBranchID: renderState.mutationForm?.rhythmBranchID
         )
     }
 
     func syncMainCompanionSelection() {
-        connectivity.pushMainCompanionContext(watchMainCompanionContext)
+        let context = watchMainCompanionContext
+        connectivity.currentMainCompanionContext = context
+        connectivity.currentMainCompanionProvider = { [weak self] in
+            self?.watchMainCompanionContext
+        }
+        connectivity.pushMainCompanionContext(context)
     }
 
     func metricSummary(for companion: PetCollectionEntry) -> CompanionRunMetricSummary? {
@@ -202,13 +231,13 @@ extension PhoneDashboardStore {
 
     private func metricSummary(forRunIDs runIDs: [String]) -> CompanionRunMetricSummary? {
         guard !runIDs.isEmpty else {
-            return CompanionRunMetricSummary(totalDistanceKm: 0, averagePaceSeconds: nil, averageCadence: nil, averageHeartRate: nil)
+            return nil
         }
 
         let runsByID = Dictionary(uniqueKeysWithValues: completedRuns.map { ($0.id, $0) })
-        let runs = runIDs.compactMap { runsByID[$0] }
+        let runs = runIDs.compactMap { runsByID[$0] }.filter { $0.source != "seeded-archive" }
         guard !runs.isEmpty else {
-            return CompanionRunMetricSummary(totalDistanceKm: 0, averagePaceSeconds: nil, averageCadence: nil, averageHeartRate: nil)
+            return nil
         }
 
         let totalDistanceMeters = runs.reduce(0.0) { $0 + $1.distanceMeters }

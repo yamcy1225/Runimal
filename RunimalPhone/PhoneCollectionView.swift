@@ -1,6 +1,12 @@
 import RunimalCore
 import SwiftUI
 
+private enum CollectionAnchor: String {
+    case stable
+    case growth
+    case extras
+}
+
 struct PhoneCollectionView: View {
     let store: PhoneDashboardStore
     @State private var hatchResult: HatchCinematicPayload?
@@ -36,28 +42,38 @@ struct PhoneCollectionView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                stableCard
-                worldAtlasCard
-                stableSection
-                growthSection
-                storageSection
-                collectionExtrasSection
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    stableCard
+                    worldAtlasCard
+                    stableSection
+                        .id(CollectionAnchor.stable.rawValue)
+                    growthSection
+                        .id(CollectionAnchor.growth.rawValue)
+                    storageSection
+                    collectionExtrasSection(proxy: proxy)
+                        .id(CollectionAnchor.extras.rawValue)
+                }
+                .padding(20)
             }
-            .padding(20)
-        }
-        .background(
-            ZStack {
-                GameBoyPalette.lightest
-                    .ignoresSafeArea()
-                GameBoyLCDOverlay()
-                    .ignoresSafeArea()
-            }
-        )
-        .fullScreenCover(item: $hatchResult) { payload in
-            HatchCinematicView(egg: payload.egg, pet: payload.pet) {
-                hatchResult = nil
+            .background(
+                ZStack {
+                    GameBoyPalette.lightest
+                        .ignoresSafeArea()
+                    GameBoyLCDOverlay()
+                        .ignoresSafeArea()
+                }
+            )
+            .fullScreenCover(item: $hatchResult) { payload in
+                HatchCinematicView(
+                    egg: payload.egg,
+                    pet: payload.pet,
+                    sourceRun: payload.sourceRun,
+                    renderState: payload.renderState
+                ) {
+                    hatchResult = nil
+                }
             }
         }
     }
@@ -126,7 +142,7 @@ struct PhoneCollectionView: View {
 
     private var stableSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionHeader("메인 슬롯", detail: "지금 들고 갈 주인공을 정합니다.")
+            sectionHeader("대표 선택", detail: "지금 함께할 주인공을 정합니다.")
             PhoneCompanionRosterPanel(
                 mainSelection: store.mainSelection,
                 mainLabel: store.mainSelectionLabel,
@@ -135,6 +151,7 @@ struct PhoneCollectionView: View {
                 eggs: store.eggInventory,
                 mutationForm: store.mutationForm(for:),
                 mutationHistory: store.mutationHistory(for:),
+                pixelRenderState: store.pixelRenderState(for:),
                 onSelectPet: store.activateCompanion(_:),
                 onSelectEgg: store.activateEgg(_:),
                 onHatchEgg: handleHatch(_:)
@@ -146,46 +163,73 @@ struct PhoneCollectionView: View {
     private var growthSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             sectionHeader("성장", detail: "진화와 성장만 빠르게 봅니다.")
-            evolutionCard
-            PhoneMythicApexPanel(
-                pet: store.featuredCompanion.pet,
-                progress: store.evolutionProgress,
-                season: store.weeklyBoard.season
-            )
-            if let outcome = store.latestFeedOutcome {
-                PhoneFeedCinematicPanel(
+            if store.hasOwnedCompanion {
+                let renderState = store.pixelRenderState(for: store.featuredCompanion)
+                evolutionCard
+                PhoneMythicApexPanel(
                     pet: store.featuredCompanion.pet,
-                    outcome: outcome,
-                    onDismiss: store.clearFeedOutcome
+                    target: store.evolutionTarget,
+                    progress: store.evolutionProgress,
+                    season: store.weeklyBoard.season,
+                    renderState: renderState
                 )
+                if let outcome = store.latestFeedOutcome {
+                    PhoneFeedCinematicPanel(
+                        pet: store.featuredCompanion.pet,
+                        outcome: outcome,
+                        season: store.weeklyBoard.season,
+                        renderState: renderState,
+                        onDismiss: store.clearFeedOutcome
+                    )
+                }
+            } else {
+                eggOnlyGrowthCard
             }
             PhoneRunCoreDecisionPanel(
                 mainSelection: store.mainSelection,
                 mainLabel: store.mainSelectionLabel,
                 availableRuns: store.availableRunCores,
                 eggOpportunity: store.eggOpportunity(for:),
+                feedPreview: store.feedProjection(for:),
+                routingSummary: store.runCoreRoutingSummary(for:),
                 onFeedPet: { _ = store.feedActiveCompanion(with: $0) },
                 onForgeEgg: { _ = store.forgeEgg(from: $0) },
                 onIncubateEgg: { _ = store.incubateMainEgg(with: $0) }
             )
-            PhonePetDetailPanel(
-                companion: store.featuredCompanion,
-                mutationForm: store.mutationForm(for: store.featuredCompanion),
-                mutationHistory: store.mutationHistory(for: store.featuredCompanion),
-                progress: store.evolutionProgress,
-                activeEffects: store.activeWeeklyEffects,
-                season: store.weeklyBoard.season
-            )
-            growthTimeline
+            if store.hasOwnedCompanion {
+                let renderState = store.pixelRenderState(for: store.featuredCompanion)
+                PhonePetDetailPanel(
+                    companion: store.featuredCompanion,
+                    mutationForm: renderState.mutationForm,
+                    mutationHistory: renderState.mutationHistory,
+                    mutationVisualState: renderState.mutationVisualState,
+                    growthStageIndex: renderState.growthStageIndex,
+                    mutationEvidence: store.mutationEvidence(for: store.featuredCompanion),
+                    worldProfile: store.worldProfile(for: store.featuredCompanion),
+                    speciesIdentity: store.speciesIdentity(for: store.featuredCompanion),
+                    variantNarrative: store.variantNarrative(for: store.featuredCompanion),
+                    worldStatus: store.worldStatus(for: store.featuredCompanion),
+                    narrativeSummary: store.narrativeSummary(for: store.featuredCompanion),
+                    nextEpisodeFocus: store.nextEpisodeFocus(for: store.featuredCompanion),
+                    progress: store.evolutionProgress,
+                    activeEffects: store.activeWeeklyEffects,
+                    season: store.weeklyBoard.season
+                )
+                growthTimeline
+            }
         }
     }
 
     private var storageSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             sectionHeader("보관함", detail: "변이와 자원을 빠르게 봅니다.")
-            PhoneRareVariantShowcasePanel(activeVariant: store.featuredCompanion.pet.rareVariant)
-            collectionEffectStage
-            resonanceCompareBoard
+            if store.hasOwnedCompanion {
+                PhoneRareVariantShowcasePanel(activeVariant: store.featuredCompanion.pet.rareVariant)
+                collectionEffectStage
+                resonanceCompareBoard
+            } else {
+                eggOnlyStorageCard
+            }
         }
     }
 
@@ -221,23 +265,31 @@ struct PhoneCollectionView: View {
         .tint(GameBoyPalette.darkest)
     }
 
-    private var shareSection: some View {
+    private func shareSection(proxy: ScrollViewProxy) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             sectionHeader("공유", detail: "핵심 순간만 따로 모았습니다.")
             PhoneMilestoneSharePanel(
                 featuredCompanion: store.featuredCompanion,
                 collection: store.collection,
+                eggInventory: store.eggInventory,
                 progress: store.evolutionProgress,
-                season: store.weeklyBoard.season
+                season: store.weeklyBoard.season,
+                onOpenFirstHatchFlow: { openFirstHatchFlow(using: proxy) },
+                onOpenRareVariantFlow: { openGrowthFlow(using: proxy) },
+                onOpenMythicFlow: { openGrowthFlow(using: proxy) }
             )
         }
     }
 
-    private var collectionExtrasSection: some View {
+    private func collectionExtrasSection(proxy: ScrollViewProxy) -> some View {
         DisclosureGroup(isExpanded: $showCollectionExtras) {
             VStack(alignment: .leading, spacing: 18) {
-                shareSection
-                researchSection
+                if store.hasOwnedCompanion {
+                    shareSection(proxy: proxy)
+                    researchSection
+                } else {
+                    eggOnlyExtrasCard
+                }
             }
             .padding(.top, 12)
         } label: {
@@ -255,14 +307,35 @@ struct PhoneCollectionView: View {
             Text(detail)
                 .font(.headline.monospaced().weight(.black))
                 .foregroundStyle(GameBoyPalette.darkest)
-            Text(title == "메인 슬롯" ? "한 칸만 먼저 고릅니다." : title == "성장" ? "먹이기와 진화만 남겼습니다." : title == "보관함" ? "핵심 상태만 먼저 읽습니다." : "필요할 때만 펼쳐 봅니다.")
+            Text(title == "대표 선택" ? "지금 쓸 대상을 먼저 고릅니다." : title == "성장" ? "먹이기와 성장만 남겼습니다." : title == "보관함" ? "핵심 상태만 먼저 읽습니다." : "필요할 때만 펼쳐 봅니다.")
                 .font(.footnote.monospaced())
                 .foregroundStyle(GameBoyPalette.mediumDark)
         }
     }
 
+    private func openFirstHatchFlow(using proxy: ScrollViewProxy) {
+        if let egg = store.eggInventory.first {
+            store.activateEgg(egg.id)
+        }
+        focusGrowthSection(using: proxy)
+    }
+
+    private func openGrowthFlow(using proxy: ScrollViewProxy) {
+        if store.mainSelection?.kind != .pet {
+            store.activateCompanion(store.featuredCompanion.id)
+        }
+        focusGrowthSection(using: proxy)
+    }
+
+    private func focusGrowthSection(using proxy: ScrollViewProxy) {
+        withAnimation(.easeInOut(duration: 0.28)) {
+            showCollectionExtras = false
+            proxy.scrollTo(CollectionAnchor.growth.rawValue, anchor: .top)
+        }
+    }
+
     private var stableCard: some View {
-        GameSurface(title: "메인 동행체") {
+        GameSurface(title: "지금 선택한 대상") {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .center, spacing: 16) {
                     ZStack {
@@ -280,11 +353,14 @@ struct PhoneCollectionView: View {
                                 resonance: store.mainEggResonance
                             )
                         } else {
+                            let renderState = store.pixelRenderState(for: store.featuredCompanion)
                             PixelPetView(
                                 pet: store.featuredCompanion.pet,
                                 pixelSize: 10,
-                                mutationForm: store.mutationForm(for: store.featuredCompanion),
-                                mutationHistory: store.mutationHistory(for: store.featuredCompanion),
+                                growthStageIndex: renderState.growthStageIndex,
+                                mutationForm: renderState.mutationForm,
+                                mutationHistory: renderState.mutationHistory,
+                                mutationVisualState: renderState.mutationVisualState,
                                 seasonalLayers: store.seasonalLayers
                             )
                         }
@@ -310,7 +386,7 @@ struct PhoneCollectionView: View {
                         HStack(spacing: 8) {
                             if store.mainSelection?.kind == .egg, let egg = store.mainEgg {
                                 TraitChip(label: egg.shell.displayLabel, accent: egg.shell.accentColor)
-                                TraitChip(label: egg.readyToHatch ? "디코딩 준비" : "스캔 중", accent: .orange.opacity(0.72))
+                                TraitChip(label: egg.readyToHatch ? "부화 준비" : "확인 중", accent: .orange.opacity(0.72))
                             } else {
                                 TraitChip(label: "Lv.\(store.featuredCompanion.level)", accent: store.featuredCompanion.pet.accentColor)
                                 TraitChip(label: "유대 \(store.featuredCompanion.bond)", accent: .white.opacity(0.28))
@@ -319,7 +395,8 @@ struct PhoneCollectionView: View {
                     }
                 }
 
-                if let lore = store.contentCatalog.companionWorldProfile(for: store.featuredCompanion.pet) {
+                if store.hasOwnedCompanion,
+                   let lore = store.contentCatalog.companionWorldProfile(for: store.featuredCompanion.pet) {
                     VStack(alignment: .leading, spacing: 5) {
                         Text(lore.fantasyLine)
                             .font(.footnote.monospaced().weight(.black))
@@ -339,7 +416,7 @@ struct PhoneCollectionView: View {
                     )
                     RunimalMetricTile(
                         icon: "shippingbox.fill",
-                        title: "러닝 코어",
+                        title: "운동 기록",
                         value: "\(store.availableRunCores.count)",
                         accent: store.mainAccentColor
                     )
@@ -351,7 +428,7 @@ struct PhoneCollectionView: View {
                     )
                 }
 
-                if store.activeWeeklyEffects.isEmpty == false {
+                if store.hasOwnedCompanion, store.activeWeeklyEffects.isEmpty == false {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             ForEach(store.activeWeeklyEffects) { effect in
@@ -360,6 +437,54 @@ struct PhoneCollectionView: View {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    private var eggOnlyGrowthCard: some View {
+        GameSurface(title: "부화 준비도") {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("아직 부화한 동행이 없습니다.")
+                    .font(.headline.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.darkest)
+                Text("지금은 알만 가지고 있으니 성장 화면도 알 기준으로만 보입니다.")
+                    .font(.footnote.monospaced())
+                    .foregroundStyle(GameBoyPalette.mediumDark)
+                RunimalProgressBar(
+                    progress: store.mainEgg?.progressRatio ?? 0,
+                    accent: store.mainAccentColor,
+                    height: 10
+                )
+                HStack(spacing: 8) {
+                    TraitChip(label: store.mainEgg?.shell.displayLabel ?? "숨김 알", accent: store.mainAccentColor)
+                    TraitChip(label: store.mainEgg?.readyToHatch == true ? "부화 가능" : "부화 준비 중", accent: .orange.opacity(0.72))
+                }
+            }
+        }
+    }
+
+    private var eggOnlyStorageCard: some View {
+        GameSurface(title: "보관함 안내") {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("동행 보관 정보는 첫 부화 이후 열립니다.")
+                    .font(.headline.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.darkest)
+                Text("지금은 알과 운동 기록만 관리하면 됩니다. 변이, 궁합, 기록 보관은 동행이 생긴 뒤부터 쌓입니다.")
+                    .font(.footnote.monospaced())
+                    .foregroundStyle(GameBoyPalette.mediumDark)
+            }
+        }
+    }
+
+    private var eggOnlyExtrasCard: some View {
+        GameSurface(title: "추가 메뉴 안내") {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("공유와 연구는 첫 동행 이후 열립니다.")
+                    .font(.headline.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.darkest)
+                Text("지금은 알을 부화시키는 흐름에 집중하면 됩니다. 첫 동행이 생기면 공유 카드와 연구실이 자연스럽게 이어집니다.")
+                    .font(.footnote.monospaced())
+                    .foregroundStyle(GameBoyPalette.mediumDark)
             }
         }
     }
@@ -398,11 +523,14 @@ struct PhoneCollectionView: View {
                             .stroke(store.featuredCompanion.pet.accentColor.opacity(0.76), style: StrokeStyle(lineWidth: 2, dash: [4, 4]))
                             .frame(width: 70, height: 70)
 
+                        let renderState = store.pixelRenderState(for: store.featuredCompanion)
                         PixelPetView(
                             pet: store.featuredCompanion.pet,
                             pixelSize: 8,
-                            mutationForm: store.mutationForm(for: store.featuredCompanion),
-                            mutationHistory: store.mutationHistory(for: store.featuredCompanion),
+                            growthStageIndex: renderState.growthStageIndex,
+                            mutationForm: renderState.mutationForm,
+                            mutationHistory: renderState.mutationHistory,
+                            mutationVisualState: renderState.mutationVisualState,
                             seasonalLayers: store.seasonalLayers
                         )
                     }
@@ -441,15 +569,16 @@ struct PhoneCollectionView: View {
 
     private var collectionGrid: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("보유한 동행체")
+            Text("보유한 동행")
                 .font(.headline.monospaced().weight(.black))
                 .foregroundStyle(GameBoyPalette.darkest)
 
             LazyVGrid(columns: columns, spacing: 14) {
                 ForEach(store.collection) { entry in
+                    let renderState = store.pixelRenderState(for: entry)
                     GameSurface(
                         accent: entry.pet.accentColor,
-                        eyebrow: entry.id == store.mainSelection?.targetID && store.mainSelection?.kind == .pet ? "메인 슬롯" : "보유 중"
+                        eyebrow: entry.id == store.mainSelection?.targetID && store.mainSelection?.kind == .pet ? "대표 선택" : "보유 중"
                     ) {
                         VStack(alignment: .leading, spacing: 12) {
                             ZStack(alignment: .topTrailing) {
@@ -464,8 +593,10 @@ struct PhoneCollectionView: View {
                                 PixelPetView(
                                     pet: entry.pet,
                                     pixelSize: 8,
-                                    mutationForm: store.mutationForm(for: entry),
-                                    mutationHistory: store.mutationHistory(for: entry),
+                                    growthStageIndex: renderState.growthStageIndex,
+                                    mutationForm: renderState.mutationForm,
+                                    mutationHistory: renderState.mutationHistory,
+                                    mutationVisualState: renderState.mutationVisualState,
                                     seasonalLayers: entry.id == store.mainSelection?.targetID && store.mainSelection?.kind == .pet ? store.seasonalLayers : []
                                 )
 
@@ -487,7 +618,7 @@ struct PhoneCollectionView: View {
                                     .font(.caption2.monospaced().weight(.black))
                                     .foregroundStyle(GameBoyPalette.mediumDark)
                                     .lineLimit(1)
-                                if let form = store.mutationForm(for: entry) {
+                                if let form = renderState.mutationForm {
                                     Text(form.displayTitle)
                                         .font(.caption2.monospaced())
                                         .foregroundStyle(GameBoyPalette.mediumDark.opacity(0.88))
@@ -513,7 +644,7 @@ struct PhoneCollectionView: View {
                             }
 
                             RunimalProgressBar(
-                                progress: min(Double(entry.level) / 12.0, 1.0),
+                                progress: RunimalBalanceConfig.companionLevelRatio(for: entry.level),
                                 accent: entry.pet.accentColor,
                                 height: 7
                             )
@@ -684,14 +815,22 @@ struct PhoneCollectionView: View {
 
     private func handleHatch(_ eggID: String) {
         guard let egg = store.eggInventory.first(where: { $0.id == eggID }) else { return }
+        let sourceRun = store.completedRuns.first(where: { $0.id == egg.sourceRunID })
         guard let pet = store.hatchEgg(eggID) else { return }
-        hatchResult = HatchCinematicPayload(egg: egg, pet: pet)
+        hatchResult = HatchCinematicPayload(
+            egg: egg,
+            pet: pet,
+            sourceRun: sourceRun,
+            renderState: store.pixelRenderState(for: pet)
+        )
     }
 }
 
 private struct HatchCinematicPayload: Identifiable {
     let egg: EggInventoryEntry
     let pet: PetCollectionEntry
+    let sourceRun: CompletedRunRecord?
+    let renderState: CompanionPixelRenderState
 
     var id: String {
         egg.id

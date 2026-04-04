@@ -34,14 +34,29 @@ struct PhoneHomeView: View {
                     if let sanctuary = store.sanctuaryReward {
                         PhoneSanctuaryPanel(reward: sanctuary)
                     }
-                    PhoneRewardStagePanel(
-                        pet: store.pet,
-                        progress: store.evolutionProgress,
-                        activeEffects: store.activeWeeklyEffects,
-                        season: store.weeklyBoard.season,
-                        claimableReward: store.claimableWeeklyReward,
-                        onClaim: store.claimableWeeklyReward == nil ? nil : { store.claimWeeklyReward() }
-                    )
+                    if store.isEggOnlyState {
+                        eggStageCard
+                    } else {
+                        let renderState = store.pixelRenderState(for: store.featuredCompanion)
+                        PhoneRewardStagePanel(
+                            pet: store.pet,
+                            target: store.evolutionTarget,
+                            progress: store.evolutionProgress,
+                            activeEffects: store.activeWeeklyEffects,
+                            season: store.weeklyBoard.season,
+                            claimableReward: store.claimableWeeklyReward,
+                            onClaim: store.claimableWeeklyReward == nil ? nil : { store.claimWeeklyReward() },
+                            renderState: renderState,
+                            seasonalLayers: store.seasonalLayers
+                        )
+                    }
+                    if store.hatchInsights.isEmpty == false {
+                        PhoneHatchInsightPanel(
+                            insights: store.hatchInsights,
+                            target: store.evolutionTarget,
+                            accent: store.mainAccentColor
+                        )
+                    }
                     questCard
                 }
                 .padding(20)
@@ -50,7 +65,7 @@ struct PhoneHomeView: View {
     }
 
     private var worldFrontierCard: some View {
-        GameSurface(title: "활성 세계", accent: store.mainAccentColor, eyebrow: "WORLD PACKS") {
+        GameSurface(title: "활성 세계", accent: store.mainAccentColor, eyebrow: "활성 지역") {
             VStack(alignment: .leading, spacing: 12) {
                 Text(worldPack.contentPack.playerFacingTheme)
                     .font(.headline.monospaced().weight(.black))
@@ -107,14 +122,14 @@ struct PhoneHomeView: View {
 
                 VStack(alignment: .trailing, spacing: 6) {
                     TraitChip(label: store.weeklyBoard.season.title, accent: store.mainAccentColor)
-                    TraitChip(label: store.mainSelection?.kind == .egg ? "메인 알" : "메인 동행", accent: .white.opacity(0.16))
+                    TraitChip(label: store.mainSelection?.kind == .egg ? "지금 선택한 알" : "지금 선택한 동행", accent: .white.opacity(0.16))
                 }
             }
         }
     }
 
     private var heroCard: some View {
-        GameSurface(accent: store.mainAccentColor, eyebrow: "메인 동행체") {
+        GameSurface(accent: store.mainAccentColor, eyebrow: store.mainSelection?.kind == .egg ? "지금 선택한 알" : "지금 선택한 동행") {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .center, spacing: 16) {
                     if store.mainSelection?.kind == .egg {
@@ -126,11 +141,14 @@ struct PhoneHomeView: View {
                             resonance: store.mainEggResonance
                         )
                     } else {
+                        let renderState = store.pixelRenderState(for: store.featuredCompanion)
                         PixelPetView(
                             pet: store.pet,
                             pixelSize: 12,
-                            mutationForm: store.mutationForm(for: store.featuredCompanion),
-                            mutationHistory: store.mutationHistory(for: store.featuredCompanion),
+                            growthStageIndex: renderState.growthStageIndex,
+                            mutationForm: renderState.mutationForm,
+                            mutationHistory: renderState.mutationHistory,
+                            mutationVisualState: renderState.mutationVisualState,
                             seasonalLayers: store.seasonalLayers
                         )
                     }
@@ -182,7 +200,7 @@ struct PhoneHomeView: View {
 
                 if let egg = store.mainEgg, store.mainSelection?.kind == .egg {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("SCAN LOG")
+                        Text("알 상태")
                             .font(.caption2.weight(.black))
                             .tracking(1.2)
                             .foregroundStyle(egg.shell.accentColor.opacity(0.88))
@@ -240,7 +258,7 @@ struct PhoneHomeView: View {
                         HStack {
                             RunimalSignalBadge(icon: "gift.fill", label: "다음 보상", accent: store.mainAccentColor)
                             Spacer()
-                            TraitChip(label: "READY", accent: .green.opacity(0.72))
+                            TraitChip(label: "받기 가능", accent: .green.opacity(0.72))
                         }
 
                         Text(nextReward.title)
@@ -294,6 +312,82 @@ struct PhoneHomeView: View {
                             )
                         }
                     }
+                }
+            }
+        }
+    }
+
+    private var eggStageCard: some View {
+        GameSurface(title: "알 상태", accent: store.mainAccentColor, eyebrow: "지금 상태") {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .center, spacing: 16) {
+                    TraceEggView(
+                        accent: store.mainAccentColor,
+                        shell: store.mainEgg?.shell,
+                        pixelSize: 10,
+                        cracked: store.mainEgg?.readyToHatch == true,
+                        resonance: store.mainEggResonance
+                    )
+                    .frame(width: 108, height: 108)
+                    .background(
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .fill(store.mainAccentColor.opacity(0.08))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                    .stroke(store.mainAccentColor.opacity(0.22), lineWidth: 1)
+                            )
+                    )
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(store.mainEgg?.readyToHatch == true ? "부화 준비 완료" : "부화 준비 중")
+                            .font(.title2.weight(.black))
+                            .foregroundStyle(GameBoyPalette.darkest)
+
+                        Text(store.mainEgg?.shell.displayLabel ?? "숨김 알")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(store.mainAccentColor.opacity(0.94))
+
+                        Text(store.mainSelectionDetail)
+                            .font(.footnote)
+                            .foregroundStyle(GameBoyPalette.mediumDark)
+                            .lineLimit(2)
+
+                        HStack(spacing: 8) {
+                            RunimalSignalBadge(
+                                icon: store.mainEgg?.readyToHatch == true ? "sparkles" : "shield.lefthalf.filled",
+                                label: store.mainEgg?.readyToHatch == true ? "바로 부화 가능" : "알만 보유 중",
+                                accent: store.mainAccentColor
+                            )
+                            TraitChip(label: store.weeklyBoard.season.title, accent: .white.opacity(0.22))
+                        }
+                    }
+                }
+
+                RunimalProgressBar(
+                    progress: store.mainEgg?.progressRatio ?? 0,
+                    accent: store.mainAccentColor,
+                    height: 10
+                )
+
+                HStack(spacing: 12) {
+                    RunimalMetricTile(
+                        icon: "sparkles",
+                        title: "알",
+                        value: "\(store.eggInventory.count)",
+                        accent: .mint
+                    )
+                    RunimalMetricTile(
+                        icon: "shippingbox.fill",
+                        title: "운동 기록",
+                        value: "\(store.availableRunCores.count)",
+                        accent: store.mainAccentColor
+                    )
+                    RunimalMetricTile(
+                        icon: "figure.run",
+                        title: "실제 러닝",
+                        value: "\(store.actualCompletedRuns.count)",
+                        accent: .green
+                    )
                 }
             }
         }

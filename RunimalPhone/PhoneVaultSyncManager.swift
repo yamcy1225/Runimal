@@ -49,6 +49,23 @@ final class PhoneVaultSyncManager {
         }
     }
 
+    func clearSnapshot() {
+        guard let url = snapshotURL() else {
+            statusLabel = "Vault unavailable"
+            return
+        }
+
+        do {
+            if fileManager.fileExists(atPath: url.path) {
+                try fileManager.removeItem(at: url)
+            }
+            lastSyncedAt = nil
+            statusLabel = "Vault cleared"
+        } catch {
+            statusLabel = "Vault clear failed"
+        }
+    }
+
     private func snapshotURL() -> URL? {
         guard let baseURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             return nil

@@ -12,13 +12,25 @@ public struct MutationRuntimeReactionSnapshot: Equatable, Sendable {
     public let stage: Int
     public let title: String
     public let detail: String
+    public let transitionStageTitle: String?
+    public let transitionPartLabel: String?
 
-    public init(id: String, axis: Axis, stage: Int, title: String, detail: String) {
+    public init(
+        id: String,
+        axis: Axis,
+        stage: Int,
+        title: String,
+        detail: String,
+        transitionStageTitle: String? = nil,
+        transitionPartLabel: String? = nil
+    ) {
         self.id = id
         self.axis = axis
         self.stage = stage
         self.title = title
         self.detail = detail
+        self.transitionStageTitle = transitionStageTitle
+        self.transitionPartLabel = transitionPartLabel
     }
 }
 
@@ -27,17 +39,19 @@ public enum MutationRuntimeReactionEngine {
         for visualState: MutationVisualState,
         snapshot: LiveRunSnapshot,
         gpsAccuracyMeters: Double?,
-        isGPSFresh: Bool
+        isGPSFresh: Bool,
+        bridgeSnapshots: [MutationRuntimeReactionSnapshot.Axis: MutationBranchBridgeSnapshot] = [:]
     ) -> MutationRuntimeReactionSnapshot? {
         let candidates = [
-            bodyCandidate(for: visualState, snapshot: snapshot),
+            bodyCandidate(for: visualState, snapshot: snapshot, bridge: bridgeSnapshots[.body]),
             ecologyCandidate(
                 for: visualState,
                 snapshot: snapshot,
                 gpsAccuracyMeters: gpsAccuracyMeters,
-                isGPSFresh: isGPSFresh
+                isGPSFresh: isGPSFresh,
+                bridge: bridgeSnapshots[.ecology]
             ),
-            rhythmCandidate(for: visualState, snapshot: snapshot),
+            rhythmCandidate(for: visualState, snapshot: snapshot, bridge: bridgeSnapshots[.rhythm]),
         ]
         .compactMap { $0 }
 
@@ -67,7 +81,8 @@ public enum MutationRuntimeReactionEngine {
 
     private static func bodyCandidate(
         for visualState: MutationVisualState,
-        snapshot: LiveRunSnapshot
+        snapshot: LiveRunSnapshot,
+        bridge: MutationBranchBridgeSnapshot?
     ) -> MutationRuntimeReactionSnapshot? {
         let stage = visualState.bodyStage
         guard stage > 0 else { return nil }
@@ -77,11 +92,16 @@ public enum MutationRuntimeReactionEngine {
         guard climbedEnough || heartEnough else { return nil }
 
         return MutationRuntimeReactionSnapshot(
-            id: "body-stage-\(stage)",
+            id: "body-stage-\(stage)-\(bridge?.branchID ?? "core")",
             axis: .body,
             stage: stage,
-            title: stage >= 3 ? "실루엣 각성" : "실루엣 반응",
-            detail: "오르막과 심박 상승으로 체형 흔적이 굳어집니다."
+            title: bridge.map { "\($0.startStageTitle) 체형 반응" } ?? (stage >= 3 ? "실루엣 각성" : "실루엣 반응"),
+            detail: bridgeDetail(
+                bridge,
+                fallback: "오르막과 심박 상승으로 체형 흔적이 굳어집니다."
+            ),
+            transitionStageTitle: bridge?.startStageTitle,
+            transitionPartLabel: compactPartLabel(for: bridge)
         )
     }
 
@@ -89,7 +109,8 @@ public enum MutationRuntimeReactionEngine {
         for visualState: MutationVisualState,
         snapshot: LiveRunSnapshot,
         gpsAccuracyMeters: Double?,
-        isGPSFresh: Bool
+        isGPSFresh: Bool,
+        bridge: MutationBranchBridgeSnapshot?
     ) -> MutationRuntimeReactionSnapshot? {
         let stage = visualState.ecologyStage
         guard stage > 0 else { return nil }
@@ -99,17 +120,23 @@ public enum MutationRuntimeReactionEngine {
         guard gpsStable && routeEnough else { return nil }
 
         return MutationRuntimeReactionSnapshot(
-            id: "ecology-stage-\(stage)",
+            id: "ecology-stage-\(stage)-\(bridge?.branchID ?? "core")",
             axis: .ecology,
             stage: stage,
-            title: stage >= 3 ? "서식 공명" : "경로 반응",
-            detail: "안정된 경로 감지로 서식 무늬가 선명해집니다."
+            title: bridge.map { "\($0.startStageTitle) 서식 반응" } ?? (stage >= 3 ? "서식 공명" : "경로 반응"),
+            detail: bridgeDetail(
+                bridge,
+                fallback: "안정된 경로 감지로 서식 무늬가 선명해집니다."
+            ),
+            transitionStageTitle: bridge?.startStageTitle,
+            transitionPartLabel: compactPartLabel(for: bridge)
         )
     }
 
     private static func rhythmCandidate(
         for visualState: MutationVisualState,
-        snapshot: LiveRunSnapshot
+        snapshot: LiveRunSnapshot,
+        bridge: MutationBranchBridgeSnapshot?
     ) -> MutationRuntimeReactionSnapshot? {
         let stage = visualState.rhythmStage
         guard stage > 0 else { return nil }
@@ -121,11 +148,31 @@ public enum MutationRuntimeReactionEngine {
         guard cadenceReady || paceReady else { return nil }
 
         return MutationRuntimeReactionSnapshot(
-            id: "rhythm-stage-\(stage)",
+            id: "rhythm-stage-\(stage)-\(bridge?.branchID ?? "core")",
             axis: .rhythm,
             stage: stage,
-            title: stage >= 3 ? "박동 각성" : "리듬 반응",
-            detail: "페이스와 케이던스가 맞아 박동 문양이 살아납니다."
+            title: bridge.map { "\($0.startStageTitle) 리듬 반응" } ?? (stage >= 3 ? "박동 각성" : "리듬 반응"),
+            detail: bridgeDetail(
+                bridge,
+                fallback: "페이스와 케이던스가 맞아 박동 문양이 살아납니다."
+            ),
+            transitionStageTitle: bridge?.startStageTitle,
+            transitionPartLabel: compactPartLabel(for: bridge)
         )
+    }
+
+    private static func bridgeDetail(
+        _ bridge: MutationBranchBridgeSnapshot?,
+        fallback: String
+    ) -> String {
+        guard let bridge else { return fallback }
+        let partLabel = compactPartLabel(for: bridge) ?? "파츠"
+        return "\(partLabel)가 \(bridge.branchTitle) 갈래로 반응합니다."
+    }
+
+    private static func compactPartLabel(for bridge: MutationBranchBridgeSnapshot?) -> String? {
+        guard let bridge else { return nil }
+        let parts = bridge.redirectedParts.isEmpty == false ? bridge.redirectedParts : bridge.inheritedParts
+        return parts.first?.title
     }
 }

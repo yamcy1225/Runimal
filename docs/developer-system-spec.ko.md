@@ -46,7 +46,7 @@ Runimal은 세 계층으로 나뉜다.
 
 - 메인 화면과 좌우 페이지 UI
 - 컬렉션/보관함/Run Core 사용 결정 UI
-- 부화 디코딩 시네마틱
+- 부화 시네마틱
 - 진행 상태 저장
 - 클라우드/볼트/충돌 처리
 - Sanctuary 보상 노출
@@ -114,9 +114,15 @@ Runimal은 세 계층으로 나뉜다.
 - `explanation`
 - `stats`
 
+추가 규칙:
+
+- `palette`는 원소 계열명이 아니라 종 고정 기본 팔레트 이름을 사용한다.
+- 희귀 변이가 붙어도 `palette`는 같은 종의 기본 팔레트 이름 위에 suffix만 붙인다.
+- 기준 문서: `docs/world/species-color-identity.ko.md`
+
 ### 3.4 PetCollectionEntry
 
-컬렉션에 저장되는 동행체 엔트리.
+컬렉션에 저장되는 동행 엔트리.
 
 주요 필드:
 
@@ -150,7 +156,7 @@ Runimal은 세 계층으로 나뉜다.
 
 ### 3.6 MainCompanionSelection
 
-메인 슬롯 상태.
+대표 선택 상태.
 
 종류:
 
@@ -222,7 +228,7 @@ Runimal은 세 계층으로 나뉜다.
 - 결정적 pseudo-random 방식으로 종족 선택
 - 선택된 종족과 기존 GeneratedPet 결과를 합쳐 최종 개체 생성
 
-## 5. 디코딩 시네마틱
+## 5. 부화 시네마틱
 
 핵심 파일:
 
@@ -239,7 +245,7 @@ Runimal은 세 계층으로 나뉜다.
 
 현재 구성 요소:
 
-- 디코딩 로그 텍스트
+- 부화 로그 텍스트
 - 글리치 그리드
 - 간섭 배경 레이어
 - 분해 조각 레이어
@@ -284,7 +290,7 @@ AR 대비:
 포함 상태:
 
 - 펫/알 인벤토리
-- 메인 슬롯
+- 대표 선택
 - 업적 해금 상태
 - 러닝 기록
 - raidContribution 총량
@@ -294,7 +300,7 @@ AR 대비:
 
 리셋은 완전 빈 앱 상태가 아니라 테스트 가능한 초기 씨드 상태로 되돌린다.
 
-## 7. Run Core 사용 흐름
+## 7. 운동 기록 사용 흐름
 
 핵심 UI 파일:
 
@@ -303,28 +309,34 @@ AR 대비:
 선택지:
 
 1. 새 알 만들기
-2. 메인 펫 성장
-3. 메인 알 인큐베이트
+2. 지금 선택한 동행 성장
+3. 지금 선택한 알 부화 준비
 
 원칙:
 
 - 하나의 러닝은 한 번만 귀속된다.
 - 알에 사용된 러닝은 부화 후 그 펫 소유로 넘어가며 재사용되지 않는다.
 
-## 8. 메인 슬롯과 컬렉션
+## 8. 대표 선택과 컬렉션
 
 핵심 파일:
 
 - [PhoneCompanionRosterPanel.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneCompanionRosterPanel.swift)
 - [PhoneCollectionView.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneCollectionView.swift)
+- [CompanionGrowthEngine.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/Sources/RunimalCore/CompanionGrowthEngine.swift)
 
 현재 UI 동작:
 
-- 메인 펫 선택
-- 메인 알 선택
+- 지금 함께 달릴 동행 선택
+- 지금 부화 준비에 쓸 알 선택
 - 알 스캔 로그 표시
-- 디코딩 가능 상태에서 부화 버튼 활성화
+- 부화 가능 상태에서 부화 버튼 활성화
 - 위험 구역 내부에서만 초기화 버튼 노출
+
+성장 기준:
+
+- 성장 단계, 다음 진화 레벨, 단계 해금, 성년기 이후 해금은 `CompanionProgressionSnapshot` 기준으로 함께 조회
+- 즉 컬렉션/상세/성장 여정 화면은 같은 진행도 소스를 공유해야 함
 
 ## 9. Sanctuary Mode
 
@@ -337,7 +349,7 @@ AR 대비:
 동작:
 
 - 러닝 기록이 없는 날 접속 시 평가
-- 메인 펫과 누적 거리 기반으로 Essence 또는 아이템 지급
+- 지금 선택한 동행과 누적 거리 기반으로 Essence 또는 아이템 지급
 - Oracle 역할은 보너스 발견 확률에 시너지
 
 ## 10. Watch 런타임 시스템

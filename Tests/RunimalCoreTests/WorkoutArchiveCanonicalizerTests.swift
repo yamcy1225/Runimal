@@ -172,6 +172,71 @@ final class WorkoutArchiveCanonicalizerTests: XCTestCase {
         XCTAssertEqual(updatedRecord.mutationContribution, mutationContribution)
     }
 
+    func testUpdatePreservesLiveCompanionGrowthSignals() {
+        let startedAt = Date(timeIntervalSince1970: 40_000)
+        let archive = WorkoutSessionArchive(
+            runID: "run-4",
+            startedAt: startedAt,
+            endedAt: startedAt.addingTimeInterval(1_200),
+            elapsedTimeSeconds: 1_200,
+            timerTimeSeconds: 1_180,
+            movingTimeSeconds: 1_150,
+            distanceMeters: 3_400,
+            averageHeartRate: 151,
+            averageCadence: 178,
+            averagePaceSeconds: 347,
+            elevationGainM: 36,
+            source: "watch-healthkit",
+            trackPoints: [makePoint(offset: 0, lat: 37.3, lon: 127.3, accuracy: 8)],
+            rawTrackPoints: [makePoint(offset: 0, lat: 37.3, lon: 127.3, accuracy: 8)],
+            displayTrackPoints: [],
+            laps: [],
+            events: []
+        )
+        let reward = RunRewardSummary(
+            pet: GeneratedPet(
+                species: .sparkfang,
+                element: .flame,
+                palette: "ember",
+                rareVariant: nil,
+                explanation: [],
+                stats: PetStats(vitality: 2, agility: 3, dexterity: 4, focus: 2, defense: 1)
+            ),
+            coreLabel: "tempo",
+            experience: 132,
+            completedQuestCount: 1,
+            flavorText: "done"
+        )
+        let potentialProfile = LiveCompanionPotentialProfile(
+            eventScore: 3,
+            storedPotentialExperience: 18,
+            labels: ["페이스 유지", "케이던스 반응"]
+        )
+        let record = CompletedRunRecord(
+            id: "run-4",
+            startedAt: startedAt,
+            endedAt: startedAt.addingTimeInterval(1_200),
+            distanceMeters: 3_100,
+            durationSeconds: 1_200,
+            averageHeartRate: 149,
+            averagePaceSeconds: 361,
+            cadence: 175,
+            elevationGainM: 20,
+            reward: reward,
+            route: [],
+            source: "watch-healthkit",
+            liveCompanionID: "companion-1",
+            liveCompanionName: "루미",
+            livePotentialProfile: potentialProfile
+        )
+
+        let updatedRecord = WorkoutArchiveCanonicalizer.update(record, with: archive)
+
+        XCTAssertEqual(updatedRecord.liveCompanionID, "companion-1")
+        XCTAssertEqual(updatedRecord.liveCompanionName, "루미")
+        XCTAssertEqual(updatedRecord.livePotentialProfile, potentialProfile)
+    }
+
     private func makePoint(offset: TimeInterval, lat: Double, lon: Double, accuracy: Double) -> WorkoutTrackPoint {
         WorkoutTrackPoint(
             timestamp: Date(timeIntervalSince1970: 10_000 + offset),

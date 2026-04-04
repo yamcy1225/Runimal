@@ -108,8 +108,12 @@ public enum WorkoutArchiveCanonicalizer {
             raidContribution: record.raidContribution,
             environmentCondition: record.environmentCondition,
             rareEventCompleted: record.rareEventCompleted,
+            liveCompanionID: record.liveCompanionID,
+            liveCompanionName: record.liveCompanionName,
+            livePotentialProfile: record.livePotentialProfile,
             mutationForm: record.mutationForm,
-            mutationContribution: record.mutationContribution
+            mutationContribution: record.mutationContribution,
+            worldImpact: record.worldImpact
         )
     }
 

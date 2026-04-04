@@ -6,6 +6,7 @@ struct PhoneRecentRunCard: View {
     let run: CompletedRunRecord
     let accent: Color
     let targetCompanion: PetCollectionEntry
+    let renderState: CompanionPixelRenderState
     let canFeed: Bool
     let onFeed: () -> Void
 
@@ -21,7 +22,7 @@ struct PhoneRecentRunCard: View {
     }
 
     var body: some View {
-        GameSurface(title: "러닝 코어", accent: accent, eyebrow: "FIT 수동 가져오기") {
+        GameSurface(title: "운동 기록", accent: accent, eyebrow: "FIT 수동 가져오기") {
             VStack(alignment: .leading, spacing: 12) {
                 coreField
 
@@ -123,18 +124,25 @@ struct PhoneRecentRunCard: View {
 
     private var feedStrip: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("메인 동행체에 바로 먹이기")
+            Text("지금 선택한 동행에 바로 반영")
                 .font(.subheadline.monospaced().weight(.black))
                 .foregroundStyle(GameBoyPalette.darkest)
 
             HStack(spacing: 12) {
-                PixelPetView(pet: targetCompanion.pet, pixelSize: 6)
+                PixelPetView(
+                    pet: targetCompanion.pet,
+                    pixelSize: 6,
+                    growthStageIndex: renderState.growthStageIndex,
+                    mutationForm: renderState.mutationForm,
+                    mutationHistory: renderState.mutationHistory,
+                    mutationVisualState: renderState.mutationVisualState
+                )
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(targetCompanion.pet.displayName)
                         .font(.subheadline.monospaced().weight(.black))
                         .foregroundStyle(GameBoyPalette.darkest)
-                    Text(canFeed ? "가져온 운동 에너지를 성장 경험치로 변환합니다." : "이미 사용한 코어이거나 사용할 수 없는 기록입니다.")
+                    Text(canFeed ? "이 운동 기록을 지금 선택한 동행 성장에 반영합니다." : "이미 사용했거나 지금은 반영할 수 없는 운동 기록입니다.")
                         .font(.caption.monospaced())
                         .foregroundStyle(GameBoyPalette.mediumDark)
                 }
@@ -142,7 +150,7 @@ struct PhoneRecentRunCard: View {
                 Spacer()
 
                 Button(action: onFeed) {
-                    Text("경험치 먹이기")
+                    Text("성장에 반영")
                         .font(.caption.monospaced().weight(.black))
                         .foregroundStyle(canFeed ? GameBoyPalette.lightest : GameBoyPalette.mediumLight)
                         .padding(.horizontal, 12)
@@ -198,7 +206,7 @@ struct PhoneRecentRunCard: View {
             return "\(externalSourceLabel)에서 수동으로 가져옴 · \(run.startedAt.formatted(date: .abbreviated, time: .shortened))"
         }
 
-        return "\(run.source) · 틈새 세계 동기화 \(run.startedAt.formatted(date: .abbreviated, time: .shortened))"
+        return "\(run.source) · 기록 저장 \(run.startedAt.formatted(date: .abbreviated, time: .shortened))"
     }
 
     private var externalSourceLabel: String? {
@@ -268,7 +276,7 @@ private struct RunShareImageCard: View {
                     Text("RUNIMAL")
                         .font(.system(size: 32, weight: .black, design: .monospaced))
                         .foregroundStyle(GameBoyPalette.darkest)
-                    Text("KINETIC CORE REPORT")
+                    Text("운동 기록 리포트")
                         .font(.system(size: 20, weight: .bold, design: .monospaced))
                         .foregroundStyle(GameBoyPalette.mediumDark)
                 }
@@ -299,7 +307,7 @@ private struct RunShareImageCard: View {
                     .font(.system(size: 46, weight: .black, design: .rounded))
                     .foregroundStyle(.white)
 
-                Text("가져온 러닝 데이터를 메인 동행체 성장 코어로 변환")
+                    Text("가져온 운동 기록을 지금 선택한 동행 성장에 반영")
                     .font(.system(size: 24, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.82))
             }

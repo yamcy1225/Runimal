@@ -1,0 +1,184 @@
+{
+  "schemaVersion": "0.2.0",
+  "project": "RunimalWorld",
+  "description": "Obsidian Circuit expansion pack for heat shimmer routes, foundry nights, and reflective canyon sprint myths.",
+  "contentPack": {
+    "packID": "obsidian-circuit",
+    "title": "Obsidian Circuit",
+    "type": "expansion",
+    "status": "active",
+    "playerFacingTheme": "열기와 금속 반사가 도심 전설처럼 쌓이는 야간 질주 확장팩",
+    "featuredRegionIDs": ["signal-foundry", "glass-canyon"],
+    "featuredSpeciesIDs": ["sparkfang", "stoneback", "windrunner"],
+    "featuredVariantIDs": ["tempo-surge", "summit-heart", "loop-sigil"],
+    "episodeIDs": ["episode-foundry-surge", "episode-cinder-anvil", "episode-glass-route", "episode-afterimage-chime"]
+  },
+  "speciesBible": [
+    {
+      "speciesID": "sparkfang",
+      "displayName": "신더래시",
+      "baseElement": "flame",
+      "fantasy": "질주의 열과 추격의 찰나를 송곳니 끝에 벼려 두는 화염형 러니멀",
+      "metricBias": { "distance": "low", "paceStability": "medium", "cadence": "high", "elevation": "low", "nightAffinity": "low", "routeComplexity": "medium" },
+      "habitatTags": ["heat", "night", "signal-zone", "city"],
+      "visualKeywords": ["ember", "afterimage", "glass-flare"],
+      "narrativeHooks": [
+        "제철소와 전광판이 겹치는 야간 루트에서는 송곳니 가장자리가 유리빛으로 갈라진다",
+        "짧은 스퍼트를 반복할수록 몸 뒤에 잔광이 아닌 잔열이 남는다는 기록이 있다"
+      ],
+      "defaultMutationFamilyIDs": ["sparkfang-tempo-rhythm", "sparkfang-neon-urban", "sparkfang-burst-swift"]
+    },
+    {
+      "speciesID": "stoneback",
+      "displayName": "크래그맨틀",
+      "baseElement": "earth",
+      "fantasy": "산마루의 중량과 인내를 갑각 아래 켜켜이 눌러 담는 방벽형 러니멀",
+      "metricBias": { "distance": "medium", "paceStability": "medium", "cadence": "low", "elevation": "high", "nightAffinity": "low", "routeComplexity": "low" },
+      "habitatTags": ["rock", "heat", "wind", "stairs"],
+      "visualKeywords": ["slag", "anvil", "basalt"],
+      "narrativeHooks": [
+        "뜨거운 금속 냄새가 가득한 경사 구간에서는 등갑 결이 현무암처럼 어둡게 눌린다",
+        "강풍이 드는 협곡에서는 움직임보다 버팀이 더 큰 소리로 들린다고 전해진다"
+      ],
+      "defaultMutationFamilyIDs": ["stoneback-ridge-guard", "stoneback-summit-pulse", "stoneback-fault-wild"]
+    },
+    {
+      "speciesID": "windrunner",
+      "displayName": "에이라리스",
+      "baseElement": "light",
+      "fantasy": "먼 항로의 결을 깃결에 새기며 달린 이보다 먼저 바람길을 읽어내는 선도형 러니멀",
+      "metricBias": { "distance": "high", "paceStability": "high", "cadence": "medium", "elevation": "low", "nightAffinity": "low", "routeComplexity": "medium" },
+      "habitatTags": ["wind", "open-path", "ridge", "dusk"],
+      "visualKeywords": ["glass-ribbon", "echo-wing", "canyon-line"],
+      "narrativeHooks": [
+        "유리 협곡처럼 반사광이 긴 통로에서는 깃선이 두 겹으로 보이며 허공에 항로를 새긴다",
+        "열기와 바람이 동시에 드는 길에서는 순항 흔적이 한 번 더 반사되어 루프 문양이 쉽게 짙어진다"
+      ],
+      "defaultMutationFamilyIDs": ["windrunner-gale-swift", "windrunner-loop-route", "windrunner-trail-wildland"]
+    }
+  ],
+  "mutationFamilies": [],
+  "rareVariants": [],
+  "regions": [
+    {
+      "regionID": "signal-foundry",
+      "title": "신호 용광 구역",
+      "unlockCondition": "night-heat-runs-3",
+      "environmentBias": {
+        "timeAuras": ["night", "dusk"],
+        "routeShapes": ["maze", "loop"],
+        "environmentConditions": ["heat", "clear", "overcast"]
+      },
+      "activeSpeciesIDs": ["sparkfang", "stoneback"],
+      "activeVariantIDs": ["tempo-surge", "summit-heart"],
+      "narrativeSummary": "용광로 열기와 교차 신호가 뒤엉켜 속도와 버팀이 한 구역 안에서 동시에 시험되는 산업 야행권"
+    },
+    {
+      "regionID": "glass-canyon",
+      "title": "유리 협곡 구역",
+      "unlockCondition": "wind-distance-18km",
+      "environmentBias": {
+        "timeAuras": ["day", "dusk"],
+        "routeShapes": ["out-and-back", "maze"],
+        "environmentConditions": ["wind", "clear"]
+      },
+      "activeSpeciesIDs": ["windrunner", "sparkfang", "stoneback"],
+      "activeVariantIDs": ["loop-sigil", "tempo-surge"],
+      "narrativeSummary": "절벽과 유리벽 사이를 미끄러지는 반사광이 발걸음을 뒤늦게 한 번 더 되비추는 협곡형 항로"
+    }
+  ],
+  "seasons": [
+    {
+      "seasonID": "obsidian-circuit",
+      "title": "Obsidian Circuit",
+      "theme": "열기와 야행 질주의 도심 산업 신화",
+      "featuredRegionIDs": ["signal-foundry"],
+      "featuredSpeciesIDs": ["sparkfang", "stoneback"],
+      "featuredVariantIDs": ["tempo-surge", "summit-heart"],
+      "eventHooks": ["foundry-overdrive", "cinder-anvil", "night-furnace-checkpoint"]
+    },
+    {
+      "seasonID": "afterimage-relay",
+      "title": "Afterimage Relay",
+      "theme": "바람 반사와 항로 잔상의 계주",
+      "featuredRegionIDs": ["glass-canyon"],
+      "featuredSpeciesIDs": ["windrunner", "sparkfang"],
+      "featuredVariantIDs": ["loop-sigil", "tempo-surge"],
+      "eventHooks": ["glass-route-dossier", "afterimage-bell", "echo-lane-loop"]
+    }
+  ],
+  "narrativeEpisodes": [
+    {
+      "episodeID": "episode-foundry-surge",
+      "seasonID": "obsidian-circuit",
+      "regionID": "signal-foundry",
+      "triggerRules": {
+        "completedRunsMin": 3,
+        "distanceKmMin": null,
+        "cadenceMin": 174,
+        "nightRunRequired": true,
+        "elevationGainMin": null
+      },
+      "playerFacingText": "용광 구역의 경고등이 리듬에 맞춰 깜박이고, 신더래시 계열의 턱선이 용해된 금속처럼 빛나기 시작한다.",
+      "rewardPayload": {
+        "unlockRegionIDs": ["signal-foundry"],
+        "unlockSpeciesIDs": [],
+        "unlockVariantIDs": ["tempo-surge"]
+      }
+    },
+    {
+      "episodeID": "episode-cinder-anvil",
+      "seasonID": "obsidian-circuit",
+      "regionID": "signal-foundry",
+      "triggerRules": {
+        "completedRunsMin": 5,
+        "distanceKmMin": null,
+        "cadenceMin": null,
+        "nightRunRequired": null,
+        "elevationGainMin": 100
+      },
+      "playerFacingText": "계단과 경사로를 밀어붙인 발걸음이 모루 같은 진동으로 남고, 크래그맨틀의 등갑에 숯빛 결의가 겹겹이 눌어붙는다.",
+      "rewardPayload": {
+        "unlockRegionIDs": [],
+        "unlockSpeciesIDs": [],
+        "unlockVariantIDs": ["summit-heart"]
+      }
+    },
+    {
+      "episodeID": "episode-glass-route",
+      "seasonID": "afterimage-relay",
+      "regionID": "glass-canyon",
+      "triggerRules": {
+        "completedRunsMin": 4,
+        "distanceKmMin": 11.0,
+        "cadenceMin": 165,
+        "nightRunRequired": null,
+        "elevationGainMin": null
+      },
+      "playerFacingText": "협곡 벽면에 반사된 잔상이 실제 항로보다 한 박자 늦게 따라오고, 에이라리스의 깃결은 두 줄의 리본처럼 공중에 남는다.",
+      "rewardPayload": {
+        "unlockRegionIDs": ["glass-canyon"],
+        "unlockSpeciesIDs": [],
+        "unlockVariantIDs": ["loop-sigil"]
+      }
+    },
+    {
+      "episodeID": "episode-afterimage-chime",
+      "seasonID": "afterimage-relay",
+      "regionID": "glass-canyon",
+      "triggerRules": {
+        "completedRunsMin": 6,
+        "distanceKmMin": 16.0,
+        "cadenceMin": 170,
+        "nightRunRequired": false,
+        "elevationGainMin": null
+      },
+      "playerFacingText": "길 끝의 금속 풍경종이 두 번 울리고, 앞서간 몸선과 뒤늦게 되돌아온 잔상이 한 번에 겹치며 계주 문양이 완성된다.",
+      "rewardPayload": {
+        "unlockRegionIDs": [],
+        "unlockSpeciesIDs": [],
+        "unlockVariantIDs": ["loop-sigil", "tempo-surge"]
+      }
+    }
+  ]
+}

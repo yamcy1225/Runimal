@@ -60,4 +60,43 @@ struct MutationRuntimeReactionEngineTests {
         #expect(reaction?.axis == .body)
         #expect(reaction?.title == "실루엣 각성")
     }
+
+    @Test
+    func bridgeSnapshotProducesTransitionAwareDetail() {
+        let bridge = SpeciesGrowthMutationBridgeEngine.bridge(
+            for: .windrunner,
+            axis: .ecology,
+            branchID: "river-open"
+        )
+
+        let reaction = MutationRuntimeReactionEngine.reaction(
+            for: MutationVisualState(bodyStage: 0, ecologyStage: 3, rhythmStage: 0),
+            snapshot: LiveRunSnapshot(
+                elapsedSeconds: 620,
+                distanceMeters: 1400,
+                currentHeartRate: 138,
+                cadence: 164,
+                elevationGainM: 12,
+                averagePaceSeconds: 350
+            ),
+            gpsAccuracyMeters: 9,
+            isGPSFresh: true,
+            bridgeSnapshots: bridge.map { [.ecology: $0] } ?? [:]
+        )
+
+        #expect(reaction?.axis == .ecology)
+        #expect(reaction?.transitionStageTitle == bridge?.startStageTitle)
+        #expect(reaction?.detail.contains("갈래") == true)
+    }
+
+    @Test
+    func bridgeSnapshotUsesHumanBranchTitleInsteadOfRawBranchID() {
+        let bridge = SpeciesGrowthMutationBridgeEngine.bridge(
+            for: .windrunner,
+            axis: .ecology,
+            branchID: "river-open"
+        )
+
+        #expect(bridge?.branchTitle == "River Open")
+    }
 }
