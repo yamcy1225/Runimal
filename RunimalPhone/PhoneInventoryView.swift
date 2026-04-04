@@ -6,6 +6,7 @@ private struct InventoryHatchCinematicPayload: Identifiable {
     let pet: PetCollectionEntry
     let sourceRun: CompletedRunRecord?
     let renderState: CompanionPixelRenderState
+    let isFirstHatch: Bool
 
     var id: String { egg.id }
 }
@@ -41,6 +42,7 @@ struct PhoneInventoryView: View {
                 egg: payload.egg,
                 pet: payload.pet,
                 sourceRun: payload.sourceRun,
+                isFirstHatch: payload.isFirstHatch,
                 renderState: payload.renderState
             ) {
                 hatchResult = nil
@@ -422,12 +424,14 @@ struct PhoneInventoryView: View {
     private func handleHatch(_ eggID: String) {
         guard let egg = store.eggInventory.first(where: { $0.id == eggID }) else { return }
         let sourceRun = store.completedRuns.first(where: { $0.id == egg.sourceRunID })
+        let isFirstHatch = store.collection.isEmpty
         guard let pet = store.hatchEgg(eggID) else { return }
         hatchResult = InventoryHatchCinematicPayload(
             egg: egg,
             pet: pet,
             sourceRun: sourceRun,
-            renderState: store.pixelRenderState(for: pet)
+            renderState: store.pixelRenderState(for: pet),
+            isFirstHatch: isFirstHatch
         )
     }
 }

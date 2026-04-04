@@ -21,11 +21,21 @@ struct PhoneFeedCinematicPanel: View {
         outcome.stageAdvanced && outcome.afterProgress.stageLabel == RunimalBalanceConfig.finalStageLabel
     }
 
+    private var isFirstStageUp: Bool {
+        outcome.stageAdvanced &&
+        outcome.beforeProgress.stageLabel == RunimalBalanceConfig.eggStageLabel &&
+        outcome.afterProgress.stageLabel == "유아기"
+    }
+
     private var mythicTitle: String {
         RunimalGameEngine.mythicTitle(for: pet)
     }
 
     private var stageHeadline: String {
+        if isFirstStageUp {
+            return "첫 단계 상승"
+        }
+
         if mythicReached {
             return "성년기 도달"
         }
@@ -47,8 +57,24 @@ struct PhoneFeedCinematicPanel: View {
         )
     }
 
+    private var panelTitle: String {
+        isFirstStageUp ? "첫 성장 연출" : "성장 연출"
+    }
+
+    private var panelEyebrow: String {
+        isFirstStageUp ? "RUN 3 PROMISE" : "기록 반영"
+    }
+
+    private var progressSummary: String {
+        if isFirstStageUp {
+            return "첫 먹이 반영으로 \(pet.displayName)이 알 단계에서 유아기로 넘어섰습니다. 이제부터 이 아이의 취향과 반응이 눈에 띄게 살아납니다."
+        }
+
+        return "\(outcome.coreLabel)을 반영해 Lv.\(outcome.beforeSnapshot.level)에서 Lv.\(outcome.afterSnapshot.level), \(outcome.beforeProgress.totalExperience) XP에서 \(outcome.afterProgress.totalExperience) XP로 올랐습니다."
+    }
+
     var body: some View {
-        GameSurface(title: "성장 연출", accent: accent, eyebrow: "기록 반영") {
+        GameSurface(title: panelTitle, accent: accent, eyebrow: panelEyebrow) {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .center, spacing: 16) {
                     ZStack {
@@ -96,7 +122,7 @@ struct PhoneFeedCinematicPanel: View {
                             .font(.title3.weight(.black))
                             .foregroundStyle(.white)
 
-                        Text("\(outcome.coreLabel)을 반영해 Lv.\(outcome.beforeSnapshot.level)에서 Lv.\(outcome.afterSnapshot.level), \(outcome.beforeProgress.totalExperience) XP에서 \(outcome.afterProgress.totalExperience) XP로 올랐습니다.")
+                        Text(progressSummary)
                             .font(.footnote)
                             .foregroundStyle(.white.opacity(0.76))
 
@@ -107,6 +133,9 @@ struct PhoneFeedCinematicPanel: View {
                                 .foregroundStyle(.white.opacity(0.45))
                             TraitChip(label: "Lv.\(outcome.afterSnapshot.level)", accent: accent.opacity(0.22))
                             TraitChip(label: outcome.afterProgress.stageLabel, accent: accent)
+                            if isFirstStageUp {
+                                TraitChip(label: "첫 성장", accent: .white.opacity(0.92))
+                            }
                             if outcome.stageAdvanced {
                                 TraitChip(label: mythicReached ? mythicTitle : "연출 발동", accent: .orange.opacity(0.82))
                             }

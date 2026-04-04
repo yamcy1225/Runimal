@@ -73,6 +73,7 @@ struct PhoneRunDeckView: View {
                             lastInboundPayloadKeys: store.connectivity.lastInboundPayloadKeys
                         )
                     }
+                    PhoneLaunchTelemetryPanel(telemetry: store.telemetry)
                     summaryCard
                     runToolsSection
                     archiveFilterStrip

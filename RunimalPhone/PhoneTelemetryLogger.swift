@@ -17,6 +17,17 @@ final class PhoneTelemetryLogger {
         let lastDetail: String
     }
 
+    struct LaunchFunnelStep: Identifiable {
+        let id: String
+        let title: String
+        let count: Int
+        let lastDetail: String
+
+        var reached: Bool {
+            count > 0
+        }
+    }
+
     var lastEventLabel = "No telemetry yet"
     var eventCount = 0
 
@@ -54,6 +65,12 @@ final class PhoneTelemetryLogger {
         logURL()?.path ?? "unavailable"
     }
 
+    func exportURL() -> URL? {
+        let url = logURL()
+        guard let url, FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return url
+    }
+
     func sectionSummary(title: String, events: Set<String>) -> SectionSummary {
         let records = readRecords().filter { events.contains($0.event) }
         return SectionSummary(
@@ -61,6 +78,28 @@ final class PhoneTelemetryLogger {
             count: records.count,
             lastDetail: records.first.map { "\($0.event) · \($0.detail)" } ?? "기록 없음"
         )
+    }
+
+    func launchFunnel() -> [LaunchFunnelStep] {
+        let records = readRecords()
+        let orderedSteps = [
+            ("first_run_completed", "첫 러닝"),
+            ("egg_created", "첫 알 생성"),
+            ("egg_hatched", "첫 부화"),
+            ("first_stage_up", "첫 단계 상승"),
+            ("rare_variant_obtained", "희귀 변이"),
+            ("weekly_reward_claimed", "주간 보상")
+        ]
+
+        return orderedSteps.map { event, title in
+            let matches = records.filter { $0.event == event }
+            return LaunchFunnelStep(
+                id: event,
+                title: title,
+                count: matches.count,
+                lastDetail: matches.first.map { $0.detail } ?? "아직 없음"
+            )
+        }
     }
 
     private func logURL() -> URL? {

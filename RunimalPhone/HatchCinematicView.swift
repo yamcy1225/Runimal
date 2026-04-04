@@ -5,6 +5,7 @@ struct HatchCinematicView: View {
     let egg: EggInventoryEntry
     let pet: PetCollectionEntry
     let sourceRun: CompletedRunRecord?
+    let isFirstHatch: Bool
     let renderState: CompanionPixelRenderState
     let onDismiss: () -> Void
 
@@ -186,6 +187,9 @@ struct HatchCinematicView: View {
             HStack(spacing: 10) {
                 TraitChip(label: egg.shell.displayLabel, accent: egg.shell.accentColor)
                 TraitChip(label: phase.badgeLabel, accent: .white.opacity(0.18))
+                if isFirstHatch, phase == .complete {
+                    TraitChip(label: "첫 동행", accent: .white.opacity(0.92))
+                }
                 if let variantLabel, phase == .complete {
                     TraitChip(label: variantLabel, accent: pet.pet.accentColor.opacity(0.82))
                 }
@@ -283,7 +287,11 @@ struct HatchCinematicView: View {
         case .wait: return "부화 준비"
         case .decoding: return "부화 진행 중"
         case .interference: return "신호 정리 중"
-        case .complete: return isRareReveal ? "특별한 부화 완료" : "부화 완료"
+        case .complete:
+            if isFirstHatch {
+                return "첫 부화 완료"
+            }
+            return isRareReveal ? "특별한 부화 완료" : "부화 완료"
         }
     }
 
@@ -296,6 +304,9 @@ struct HatchCinematicView: View {
         case .interference:
             return "신호 정리 중..."
         case .complete:
+            if isFirstHatch {
+                return "\(pet.pet.displayName) // 첫 동행 합류"
+            }
             return isRareReveal ? "\(pet.pet.displayName) // 특별한 모습 확정" : "\(pet.pet.displayName) 등장"
         }
     }
@@ -309,6 +320,9 @@ struct HatchCinematicView: View {
         case .interference:
             return "흩어진 신호를 다시 모아 하나의 모습으로 정리하고 있습니다."
         case .complete:
+            if isFirstHatch {
+                return "이번 러닝이 첫 생명으로 자리 잡았습니다. 이제 이 아이가 당신의 첫 동행이 됩니다."
+            }
             if isRareReveal {
                 return "\(variantLabel ?? "희귀 변이") 신호가 고정되었습니다. 일반 개체보다 높은 가치의 생성 결과입니다."
             }
