@@ -474,38 +474,43 @@ final class PhoneProgressStore {
             interactionBonus.bonusExperience +
             lateGrowthBonus.bonusExperience +
             potentialSpend
-        let starterStageGuarantee = (currentRecord?.feedCount ?? 0) == 0 &&
-            (currentRecord?.totalExperience ?? 0) >= 100 &&
-            beforeProgress.stageLabel == RunimalBalanceConfig.eggStageLabel
+        let starterStageGuarantee = RunimalStarterLoopEngine.shouldGuaranteeFirstVisibleStageAdvance(
+            record: currentRecord,
+            currentStageLabel: beforeProgress.stageLabel,
+            run: run
+        )
         let stageLock = RunimalRewardPulseEngine.stageLock(
             currentProgress: beforeProgress,
             proposedExperience: rawExperience
         )
+        let currentExperience = currentRecord?.totalExperience ?? 0
         let uncappedExperience: Int
 
         if starterStageGuarantee {
-            let firstThreshold = RunimalBalanceConfig.evolutionThresholds(for: companion.pet.species)[1]
             uncappedExperience = max(
                 rawExperience + stageLock.bonusExperience,
-                max(0, firstThreshold - (currentRecord?.totalExperience ?? 0))
+                RunimalStarterLoopEngine.guaranteedFirstVisibleStageGain(
+                    currentExperience: currentExperience,
+                    species: companion.pet.species
+                )
             )
         } else {
             uncappedExperience = rawExperience + stageLock.bonusExperience
         }
 
-        let currentExperience = currentRecord?.totalExperience ?? 0
         let gainedExperience = RunimalBalanceConfig.cappedExperienceGain(
             currentExperience: currentExperience,
-            proposedGain: uncappedExperience,
+            proposedGain: starterStageGuarantee ? 0 : uncappedExperience,
             currentLevel: levelBefore,
             runDistanceKm: run.distanceMeters / 1000
         )
-        let growthCapApplied = gainedExperience < uncappedExperience
+        let resolvedGainedExperience = starterStageGuarantee ? uncappedExperience : gainedExperience
+        let growthCapApplied = starterStageGuarantee == false && gainedExperience < uncappedExperience
 
         let remainingStoredPotentialExperience = max(storedPotential - potentialSpend, 0)
         let updatedRecord = CompanionGrowthRecord(
             companionID: companion.id,
-            totalExperience: currentExperience + gainedExperience,
+            totalExperience: currentExperience + resolvedGainedExperience,
             storedPotentialExperience: remainingStoredPotentialExperience,
             feedCount: (currentRecord?.feedCount ?? 0) + 1,
             assignedRunIDs: (currentRecord?.assignedRunIDs ?? []) + [run.id],
@@ -525,6 +530,7 @@ final class PhoneProgressStore {
         let bonusLabels = stageLock.bonusLabels +
             interactionBonus.labels +
             lateGrowthBonus.labels +
+            (starterStageGuarantee ? ["첫 성장 고정"] : []) +
             (growthCapApplied ? ["10km 미만 1레벨 상한"] : []) +
             retainedGrowthLabels +
             (potentialSpend > 0 ? ["동행 잠재 사용 +\(potentialSpend)"] : [])
@@ -538,7 +544,7 @@ final class PhoneProgressStore {
             storedPotentialExperience: storedPotential,
             potentialExperienceSpent: potentialSpend,
             remainingStoredPotentialExperience: remainingStoredPotentialExperience,
-            gainedExperience: gainedExperience,
+            gainedExperience: resolvedGainedExperience,
             beforeSnapshot: beforeSnapshot,
             afterSnapshot: afterSnapshot,
             beforeProgress: beforeProgress,

@@ -12,7 +12,7 @@ Primary targets:
 
 Primary project root:
 
-- `/Users/heobella/jaw-bot-2/apps/runimal-apple`
+- `/Users/heobella/jaw-bot-4/apps/runimal-apple`
 
 ## 2. Architecture Overview
 
@@ -22,7 +22,7 @@ Runimal is split into three layers.
 
 Location:
 
-- `/Users/heobella/jaw-bot-2/apps/runimal-apple/Sources/RunimalCore`
+- `/Users/heobella/jaw-bot-4/apps/runimal-apple/Sources/RunimalCore`
 
 Responsibilities:
 
@@ -40,7 +40,7 @@ This layer should remain UI-independent.
 
 Location:
 
-- `/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone`
+- `/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone`
 
 Responsibilities:
 
@@ -55,7 +55,7 @@ Responsibilities:
 
 Location:
 
-- `/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalWatch`
+- `/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalWatch`
 
 Responsibilities:
 
@@ -207,7 +207,7 @@ Kinds:
 
 Core file:
 
-- [RunimalEggEngine.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/Sources/RunimalCore/RunimalEggEngine.swift)
+- [RunimalEggEngine.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/Sources/RunimalCore/RunimalEggEngine.swift)
 
 Main responsibilities:
 
@@ -287,11 +287,11 @@ Design result:
 
 Primary store:
 
-- [PhoneProgressStore.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneProgressStore.swift)
+- [PhoneProgressStore.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone/PhoneProgressStore.swift)
 
 Extension:
 
-- [PhoneProgressStore+CompanionLoop.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneProgressStore+CompanionLoop.swift)
+- [PhoneProgressStore+CompanionLoop.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone/PhoneProgressStore+CompanionLoop.swift)
 
 Persistent state includes:
 
@@ -384,8 +384,8 @@ Effects:
 
 Primary files:
 
-- [PhoneRunCoreDecisionPanel.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneRunCoreDecisionPanel.swift)
-- [PhoneCollectionView.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneCollectionView.swift)
+- [PhoneRunCoreDecisionPanel.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone/PhoneRunCoreDecisionPanel.swift)
+- [PhoneCollectionView.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone/PhoneCollectionView.swift)
 
 Current behavior:
 
@@ -413,10 +413,10 @@ Eggs should not display:
 
 Key files:
 
-- [PhoneCompanionRosterPanel.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneCompanionRosterPanel.swift)
-- [PhoneCollectionView.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneCollectionView.swift)
-- [PhoneHomeView.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneHomeView.swift)
-- [EggShellStyle.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/SharedUI/EggShellStyle.swift)
+- [PhoneCompanionRosterPanel.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone/PhoneCompanionRosterPanel.swift)
+- [PhoneCollectionView.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone/PhoneCollectionView.swift)
+- [PhoneHomeView.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone/PhoneHomeView.swift)
+- [EggShellStyle.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/SharedUI/EggShellStyle.swift)
 
 ## 8.2 Reset Safety
 
@@ -431,7 +431,7 @@ Current behavior:
 
 Key file:
 
-- [PhoneCollectionView.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneCollectionView.swift)
+- [PhoneCollectionView.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone/PhoneCollectionView.swift)
 
 ## 9. Weekly And Seasonal Systems
 
@@ -482,8 +482,8 @@ This system is kept separate from base pet generation.
 
 Core files:
 
-- [CompanionBuildEngine.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/Sources/RunimalCore/CompanionBuildEngine.swift)
-- [PhoneBuildTreePanel.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneBuildTreePanel.swift)
+- [CompanionBuildEngine.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/Sources/RunimalCore/CompanionBuildEngine.swift)
+- [PhoneBuildTreePanel.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone/PhoneBuildTreePanel.swift)
 
 ## 12. Sync And Cloud
 
@@ -495,9 +495,9 @@ Primary persistence layers:
 
 Core related files:
 
-- [PhoneVaultSyncManager.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneVaultSyncManager.swift)
-- [PhoneCloudMirrorManager.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneCloudMirrorManager.swift)
-- [SnapshotMergeEngine.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/Sources/RunimalCore/SnapshotMergeEngine.swift)
+- [PhoneVaultSyncManager.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone/PhoneVaultSyncManager.swift)
+- [PhoneCloudMirrorManager.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone/PhoneCloudMirrorManager.swift)
+- [SnapshotMergeEngine.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/Sources/RunimalCore/SnapshotMergeEngine.swift)
 
 Egg achievement unlock state is now part of snapshots and merge results.
 
@@ -515,9 +515,9 @@ Most collection management remains on iPhone.
 
 Key files:
 
-- [WatchRunSessionManager.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalWatch/WatchRunSessionManager.swift)
-- [WatchDashboardView.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalWatch/WatchDashboardView.swift)
-- [WatchConnectivityManager.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalWatch/WatchConnectivityManager.swift)
+- [WatchRunSessionManager.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalWatch/WatchRunSessionManager.swift)
+- [WatchDashboardView.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalWatch/WatchDashboardView.swift)
+- [WatchConnectivityManager.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalWatch/WatchConnectivityManager.swift)
 
 ## 14. Verification Notes
 

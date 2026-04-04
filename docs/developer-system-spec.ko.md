@@ -12,7 +12,7 @@
 
 프로젝트 루트:
 
-- `/Users/heobella/jaw-bot-2/apps/runimal-apple`
+- `/Users/heobella/jaw-bot-4/apps/runimal-apple`
 
 ## 2. 아키텍처 개요
 
@@ -22,7 +22,7 @@ Runimal은 세 계층으로 나뉜다.
 
 위치:
 
-- `/Users/heobella/jaw-bot-2/apps/runimal-apple/Sources/RunimalCore`
+- `/Users/heobella/jaw-bot-4/apps/runimal-apple/Sources/RunimalCore`
 
 책임:
 
@@ -40,7 +40,7 @@ Runimal은 세 계층으로 나뉜다.
 
 위치:
 
-- `/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone`
+- `/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone`
 
 책임:
 
@@ -55,7 +55,7 @@ Runimal은 세 계층으로 나뉜다.
 
 위치:
 
-- `/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalWatch`
+- `/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalWatch`
 
 책임:
 
@@ -167,9 +167,9 @@ Runimal은 세 계층으로 나뉜다.
 
 핵심 파일:
 
-- [RunimalEggEngine.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/Sources/RunimalCore/RunimalEggEngine.swift)
-- [EggShellStyle.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/SharedUI/EggShellStyle.swift)
-- [TraceEggView.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/SharedUI/TraceEggView.swift)
+- [RunimalEggEngine.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/Sources/RunimalCore/RunimalEggEngine.swift)
+- [EggShellStyle.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/SharedUI/EggShellStyle.swift)
+- [TraceEggView.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/SharedUI/TraceEggView.swift)
 
 ### 4.1 알 획득 조건
 
@@ -232,9 +232,9 @@ Runimal은 세 계층으로 나뉜다.
 
 핵심 파일:
 
-- [HatchCinematicView.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/HatchCinematicView.swift)
-- [HatchInterferenceBackdropView.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/SharedUI/HatchInterferenceBackdropView.swift)
-- [HatchFragmentBurstView.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/SharedUI/HatchFragmentBurstView.swift)
+- [HatchCinematicView.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone/HatchCinematicView.swift)
+- [HatchInterferenceBackdropView.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/SharedUI/HatchInterferenceBackdropView.swift)
+- [HatchFragmentBurstView.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/SharedUI/HatchFragmentBurstView.swift)
 
 단계:
 
@@ -260,9 +260,9 @@ AR 대비:
 
 핵심 파일:
 
-- [PhoneProgressStore.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneProgressStore.swift)
-- [PhoneProgressStore+CompanionLoop.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneProgressStore+CompanionLoop.swift)
-- [PhoneProgressStore+Sanctuary.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneProgressStore+Sanctuary.swift)
+- [PhoneProgressStore.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone/PhoneProgressStore.swift)
+- [PhoneProgressStore+CompanionLoop.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone/PhoneProgressStore+CompanionLoop.swift)
+- [PhoneProgressStore+Sanctuary.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone/PhoneProgressStore+Sanctuary.swift)
 
 저장 대상:
 
@@ -304,7 +304,7 @@ AR 대비:
 
 핵심 UI 파일:
 
-- [PhoneRunCoreDecisionPanel.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneRunCoreDecisionPanel.swift)
+- [PhoneRunCoreDecisionPanel.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone/PhoneRunCoreDecisionPanel.swift)
 
 선택지:
 
@@ -321,9 +321,9 @@ AR 대비:
 
 핵심 파일:
 
-- [PhoneCompanionRosterPanel.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneCompanionRosterPanel.swift)
-- [PhoneCollectionView.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneCollectionView.swift)
-- [CompanionGrowthEngine.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/Sources/RunimalCore/CompanionGrowthEngine.swift)
+- [PhoneCompanionRosterPanel.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone/PhoneCompanionRosterPanel.swift)
+- [PhoneCollectionView.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone/PhoneCollectionView.swift)
+- [CompanionGrowthEngine.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/Sources/RunimalCore/CompanionGrowthEngine.swift)
 
 현재 UI 동작:
 
@@ -342,9 +342,9 @@ AR 대비:
 
 핵심 파일:
 
-- [SanctuaryEngine.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/Sources/RunimalCore/SanctuaryEngine.swift)
-- [SanctuaryModels.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/Sources/RunimalCore/SanctuaryModels.swift)
-- [PhoneSanctuaryPanel.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalPhone/PhoneSanctuaryPanel.swift)
+- [SanctuaryEngine.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/Sources/RunimalCore/SanctuaryEngine.swift)
+- [SanctuaryModels.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/Sources/RunimalCore/SanctuaryModels.swift)
+- [PhoneSanctuaryPanel.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalPhone/PhoneSanctuaryPanel.swift)
 
 동작:
 
@@ -356,9 +356,9 @@ AR 대비:
 
 핵심 파일:
 
-- [WatchRunSessionManager.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalWatch/WatchRunSessionManager.swift)
-- [WatchDashboardView.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/RunimalWatch/WatchDashboardView.swift)
-- [RunimalCuePlayer.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/SharedUI/RunimalCuePlayer.swift)
+- [WatchRunSessionManager.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalWatch/WatchRunSessionManager.swift)
+- [WatchDashboardView.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/RunimalWatch/WatchDashboardView.swift)
+- [RunimalCuePlayer.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/SharedUI/RunimalCuePlayer.swift)
 
 역할:
 

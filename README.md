@@ -76,7 +76,7 @@ Runimal의 Apple 플랫폼 구현 저장소입니다.
 ## 로컬 개발
 
 ```bash
-cd /Users/heobella/jaw-bot-2/apps/runimal-apple
+cd /Users/heobella/jaw-bot-4/apps/runimal-apple
 xcodegen generate
 swift build
 ```

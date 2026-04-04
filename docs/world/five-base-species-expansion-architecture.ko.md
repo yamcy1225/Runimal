@@ -71,9 +71,9 @@ Runimal의 기본 종족 값은 `5종`으로 고정한다.
 
 ## 코드 뼈대
 
-- [SpeciesExpansionModels.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/Sources/RunimalCore/SpeciesExpansionModels.swift)
-- [DefaultSpeciesExpansionBlueprints.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/Sources/RunimalCore/DefaultSpeciesExpansionBlueprints.swift)
-- [SpeciesExpansionEngineTests.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/Tests/RunimalCoreTests/SpeciesExpansionEngineTests.swift)
+- [SpeciesExpansionModels.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/Sources/RunimalCore/SpeciesExpansionModels.swift)
+- [DefaultSpeciesExpansionBlueprints.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/Sources/RunimalCore/DefaultSpeciesExpansionBlueprints.swift)
+- [SpeciesExpansionEngineTests.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/Tests/RunimalCoreTests/SpeciesExpansionEngineTests.swift)
 
 ## 다음 단계
 
