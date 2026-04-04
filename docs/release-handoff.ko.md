@@ -16,7 +16,7 @@
 - `PixelPetView` 공통 렌더가 `SpeciesVisualRenderProfile`을 직접 참조하도록 정리 완료
 - `PhoneDashboardStore` 액션 분리 / `PhoneDashboardView` 크롬 분리 완료
 - TestFlight archive/export 플레이북 및 기본 스크립트 정리 완료
-- App Store 메타데이터 템플릿 및 GitHub Actions 릴리즈 워크플로우 초안 추가
+- App Store 메타데이터 템플릿 및 GitHub Actions 릴리즈 워크플로우 정리 완료
 
 ## 릴리즈 전 최종 점검 항목
 
@@ -58,7 +58,8 @@
 - 워치 빌드는 연결 상태에 따라 설치 재시도가 필요할 수 있음
 - 최근 워치 sync 반응 저하와 폰/워치 렌더 불일치는 2차 정리까지 반영돼 공통 렌더 프로파일 기준으로 맞춰진 상태
 - `project.yml`이 원본이므로 새 Swift 파일 추가 뒤에는 `xcodegen generate`가 필요함
-- GitHub Actions 워크플로우와 TestFlight 업로드 스크립트 초안은 추가됐지만, 서명/시크릿 연결은 실제 저장소 환경에서 마무리해야 함
+- GitHub Actions 워크플로우는 `push`에서 unsigned validation, `workflow_dispatch`에서 archive/export/upload를 분리해 동작함
+- `workflow_dispatch` archive에는 `DEVELOPMENT_TEAM_ID`, TestFlight 업로드에는 `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_PRIVATE_KEY_BASE64`가 필요함
 
 ## 권장 다음 작업
 

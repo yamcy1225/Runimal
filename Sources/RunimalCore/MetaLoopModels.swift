@@ -88,6 +88,11 @@ public struct WeeklySeason: Codable, Equatable, Sendable {
         self.focusSpecies = focusSpecies
         self.focusVariant = focusVariant
     }
+
+    public var id: String {
+        let variantToken = focusVariant?.rawValue ?? "base"
+        return "\(focusSpecies.rawValue)-\(variantToken)-\(rewardTitle)"
+    }
 }
 
 public struct WeeklyReward: Codable, Equatable, Identifiable, Sendable {

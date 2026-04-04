@@ -11,6 +11,7 @@ BUILD_ROOT="${BUILD_ROOT:-$PROJECT_ROOT/build/release}"
 ARCHIVE_PATH="${ARCHIVE_PATH:-$BUILD_ROOT/${SCHEME}.xcarchive}"
 EXPORT_DIR="${EXPORT_DIR:-$BUILD_ROOT/export}"
 EXPORT_OPTIONS_PLIST="${EXPORT_OPTIONS_PLIST:-$BUILD_ROOT/ExportOptions.plist}"
+ALLOW_PROVISIONING_UPDATES="${ALLOW_PROVISIONING_UPDATES:-1}"
 
 if [[ -z "$TEAM_ID" ]]; then
   echo "TEAM_ID environment variable is required."
@@ -24,6 +25,19 @@ if [[ ! -d "$PROJECT_PATH" ]]; then
   echo "RunimalApple.xcodeproj is missing. Run 'xcodegen generate' first."
   exit 1
 fi
+
+if ! command -v xcodebuild >/dev/null 2>&1; then
+  echo "xcodebuild is required."
+  exit 1
+fi
+
+if [[ "${ALLOW_PROVISIONING_UPDATES}" == "1" ]]; then
+  PROVISIONING_FLAG=(-allowProvisioningUpdates)
+else
+  PROVISIONING_FLAG=()
+fi
+
+rm -rf "$ARCHIVE_PATH" "$EXPORT_DIR"
 
 cat > "$EXPORT_OPTIONS_PLIST" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -50,13 +64,15 @@ cat > "$EXPORT_OPTIONS_PLIST" <<EOF
 </plist>
 EOF
 
-echo "==> Archiving ${SCHEME}"
+echo "==> Archiving ${SCHEME} (${CONFIGURATION})"
 xcodebuild \
   -project "$PROJECT_PATH" \
   -scheme "$SCHEME" \
   -configuration "$CONFIGURATION" \
   -destination "generic/platform=iOS" \
   -archivePath "$ARCHIVE_PATH" \
+  "${PROVISIONING_FLAG[@]}" \
+  clean \
   archive
 
 echo "==> Exporting IPA"

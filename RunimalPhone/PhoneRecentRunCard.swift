@@ -21,8 +21,18 @@ struct PhoneRecentRunCard: View {
         "+\(run.reward.experience) XP"
     }
 
+    private var eyebrowLabel: String {
+        if run.source.hasPrefix("fit:") {
+            return "FIT 가져온 기록"
+        }
+        if run.source.hasPrefix("healthkit:") {
+            return "외부 운동 기록"
+        }
+        return "운동 기록"
+    }
+
     var body: some View {
-        GameSurface(title: "운동 기록", accent: accent, eyebrow: "FIT 수동 가져오기") {
+        GameSurface(title: "운동 기록", accent: accent, eyebrow: eyebrowLabel) {
             VStack(alignment: .leading, spacing: 12) {
                 coreField
 
@@ -230,7 +240,7 @@ struct PhoneRecentRunCard: View {
     private func renderShareImage() -> UIImage? {
         let renderer = ImageRenderer(
             content: RunShareImageCard(run: run)
-                .frame(width: 1080, height: 1080)
+                .frame(width: 1080, height: 1920)
         )
         renderer.scale = 1
         return renderer.uiImage
@@ -262,6 +272,19 @@ struct PhoneRecentRunCard: View {
 private struct RunShareImageCard: View {
     let run: CompletedRunRecord
 
+    private var sourceLabel: String {
+        if let label = run.sourceLabel {
+            return label.uppercased()
+        }
+        if run.source.hasPrefix("fit:") {
+            return "FIT IMPORT"
+        }
+        if run.source.hasPrefix("healthkit:") {
+            return "HEALTHKIT"
+        }
+        return "LIVE RUN"
+    }
+
     var body: some View {
         ZStack {
             LinearGradient(
@@ -271,14 +294,20 @@ private struct RunShareImageCard: View {
             )
             GameBoyLCDOverlay()
 
-            VStack(alignment: .leading, spacing: 28) {
+            VStack(alignment: .leading, spacing: 30) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("RUNIMAL")
                         .font(.system(size: 32, weight: .black, design: .monospaced))
                         .foregroundStyle(GameBoyPalette.darkest)
-                    Text("운동 기록 리포트")
+                    Text("오늘의 러닝이 생명으로 남았다")
                         .font(.system(size: 20, weight: .bold, design: .monospaced))
                         .foregroundStyle(GameBoyPalette.mediumDark)
+                }
+
+                HStack(spacing: 10) {
+                    shareChip(sourceLabel)
+                    shareChip(environmentLabel(run.environmentCondition))
+                    shareChip(run.reward.pet.displayName)
                 }
 
                 ZStack {
@@ -293,43 +322,93 @@ private struct RunShareImageCard: View {
                         RoutePreviewShape(points: run.route)
                             .stroke(GameBoyPalette.mediumDark, style: StrokeStyle(lineWidth: 14, lineCap: .round, lineJoin: .round))
                             .padding(34)
+                    } else {
+                        Image(systemName: "figure.run.square.stack")
+                            .font(.system(size: 110, weight: .black))
+                            .foregroundStyle(GameBoyPalette.mediumDark)
                     }
                 }
-                .aspectRatio(1, contentMode: .fit)
+                .frame(maxWidth: .infinity)
+                .frame(height: 760)
 
                 HStack(spacing: 18) {
                     shareMetric("거리", distanceLabel(run.distanceMeters))
                     shareMetric("XP", "+\(run.reward.experience)")
+                    shareMetric("페이스", paceLabel(run.averagePaceSeconds))
                     shareMetric("케이던스", run.cadence.map { "\($0) spm" } ?? "--")
                 }
 
                 Text(run.reward.coreLabel)
                     .font(.system(size: 46, weight: .black, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(GameBoyPalette.darkest)
+                    .lineLimit(2)
 
-                    Text("가져온 운동 기록을 지금 선택한 동행 성장에 반영")
+                Text("기록 보관이 아니라, 다음 알과 성장 선택을 자랑하는 브래그 카드.")
                     .font(.system(size: 24, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.82))
+                    .foregroundStyle(GameBoyPalette.mediumDark)
+
+                Spacer(minLength: 0)
             }
             .padding(48)
         }
+    }
+
+    private func shareChip(_ label: String) -> some View {
+        Text(label)
+            .font(.system(size: 20, weight: .black, design: .monospaced))
+            .foregroundStyle(GameBoyPalette.darkest)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 10)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(GameBoyPalette.lightest.opacity(0.82))
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(GameBoyPalette.darkest, lineWidth: 2)
+                    )
+            )
     }
 
     private func shareMetric(_ title: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.64))
+                .foregroundStyle(GameBoyPalette.mediumDark)
             Text(value)
                 .font(.system(size: 28, weight: .black, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(GameBoyPalette.darkest)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
-        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(GameBoyPalette.lightest.opacity(0.84))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(GameBoyPalette.darkest, lineWidth: 2)
+                )
+        )
     }
 
     private func distanceLabel(_ meters: Double) -> String {
         String(format: "%.2f km", meters / 1000)
+    }
+
+    private func paceLabel(_ seconds: Int?) -> String {
+        guard let seconds else { return "--" }
+        return "\(seconds / 60):\(String(format: "%02d", seconds % 60))/km"
+    }
+
+    private func environmentLabel(_ condition: EnvironmentCondition) -> String {
+        switch condition {
+        case .clear: return "맑음"
+        case .rain: return "비"
+        case .snow: return "눈"
+        case .wind: return "바람"
+        case .heat: return "고온"
+        case .cold: return "저온"
+        case .overcast: return "흐림"
+        case .unknown: return "미확인"
+        }
     }
 }

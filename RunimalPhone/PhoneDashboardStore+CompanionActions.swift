@@ -7,7 +7,14 @@ extension PhoneDashboardStore {
         progress.claimWeeklyReward(id: reward.id)
         syncCompanionEffects()
         persistVault()
-        telemetry.log("weekly_reward_claimed", detail: reward.id)
+        telemetry.log(
+            "weekly_reward_claimed",
+            detail: reward.id,
+            properties: [
+                "reward_id": reward.id,
+                "season_id": weeklyBoard.season.id
+            ]
+        )
     }
 
     func activateCompanion(_ companionID: String) {
@@ -40,7 +47,15 @@ extension PhoneDashboardStore {
                 telemetry.log("signal_lock_applied", detail: "\(run.id):\(outcome.afterProgress.stageLabel)")
             }
             if outcome.stageAdvanced, wasFirstStageUp {
-                telemetry.log("first_stage_up", detail: outcome.afterProgress.stageLabel)
+                telemetry.log(
+                    "first_stage_up",
+                    detail: outcome.afterProgress.stageLabel,
+                    properties: [
+                        "run_id": run.id,
+                        "stage_label": outcome.afterProgress.stageLabel,
+                        "companion_id": featuredCompanion.id
+                    ]
+                )
             }
         }
         syncMainCompanionSelection()
@@ -57,7 +72,15 @@ extension PhoneDashboardStore {
         persistVault()
         if let forgedEgg {
             let firstFlag = wasFirstEgg ? "first" : "repeat"
-            telemetry.log("egg_created", detail: "\(forgedEgg.shell.rawValue):\(firstFlag)")
+            telemetry.log(
+                "egg_created",
+                detail: "\(forgedEgg.shell.rawValue):\(firstFlag)",
+                properties: [
+                    "shell": forgedEgg.shell.rawValue,
+                    "creation_kind": firstFlag,
+                    "source_run_id": run.id
+                ]
+            )
         }
         telemetry.log("forge_egg", detail: run.id)
         return forgedEgg
@@ -85,10 +108,25 @@ extension PhoneDashboardStore {
         persistVault()
         if let companion {
             let hatchDetail = isFirstHatch ? "first:\(companion.pet.species.rawValue)" : companion.pet.species.rawValue
-            telemetry.log("egg_hatched", detail: hatchDetail)
+            telemetry.log(
+                "egg_hatched",
+                detail: hatchDetail,
+                properties: [
+                    "species": companion.pet.species.rawValue,
+                    "is_first_hatch": isFirstHatch ? "true" : "false",
+                    "egg_id": eggID
+                ]
+            )
             if let rareVariant = companion.pet.rareVariant {
                 let rareLabel = RareVariantMeta.labels[rareVariant] ?? rareVariant.rawValue
-                telemetry.log("rare_variant_obtained", detail: "\(rareLabel):\(companion.pet.species.rawValue)")
+                telemetry.log(
+                    "rare_variant_obtained",
+                    detail: "\(rareLabel):\(companion.pet.species.rawValue)",
+                    properties: [
+                        "variant": rareVariant.rawValue,
+                        "species": companion.pet.species.rawValue
+                    ]
+                )
             }
         }
         telemetry.log("hatch_egg", detail: eggID)

@@ -8,6 +8,7 @@ final class PhoneTelemetryLogger {
         let timestamp: Date
         let event: String
         let detail: String
+        let properties: [String: String]?
     }
 
     struct SectionSummary {
@@ -19,8 +20,13 @@ final class PhoneTelemetryLogger {
     var lastEventLabel = "No telemetry yet"
     var eventCount = 0
 
-    func log(_ event: String, detail: String) {
-        let record = Record(timestamp: Date(), event: event, detail: detail)
+    func log(_ event: String, detail: String, properties: [String: String] = [:]) {
+        let record = Record(
+            timestamp: Date(),
+            event: event,
+            detail: detail,
+            properties: properties.isEmpty ? nil : properties
+        )
         guard let url = logURL() else { return }
 
         do {

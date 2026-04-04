@@ -109,7 +109,15 @@ extension PhoneDashboardStore {
         }
         persistVault()
         if isFirstCompletedRun {
-            telemetry.log("first_run_completed", detail: record.id)
+            telemetry.log(
+                "first_run_completed",
+                detail: record.id,
+                properties: [
+                    "run_id": record.id,
+                    "source": record.source,
+                    "live_companion_id": stampedRecord.liveCompanionID ?? "none"
+                ]
+            )
         }
         telemetry.log("completed_run_ingested", detail: record.id)
     }

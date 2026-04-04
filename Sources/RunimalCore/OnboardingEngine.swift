@@ -12,21 +12,21 @@ public enum RunimalOnboardingEngine {
 
         return [
             StarterLoopStep(
-                id: "day-1",
-                title: "Step 1 · 첫 ??? 알 획득",
-                detail: "빈 슬롯 상태의 첫 성공 러닝으로 숨겨진 알을 확보합니다.",
+                id: "run-1",
+                title: "Run 1 · 첫 ??? 알 확보",
+                detail: "빈 슬롯 상태의 첫 성공 러닝은 스타터 알로 고정되어 첫 생명 신호를 남깁니다.",
                 completed: hasStarterEgg
             ),
             StarterLoopStep(
-                id: "day-2",
-                title: "Step 2 · 첫 부화 완료",
-                detail: "둘째 러닝으로 알을 부화시켜 첫 동행을 대표로 세웁니다.",
+                id: "run-2",
+                title: "Run 2 · 첫 부화 보장",
+                detail: "둘째 러닝은 스타터 알의 부화선을 넘기도록 설계되어 첫 동행이 반드시 깨어납니다.",
                 completed: hasFirstHatch
             ),
             StarterLoopStep(
-                id: "day-3",
-                title: "Step 3 · 첫 단계 상승",
-                detail: "셋째 운동 기록을 먹여 첫 성장 단계를 넘깁니다.",
+                id: "run-3",
+                title: "Run 3 · 첫 단계 상승",
+                detail: "첫 의미 있는 먹이 주기는 유아기 진입을 보장해 성장의 손맛을 바로 보여 줍니다.",
                 completed: hasStageAdvance
             ),
         ]

@@ -72,6 +72,12 @@ Runimal의 Apple 플랫폼 구현 저장소입니다.
 - [TestFlight 릴리즈 플레이북](./docs/testflight-release-playbook.ko.md)
 - [App Store 메타데이터 가이드](./docs/app-store-metadata.ko.md)
 - [실시간 동행 / 운동 기록 분리 원칙](./docs/live-companion-and-run-core.ko.md)
+- [v1 런치 락](./docs/v1-launch-lock.ko.md)
+- [v1 스코프 컷 메모](./docs/v1-scope-cut-memo.ko.md)
+- [런치 QA 게이트](./docs/launch-qa-gate.ko.md)
+- [텔레메트리 이벤트 스키마](./docs/telemetry-event-schema.ko.md)
+- [런치 콘텐츠 바이블](./docs/launch-content-bible.ko.md)
+- [Season 0 라이브 옵스 플랜](./docs/season-0-live-ops-plan.ko.md)
 
 ## 로컬 개발
 

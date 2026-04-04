@@ -29,6 +29,9 @@ struct PhoneHomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     headerDeck
+                    if store.starterLoop.allSatisfy(\.completed) == false {
+                        PhoneStarterLoopPanel(steps: store.starterLoop, accent: store.mainAccentColor)
+                    }
                     worldFrontierCard
                     heroCard
                     if let sanctuary = store.sanctuaryReward {

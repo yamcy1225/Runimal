@@ -6,7 +6,8 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 BUILD_ROOT="${BUILD_ROOT:-$PROJECT_ROOT/build/release}"
 EXPORT_DIR="${EXPORT_DIR:-$BUILD_ROOT/export}"
 IPA_PATH="${IPA_PATH:-$EXPORT_DIR/RunimalPhone.ipa}"
-KEY_FILE="$BUILD_ROOT/AuthKey_${ASC_KEY_ID}.p8"
+PRIVATE_KEYS_DIR="${APP_STORE_CONNECT_KEYS_DIR:-$HOME/.appstoreconnect/private_keys}"
+KEY_FILE=""
 
 if [[ -z "${ASC_KEY_ID:-}" || -z "${ASC_ISSUER_ID:-}" || -z "${ASC_PRIVATE_KEY_BASE64:-}" ]]; then
   echo "ASC_KEY_ID, ASC_ISSUER_ID, ASC_PRIVATE_KEY_BASE64 are required."
@@ -18,10 +19,12 @@ if [[ ! -f "$IPA_PATH" ]]; then
   exit 1
 fi
 
-mkdir -p "$BUILD_ROOT"
+mkdir -p "$BUILD_ROOT" "$PRIVATE_KEYS_DIR"
+KEY_FILE="$PRIVATE_KEYS_DIR/AuthKey_${ASC_KEY_ID}.p8"
 echo "$ASC_PRIVATE_KEY_BASE64" | base64 --decode > "$KEY_FILE"
 trap 'rm -f "$KEY_FILE"' EXIT
 
+echo "==> Uploading $IPA_PATH to TestFlight"
 xcrun altool \
   --upload-app \
   --type ios \
