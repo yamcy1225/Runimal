@@ -158,6 +158,7 @@
 		F69BF81831517E9F2BF2C1E7 /* EggShellStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54E584FB521B2BC162F4627C /* EggShellStyle.swift */; };
 		F6A2CC69128FDAEADD41F8C2 /* TraceEggView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCD4226FA288DCD5E44ADDD /* TraceEggView.swift */; };
 		F6AED6D549D2398806D8C6A7 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23AC4CCEAC7FAA50A28E254D /* ShareSheet.swift */; };
+		FF075A7F17B2ED695F3F1DBF /* PhoneUICaptureHarness.swift in Sources */ = {isa = PBXBuildFile; fileRef = A99B09E03E896FF4CCAA9234 /* PhoneUICaptureHarness.swift */; };
 		FF357E43DF761FF1E407F410 /* RunimalVisualTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EDC1EAEF93DF5A60A753D3F /* RunimalVisualTile.swift */; };
 		FF57A1B42F7E1113E60C40BF /* PhoneRunDeckView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F24904A9C69E6694D216558 /* PhoneRunDeckView.swift */; };
 /* End PBXBuildFile section */
@@ -273,6 +274,7 @@
 		A21D71A18796FCADC6FDA700 /* HatchInterferenceBackdropView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HatchInterferenceBackdropView.swift; sourceTree = "<group>"; };
 		A507B13D77009C0F9915ADDA /* raids.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = raids.json; sourceTree = "<group>"; };
 		A9022BE50135CB623C706CD5 /* WatchRunPulseCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRunPulseCard.swift; sourceTree = "<group>"; };
+		A99B09E03E896FF4CCAA9234 /* PhoneUICaptureHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneUICaptureHarness.swift; sourceTree = "<group>"; };
 		A9F7187532AD05E3E0A28B52 /* feedback-profiles.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "feedback-profiles.json"; sourceTree = "<group>"; };
 		ABCCD7FD29177A39ACD44643 /* HatchBurstView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HatchBurstView.swift; sourceTree = "<group>"; };
 		AE5C185CFBC7BCD90C4E6838 /* PhoneHealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneHealthKitManager.swift; sourceTree = "<group>"; };
@@ -466,6 +468,7 @@
 				1E0D41AA3032A2C590F91404 /* PhoneStarterLoopPanel.swift */,
 				63B8A677CC7E7FF91B275ADA /* PhoneSurplusLabPanel.swift */,
 				6E7081E582D73DB353FE156C /* PhoneTelemetryLogger.swift */,
+				A99B09E03E896FF4CCAA9234 /* PhoneUICaptureHarness.swift */,
 				C05253ED9374F103DD2D3A46 /* PhoneVaultPanel.swift */,
 				154264C7723E8BDEE608F409 /* PhoneVaultSyncManager.swift */,
 				A11E3E784C3CDB5962B028F5 /* PhoneWeeklyBoardPanel.swift */,
@@ -762,6 +765,7 @@
 				42EE959C9795A6188C914022 /* PhoneStarterLoopPanel.swift in Sources */,
 				348112833B9390E5F1FCDBE8 /* PhoneSurplusLabPanel.swift in Sources */,
 				BE319FFCDE14A8F492D0A193 /* PhoneTelemetryLogger.swift in Sources */,
+				FF075A7F17B2ED695F3F1DBF /* PhoneUICaptureHarness.swift in Sources */,
 				C90C3EE0D1FD7D50AB82092C /* PhoneVaultPanel.swift in Sources */,
 				783F8FCFD163D58382926D7F /* PhoneVaultSyncManager.swift in Sources */,
 				D08B8FB1CE64F3BECEC1D976 /* PhoneWeeklyBoardPanel.swift in Sources */,

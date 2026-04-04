@@ -108,10 +108,27 @@ final class MacBalanceLabStore {
             shape = .loop
         }
     }
+
+    convenience init(captureScenario: MacUICaptureScenario) {
+        self.init()
+        switch captureScenario {
+        case .dashboard:
+            apply(.long)
+            selectedScenarioID = RunimalQAReplayEngine.scenarios.last?.id ?? selectedScenarioID
+        }
+    }
 }
 
 struct MacDashboardView: View {
-    @State private var store = MacBalanceLabStore()
+    @State private var store: MacBalanceLabStore
+
+    init() {
+        _store = State(initialValue: MacBalanceLabStore())
+    }
+
+    init(store: MacBalanceLabStore) {
+        _store = State(initialValue: store)
+    }
 
     var body: some View {
         ScrollView {

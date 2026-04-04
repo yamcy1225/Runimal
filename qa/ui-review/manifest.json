@@ -1,0 +1,109 @@
+{
+  "generatedAt": "2026-04-05T01:49:14+09:00",
+  "screens": [
+    {
+      "id": "iphone-home-dashboard",
+      "platform": "iPhone",
+      "flow": "Home / Dashboard",
+      "current": "captures/iphone/current/home-dashboard.png",
+      "revised": "captures/iphone/revised/home-dashboard.png",
+      "notes": "Check hierarchy, starter-loop readability, companion vs workout-record distinction, and CTA clarity."
+    },
+    {
+      "id": "iphone-workout-record",
+      "platform": "iPhone",
+      "flow": "Workout Record",
+      "current": "captures/iphone/current/workout-record.png",
+      "revised": "captures/iphone/revised/workout-record.png",
+      "notes": "Check route preview square, reward summary readability, and import/live parity language."
+    },
+    {
+      "id": "iphone-egg-creation",
+      "platform": "iPhone",
+      "flow": "Egg Creation",
+      "current": "captures/iphone/current/egg-creation.png",
+      "revised": "captures/iphone/revised/egg-creation.png",
+      "notes": "Check egg-forge emphasis, shell readability, and first-run promise language."
+    },
+    {
+      "id": "iphone-hatch",
+      "platform": "iPhone",
+      "flow": "Hatch",
+      "current": "captures/iphone/current/hatch.png",
+      "revised": "captures/iphone/revised/hatch.png",
+      "notes": "Check reveal hierarchy, rare banner legibility, and emotional landing."
+    },
+    {
+      "id": "iphone-first-stage-up",
+      "platform": "iPhone",
+      "flow": "First Stage-Up",
+      "current": "captures/iphone/current/first-stage-up.png",
+      "revised": "captures/iphone/revised/first-stage-up.png",
+      "notes": "Check stage jump clarity, XP pacing, and stage-up celebration weight."
+    },
+    {
+      "id": "iphone-rare-mutation",
+      "platform": "iPhone",
+      "flow": "Rare Mutation Reveal",
+      "current": "captures/iphone/current/rare-mutation.png",
+      "revised": "captures/iphone/revised/rare-mutation.png",
+      "notes": "Check aura strength, badge emphasis, and whether the rare state reads instantly."
+    },
+    {
+      "id": "iphone-showcase-share",
+      "platform": "iPhone",
+      "flow": "Showcase / Share Card",
+      "current": "captures/iphone/current/showcase-share.png",
+      "revised": "captures/iphone/revised/showcase-share.png",
+      "notes": "Check poster-worthiness, social crop safety, and title punch."
+    },
+    {
+      "id": "iphone-inventory",
+      "platform": "iPhone",
+      "flow": "Inventory / Storage",
+      "current": "captures/iphone/current/inventory.png",
+      "revised": "captures/iphone/revised/inventory.png",
+      "notes": "Check density, touch comfort, and truncation across counts and badges."
+    },
+    {
+      "id": "watch-dashboard",
+      "platform": "Apple Watch",
+      "flow": "Watch Dashboard",
+      "current": "captures/watch/current/dashboard.png",
+      "revised": "captures/watch/revised/dashboard.png",
+      "notes": "Check glanceability, safe area, and compact badge legibility."
+    },
+    {
+      "id": "watch-running-companion",
+      "platform": "Apple Watch",
+      "flow": "Live Running / Companion",
+      "current": "captures/watch/current/running-companion.png",
+      "revised": "captures/watch/revised/running-companion.png",
+      "notes": "Check first swipe screen hierarchy, pet presence, bond feedback, and CTA weight."
+    },
+    {
+      "id": "watch-running-metrics",
+      "platform": "Apple Watch",
+      "flow": "Live Running / Metrics",
+      "current": "captures/watch/current/running-metrics.png",
+      "revised": "captures/watch/revised/running-metrics.png",
+      "notes": "Check distance dominance, metric readability, and whether the run is legible in one glance."
+    },
+    {
+      "id": "watch-running-pulse",
+      "platform": "Apple Watch",
+      "flow": "Live Running / Pulse",
+      "current": "captures/watch/current/running-pulse.png",
+      "revised": "captures/watch/revised/running-pulse.png",
+      "notes": "Check emotional payoff, growth signal clarity, and whether progression reads alive instead of debug-heavy."
+    },
+    {
+      "id": "mac-dashboard",
+      "platform": "macOS",
+      "flow": "Mac Dashboard",
+      "current": "captures/mac/current/dashboard.png",
+      "revised": "captures/mac/revised/dashboard.png",
+      "notes": "Check panel rhythm, typography, and cross-platform identity alignment."
+    }
+  ]
+}

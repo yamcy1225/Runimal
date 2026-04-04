@@ -3,14 +3,16 @@ import SwiftUI
 @main
 struct RunimalWatchApp: App {
     init() {
-        Task { @MainActor in
-            WatchConnectivityManager.shared.activate()
+        if WatchUICaptureScenario.current == nil {
+            Task { @MainActor in
+                WatchConnectivityManager.shared.activate()
+            }
         }
     }
 
     var body: some Scene {
         WindowGroup {
-            WatchDashboardView()
+            WatchDashboardView(captureScenario: WatchUICaptureScenario.current)
         }
     }
 }

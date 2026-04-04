@@ -3,8 +3,13 @@ name: Runimal Release
 on:
   workflow_dispatch:
     inputs:
+      export_archive:
+        description: Export an archive and IPA artifact
+        required: false
+        type: boolean
+        default: true
       upload_to_testflight:
-        description: Upload exported IPA to TestFlight
+        description: Upload the exported IPA to TestFlight
         required: false
         type: boolean
         default: false
@@ -15,31 +20,112 @@ on:
 jobs:
   build:
     runs-on: macos-15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+      TEAM_ID: ${{ secrets.DEVELOPMENT_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_PRIVATE_KEY_BASE64: ${{ secrets.ASC_PRIVATE_KEY_BASE64 }}
+      DERIVED_DATA_PATH: ${{ github.workspace }}/build/derived-data
+      SOURCE_PACKAGES_PATH: ${{ github.workspace }}/build/source-packages
+      BUILD_ROOT: ${{ github.workspace }}/build/release
     steps:
       - uses: actions/checkout@v4
 
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode.app
+        run: sudo xcode-select -s "$DEVELOPER_DIR"
 
       - name: Generate Project
         run: xcodegen generate
 
+      - name: Resolve Release Flags
+        id: release_flags
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          has_team_id=false
+          has_upload_secrets=false
+          should_export=false
+          should_upload=false
+
+          if [[ -n "${TEAM_ID:-}" ]]; then
+            has_team_id=true
+          fi
+
+          if [[ -n "${ASC_KEY_ID:-}" && -n "${ASC_ISSUER_ID:-}" && -n "${ASC_PRIVATE_KEY_BASE64:-}" ]]; then
+            has_upload_secrets=true
+          fi
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ "${{ inputs.export_archive }}" == "true" || "${{ inputs.upload_to_testflight }}" == "true" ]]; then
+              should_export=true
+            fi
+
+            if [[ "$should_export" == "true" && "$has_team_id" != "true" ]]; then
+              echo "Archive/export requested, but DEVELOPMENT_TEAM_ID is missing. Skipping archive." >&2
+              should_export=false
+            fi
+
+            if [[ "${{ inputs.upload_to_testflight }}" == "true" && "$has_upload_secrets" == "true" && "$should_export" == "true" ]]; then
+              should_upload=true
+            elif [[ "${{ inputs.upload_to_testflight }}" == "true" ]]; then
+              echo "Upload requested, but App Store Connect secrets are incomplete. Skipping upload." >&2
+            fi
+          fi
+
+          echo "has_team_id=$has_team_id" >> "$GITHUB_OUTPUT"
+          echo "has_upload_secrets=$has_upload_secrets" >> "$GITHUB_OUTPUT"
+          echo "should_export=$should_export" >> "$GITHUB_OUTPUT"
+          echo "should_upload=$should_upload" >> "$GITHUB_OUTPUT"
+
+      - name: Swift Package Tests
+        run: swift test
+
       - name: Build iPhone
-        run: xcodebuild -project RunimalApple.xcodeproj -scheme RunimalPhone -destination 'generic/platform=iOS' build
+        run: |
+          xcodebuild \
+            -project RunimalApple.xcodeproj \
+            -scheme RunimalPhone \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$DERIVED_DATA_PATH/phone" \
+            -clonedSourcePackagesDirPath "$SOURCE_PACKAGES_PATH" \
+            build
 
       - name: Build Watch
-        run: xcodebuild -project RunimalApple.xcodeproj -scheme RunimalWatch -destination 'generic/platform=watchOS' build
+        run: |
+          xcodebuild \
+            -project RunimalApple.xcodeproj \
+            -scheme RunimalWatch \
+            -destination 'generic/platform=watchOS' \
+            -derivedDataPath "$DERIVED_DATA_PATH/watch" \
+            -clonedSourcePackagesDirPath "$SOURCE_PACKAGES_PATH" \
+            build
+
+      - name: Build Mac
+        run: |
+          xcodebuild \
+            -project RunimalApple.xcodeproj \
+            -scheme RunimalMac \
+            -destination 'platform=macOS' \
+            -derivedDataPath "$DERIVED_DATA_PATH/mac" \
+            -clonedSourcePackagesDirPath "$SOURCE_PACKAGES_PATH" \
+            build
 
       - name: Archive And Export
-        if: github.event_name == 'workflow_dispatch'
-        env:
-          TEAM_ID: ${{ secrets.DEVELOPMENT_TEAM_ID }}
+        if: steps.release_flags.outputs.should_export == 'true'
         run: ./scripts/release/testflight_archive.sh
 
+      - name: Upload Export Artifact
+        if: steps.release_flags.outputs.should_export == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: runimal-phone-release
+          path: |
+            build/release/RunimalPhone.xcarchive
+            build/release/export/RunimalPhone.ipa
+          if-no-files-found: error
+
       - name: Upload To TestFlight
-        if: github.event_name == 'workflow_dispatch' && inputs.upload_to_testflight && secrets.ASC_KEY_ID != '' && secrets.ASC_ISSUER_ID != '' && secrets.ASC_PRIVATE_KEY_BASE64 != ''
-        env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_PRIVATE_KEY_BASE64: ${{ secrets.ASC_PRIVATE_KEY_BASE64 }}
+        if: steps.release_flags.outputs.should_upload == 'true'
         run: ./scripts/release/upload_to_testflight.sh

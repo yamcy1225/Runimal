@@ -4,7 +4,11 @@ import SwiftUI
 struct RunimalPhoneApp: App {
     var body: some Scene {
         WindowGroup {
-            PhoneDashboardView()
+            if let scenario = PhoneUICaptureScenario.current {
+                PhoneUICaptureHarnessRoot(scenario: scenario)
+            } else {
+                PhoneDashboardView()
+            }
         }
     }
 }
