@@ -9,6 +9,7 @@ struct PixelPetView: View {
     var mutationHistory: MutationHistorySnapshot? = nil
     var mutationVisualState: MutationVisualState? = nil
     var seasonalLayers: [SeasonalVisualLayer] = []
+    var showsAura: Bool = true
     @State private var hovering = false
     @State private var tiltDegrees = 0.0
     @State private var blink = false
@@ -26,22 +27,24 @@ struct PixelPetView: View {
         let visualState = infantStage ? MutationVisualState(bodyStage: 0, ecologyStage: 0, rhythmStage: 0) : resolvedVisualState
 
         ZStack(alignment: .topLeading) {
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [pet.accentColor.opacity(auraShift ? 0.42 : 0.26), .clear],
-                        center: .center,
-                        startRadius: pixelSize,
-                        endRadius: pixelSize * 5
+            if showsAura {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [pet.accentColor.opacity(auraShift ? 0.42 : 0.26), .clear],
+                            center: .center,
+                            startRadius: pixelSize,
+                            endRadius: pixelSize * 5
+                        )
                     )
-                )
-                .frame(width: 9 * pixelSize, height: 9 * pixelSize)
-                .offset(y: pixelSize * 0.8)
+                    .frame(width: 9 * pixelSize, height: 9 * pixelSize)
+                    .offset(y: pixelSize * 0.8)
 
-            Circle()
-                .stroke(pet.accentColor.opacity(auraShift ? 0.34 : 0.16), style: StrokeStyle(lineWidth: max(1, pixelSize * 0.16), dash: [3, 5]))
-                .frame(width: 8.9 * pixelSize, height: 8.9 * pixelSize)
-                .rotationEffect(.degrees(auraShift ? 14 : -12))
+                Circle()
+                    .stroke(pet.accentColor.opacity(auraShift ? 0.34 : 0.16), style: StrokeStyle(lineWidth: max(1, pixelSize * 0.16), dash: [3, 5]))
+                    .frame(width: 8.9 * pixelSize, height: 8.9 * pixelSize)
+                    .rotationEffect(.degrees(auraShift ? 14 : -12))
+            }
 
             pixelLayer(bodyPixels, color: pet.accentColor)
             pixelLayer(baseBodyIdentityPixels, color: pet.accentColor.opacity(0.82), inset: pixelSize * 0.08)
@@ -76,7 +79,7 @@ struct PixelPetView: View {
                 .offset(y: pixelSize * 1.25)
         }
         .overlay {
-            if pet.rareVariant != nil && !infantStage {
+            if showsAura && pet.rareVariant != nil && !infantStage {
                 Circle()
                     .stroke(pet.accentColor.opacity(0.46), lineWidth: max(1, pixelSize * 0.18))
                     .frame(width: 9.6 * pixelSize, height: 9.6 * pixelSize)

@@ -126,6 +126,14 @@ enum RunimalCuePlayer {
         #endif
     }
 
+    static func playCompanionTouchCue(isDelighted: Bool = false) {
+        #if os(iOS)
+        AudioServicesPlaySystemSound(isDelighted ? 1117 : 1519)
+        #elseif os(watchOS)
+        WKInterfaceDevice.current().play(isDelighted ? .success : .click)
+        #endif
+    }
+
     enum AlertCueKind {
         case goal
         case reward

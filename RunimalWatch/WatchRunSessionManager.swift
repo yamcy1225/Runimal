@@ -7,6 +7,103 @@ import RunimalCore
 import WeatherKit
 import WatchKit
 
+enum WatchUICaptureScenario: String {
+    case dashboard
+    case runningCompanion = "running-companion"
+    case runningMetrics = "running-metrics"
+    case runningPulse = "running-pulse"
+
+    static var current: WatchUICaptureScenario? {
+        ProcessInfo.processInfo.environment["RUNIMAL_WATCH_UI_CAPTURE_SCENARIO"].flatMap(Self.init(rawValue:))
+    }
+}
+
+enum WatchUICaptureFixtures {
+    static let captureDate = Calendar(identifier: .gregorian).date(
+        from: DateComponents(year: 2026, month: 4, day: 5, hour: 6, minute: 24)
+    ) ?? Date(timeIntervalSince1970: 0)
+
+    static let companion = GeneratedPet(
+        species: .windrunner,
+        element: .light,
+        palette: PetSpecies.windrunner.paletteName(rareVariant: .loopSigil),
+        rareVariant: .loopSigil,
+        explanation: ["watch capture"],
+        stats: PetStats(vitality: 13, agility: 16, dexterity: 12, focus: 14, defense: 9)
+    )
+
+    static let companionContext = WatchMainCompanionContext(
+        selection: MainCompanionSelection(kind: .pet, targetID: "watch-capture-companion"),
+        pet: companion,
+        petName: companion.displayName,
+        petHeadline: "워치에서 실시간으로 반응하는 동행",
+        detailText: "러닝 중에는 이 화면이 리듬과 반응을 바로 보여 줍니다.",
+        companionLevel: 12,
+        companionStageLabel: "유아기",
+        growthStageIndex: 1,
+        mutationBodyStage: 1,
+        mutationEcologyStage: 1,
+        mutationRhythmStage: 2,
+        mutationRhythmBranchID: "loop-sigil",
+        updatedAt: captureDate
+    )
+
+    static let activeEffects = [
+        WeeklyRewardEffect(id: "growth-feed", title: "Growth Feed", detail: "첫 성장 보상을 또렷하게 고정"),
+        WeeklyRewardEffect(id: "field-cycle", title: "Field Cycle", detail: "리듬 반응을 빠르게 드러냄"),
+    ]
+
+    static let dashboardSnapshot = LiveRunSnapshot(
+        elapsedSeconds: 0,
+        distanceMeters: 0,
+        currentHeartRate: 102,
+        cadence: nil,
+        elevationGainM: 0,
+        averagePaceSeconds: nil
+    )
+
+    static let runningSnapshot = LiveRunSnapshot(
+        elapsedSeconds: 23 * 60 + 18,
+        distanceMeters: 4860,
+        currentHeartRate: 154,
+        cadence: 173,
+        elevationGainM: 28,
+        averagePaceSeconds: 308
+    )
+
+    static let runningReaction = MutationRuntimeReactionSnapshot(
+        id: "watch-capture-rhythm",
+        axis: .rhythm,
+        stage: 2,
+        title: "리듬 반응",
+        detail: "페이스와 케이던스가 맞아 박동 문양이 살아납니다."
+    )
+
+    static let runningObjective = LiveCompanionObjectiveSnapshot(
+        title: "첫 성장 리듬 유지",
+        detail: "3분 더 유지하면 잠재와 성장 신호가 모두 고정됩니다.",
+        progress: 0.76
+    )
+
+    static let runningPreview = RunimalRunCoreGrowthBalanceEngine.liveInteractionPreview(
+        snapshot: runningSnapshot,
+        routePointCount: 18,
+        gpsAccuracyMeters: 6,
+        isGPSFresh: true,
+        environmentCondition: .clear,
+        rareEventCompleted: false,
+        isNightWindow: false,
+        mutationReaction: runningReaction,
+        objective: runningObjective
+    )
+
+    static let runtimeAlert = WatchRuntimeAlert(
+        title: "성장 신호 유지",
+        detail: "지금 리듬이면 첫 성장 보상이 확정됩니다.",
+        kind: .goal
+    )
+}
+
 struct WatchRuntimeAlert: Identifiable, Equatable {
     enum Kind {
         case goal
@@ -309,6 +406,35 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     func autoplayDemoIfNeeded() {
         guard isDemoMode, demoTask == nil, sessionStateLabel == "idle" else { return }
         startDemoRun()
+    }
+
+    func applyCaptureScenario(_ scenario: WatchUICaptureScenario) {
+        demoTask?.cancel()
+        demoTask = nil
+        authorizationStatus = "demo"
+        locationStatusLabel = "gps stable"
+        latestGPSAccuracyMeters = 6
+        lastGPSUpdateAt = WatchUICaptureFixtures.captureDate
+        lastReward = nil
+        lastCompletedRun = nil
+        lastWorkoutArchive = nil
+        lastSavedWorkoutLabel = "Capture preview ready"
+        routePreview = []
+        runtimeAlert = nil
+
+        switch scenario {
+        case .dashboard:
+            sessionStateLabel = "idle"
+            latestSnapshot = WatchUICaptureFixtures.dashboardSnapshot
+            mutationReaction = nil
+            liveInteractionPreview = .empty
+        case .runningCompanion, .runningMetrics, .runningPulse:
+            sessionStateLabel = "running"
+            latestSnapshot = WatchUICaptureFixtures.runningSnapshot
+            mutationReaction = WatchUICaptureFixtures.runningReaction
+            liveInteractionPreview = WatchUICaptureFixtures.runningPreview
+            runtimeAlert = WatchUICaptureFixtures.runtimeAlert
+        }
     }
 
     var livePet: GeneratedPet {

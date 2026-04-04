@@ -1,13 +1,21 @@
 import RunimalCore
 import SwiftUI
+import ImageIO
+import UniformTypeIdentifiers
 
 struct WatchDashboardView: View {
+    let captureScenario: WatchUICaptureScenario?
     @State private var runSessionManager = WatchRunSessionManager()
     @State private var connectivityManager = WatchConnectivityManager.shared
     @State private var displayedMainCompanionContext: WatchMainCompanionContext?
     @State private var offlineMapCatalog = WatchOfflineMapPackCatalog()
     @State private var hatchBurstScale: CGFloat = 0.9
     @State private var countdownValue: Int?
+    @State private var selectedPage = 0
+
+    init(captureScenario: WatchUICaptureScenario? = nil) {
+        self.captureScenario = captureScenario
+    }
 
     private var mainCompanionContext: WatchMainCompanionContext? {
         connectivityManager.mainCompanionContext ?? displayedMainCompanionContext
@@ -90,7 +98,9 @@ struct WatchDashboardView: View {
             reward: runSessionManager.lastReward,
             hatchBurstScale: hatchBurstScale,
             countdownValue: countdownValue,
-            onRefreshCompanion: connectivityManager.refreshMainCompanionContext,
+            showsAuxiliaryPages: captureScenario == nil,
+            selectedPage: $selectedPage,
+            onRefreshCompanion: captureScenario == nil ? connectivityManager.refreshMainCompanionContext : {},
             onStartRun: startRunWithCountdown,
             onEndRun: endRun
         )
@@ -115,6 +125,12 @@ struct WatchDashboardView: View {
             .ignoresSafeArea()
         )
         .task {
+            if let captureScenario {
+                applyCaptureScenario(captureScenario)
+                exportCaptureIfRequested()
+                return
+            }
+
             runSessionManager.setAutoPauseEnabled(connectivityManager.autoPauseEnabled)
             runSessionManager.prepareGPSPreview()
             displayedMainCompanionContext = connectivityManager.resolvedMainCompanionContext()
@@ -242,15 +258,17 @@ private struct WatchDashboardPages: View {
     let reward: RunRewardSummary?
     let hatchBurstScale: CGFloat
     let countdownValue: Int?
+    let showsAuxiliaryPages: Bool
+    @Binding var selectedPage: Int
     let onRefreshCompanion: () -> Void
     let onStartRun: () -> Void
     let onEndRun: () -> Void
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedPage) {
             WatchSingleCardPage {
                 VStack(spacing: 10) {
-                    if let runtimeAlert {
+                    if selectedPage == 0, let runtimeAlert {
                         WatchRuntimeAlertBanner(alert: runtimeAlert)
                     }
 
@@ -296,7 +314,7 @@ private struct WatchDashboardPages: View {
             }
             .tag(2)
 
-            if offlineMapPacks.isEmpty == false || routePreview.isEmpty == false {
+            if showsAuxiliaryPages && (offlineMapPacks.isEmpty == false || routePreview.isEmpty == false) {
                 WatchSingleCardPage {
                     WatchOfflineMapPreviewCard(
                         selectedPack: selectedOfflineMapPack,
@@ -309,7 +327,7 @@ private struct WatchDashboardPages: View {
                 .tag(3)
             }
 
-            if offlineMapPacks.count > 1 {
+            if showsAuxiliaryPages && offlineMapPacks.count > 1 {
                 WatchSingleCardPage {
                     WatchOfflineMapPackCard(
                         packs: offlineMapPacks,
@@ -322,7 +340,7 @@ private struct WatchDashboardPages: View {
                 .tag(4)
             }
 
-            if let reward {
+            if showsAuxiliaryPages, let reward {
                 WatchSingleCardPage {
                     WatchRewardSection(
                         reward: reward,
@@ -338,6 +356,208 @@ private struct WatchDashboardPages: View {
     private var selectedOfflineMapPack: OfflineMapPackSummary? {
         guard let selectedOfflineMapPackID else { return offlineMapPacks.first }
         return offlineMapPacks.first(where: { $0.id == selectedOfflineMapPackID }) ?? offlineMapPacks.first
+    }
+}
+
+private extension WatchDashboardView {
+    func applyCaptureScenario(_ scenario: WatchUICaptureScenario) {
+        let companionContext = WatchUICaptureFixtures.companionContext
+        displayedMainCompanionContext = companionContext
+        connectivityManager.mainCompanionContext = companionContext
+        connectivityManager.activeEffects = WatchUICaptureFixtures.activeEffects
+        connectivityManager.claimedRewardIDs = ["weekly-badge", "growth-feed"]
+        connectivityManager.autoPauseEnabled = true
+
+        runSessionManager.applyCompanionContext(
+            CompanionEffectContext(
+                claimedRewardIDs: Array(connectivityManager.claimedRewardIDs).sorted(),
+                activeEffects: WatchUICaptureFixtures.activeEffects
+            )
+        )
+        runSessionManager.applyMainCompanionContext(companionContext)
+
+        switch scenario {
+        case .dashboard:
+            selectedPage = 0
+        case .runningCompanion:
+            selectedPage = 0
+        case .runningMetrics:
+            selectedPage = 1
+        case .runningPulse:
+            selectedPage = 2
+        }
+
+        runSessionManager.applyCaptureScenario(scenario)
+    }
+
+    func exportCaptureIfRequested() {
+        guard let outputPath = ProcessInfo.processInfo.environment["RUNIMAL_WATCH_UI_CAPTURE_OUTPUT_PATH"],
+              outputPath.isEmpty == false else {
+            return
+        }
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(250))
+
+            let renderView = WatchDashboardCaptureRootView(
+                runtimeAlert: runSessionManager.runtimeAlert,
+                mainCompanionContext: mainCompanionContext,
+                stageAccent: stageAccent,
+                sessionStateLabel: runSessionManager.sessionStateLabel,
+                heartResonance: heartResonance,
+                growthRatio: growthRatio,
+                latestSnapshot: runSessionManager.latestSnapshot,
+                latestGPSAccuracyMeters: runSessionManager.latestGPSAccuracyMeters,
+                gpsLastUpdatedAt: runSessionManager.gpsLastUpdatedAt,
+                locationStatusLabel: runSessionManager.locationStatusLabel,
+                liveFeedback: liveFeedback,
+                mutationReaction: runSessionManager.mutationReaction,
+                liveInteractionPreview: runSessionManager.liveInteractionPreview,
+                stageBadges: stageBadges,
+                reward: runSessionManager.lastReward,
+                hatchBurstScale: hatchBurstScale,
+                countdownValue: countdownValue,
+                selectedPage: selectedPage
+            )
+            .frame(width: 208, height: 248)
+
+            let renderer = ImageRenderer(content: renderView)
+            renderer.scale = 2
+
+            guard let cgImage = renderer.cgImage else { return }
+
+            let url = URL(fileURLWithPath: outputPath)
+            try? FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(),
+                withIntermediateDirectories: true,
+                attributes: nil
+            )
+
+            guard let destination = CGImageDestinationCreateWithURL(
+                url as CFURL,
+                UTType.png.identifier as CFString,
+                1,
+                nil
+            ) else {
+                return
+            }
+
+            CGImageDestinationAddImage(destination, cgImage, nil)
+            CGImageDestinationFinalize(destination)
+        }
+    }
+}
+
+private struct WatchDashboardCaptureRootView: View {
+    let runtimeAlert: WatchRuntimeAlert?
+    let mainCompanionContext: WatchMainCompanionContext?
+    let stageAccent: Color
+    let sessionStateLabel: String
+    let heartResonance: Double
+    let growthRatio: Double
+    let latestSnapshot: LiveRunSnapshot
+    let latestGPSAccuracyMeters: Double?
+    let gpsLastUpdatedAt: Date?
+    let locationStatusLabel: String
+    let liveFeedback: LiveRunFeedback
+    let mutationReaction: MutationRuntimeReactionSnapshot?
+    let liveInteractionPreview: LiveCompanionInteractionPreview
+    let stageBadges: [String]
+    let reward: RunRewardSummary?
+    let hatchBurstScale: CGFloat
+    let countdownValue: Int?
+    let selectedPage: Int
+
+    var body: some View {
+        WatchSingleCardPage {
+            VStack(spacing: 10) {
+                if selectedPage == 0, let runtimeAlert {
+                    WatchRuntimeAlertBanner(alert: runtimeAlert)
+                }
+
+                capturePageContent
+            }
+        }
+        .overlay {
+            if let countdownValue {
+                WatchRunCountdownOverlay(
+                    value: countdownValue,
+                    accent: stageAccent
+                )
+            }
+        }
+        .background(
+            ZStack {
+                LinearGradient(
+                    colors: [GameBoyPalette.mediumLight, GameBoyPalette.lightest, GameBoyPalette.mediumLight.opacity(0.88)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                GameBoyLCDOverlay()
+                    .opacity(0.7)
+            }
+            .ignoresSafeArea()
+        )
+    }
+
+    @ViewBuilder
+    private var capturePageContent: some View {
+        switch selectedPage {
+        case 0:
+            WatchLaunchPageCard(
+                companion: mainCompanionContext,
+                accent: stageAccent,
+                sessionStateLabel: sessionStateLabel,
+                heartResonance: heartResonance,
+                gpsAccuracyMeters: latestGPSAccuracyMeters,
+                lastGPSUpdateAt: gpsLastUpdatedAt,
+                locationStatusLabel: locationStatusLabel,
+                mutationReaction: mutationReaction,
+                countdownValue: countdownValue,
+                onPrimaryAction: {},
+                onRefreshCompanion: {}
+            )
+        case 1:
+            WatchRunStatsPanel(
+                snapshot: latestSnapshot,
+                gpsAccuracyMeters: latestGPSAccuracyMeters,
+                lastGPSUpdateAt: gpsLastUpdatedAt,
+                locationStatusLabel: locationStatusLabel,
+                interactionPreview: liveInteractionPreview,
+                companion: mainCompanionContext,
+                accent: stageAccent
+            )
+        case 2:
+            WatchRunPulseCard(
+                feedback: liveFeedback,
+                accent: stageAccent,
+                interactionPreview: liveInteractionPreview,
+                companion: mainCompanionContext,
+                badges: Array(stageBadges.prefix(2)),
+                reaction: mutationReaction
+            )
+        default:
+            if let reward {
+                WatchRewardSection(
+                    reward: reward,
+                    hatchBurstScale: hatchBurstScale
+                )
+            } else {
+                WatchLaunchPageCard(
+                    companion: mainCompanionContext,
+                    accent: stageAccent,
+                    sessionStateLabel: sessionStateLabel,
+                    heartResonance: heartResonance,
+                    gpsAccuracyMeters: latestGPSAccuracyMeters,
+                    lastGPSUpdateAt: gpsLastUpdatedAt,
+                    locationStatusLabel: locationStatusLabel,
+                    mutationReaction: mutationReaction,
+                    countdownValue: countdownValue,
+                    onPrimaryAction: {},
+                    onRefreshCompanion: {}
+                )
+            }
+        }
     }
 }
 
@@ -378,16 +598,16 @@ private struct WatchSingleCardPage<Content: View>: View {
     var body: some View {
         GeometryReader { proxy in
             VStack {
-                Spacer(minLength: 6)
+                Spacer(minLength: 2)
                 content
                     .frame(maxWidth: proxy.size.width - 2)
-                Spacer(minLength: 18)
+                Spacer(minLength: 6)
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
         .padding(.horizontal, 2)
-        .padding(.top, 6)
-        .padding(.bottom, 14)
+        .padding(.top, 2)
+        .padding(.bottom, 6)
     }
 }
 
@@ -447,21 +667,24 @@ private struct WatchRuntimeAlertBanner: View {
         HStack(spacing: 8) {
             Circle()
                 .fill(accent)
-                .frame(width: 8, height: 8)
+                .frame(width: 6, height: 6)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(alert.title)
                     .font(.caption2.monospaced().weight(.black))
                     .foregroundStyle(GameBoyPalette.darkest)
+                    .lineLimit(1)
                 Text(alert.detail)
                     .font(.caption2.monospaced())
                     .foregroundStyle(GameBoyPalette.mediumDark)
-                    .lineLimit(2)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
             }
 
             Spacer(minLength: 0)
         }
-        .padding(10)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 7)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(GameBoyPalette.lightest)

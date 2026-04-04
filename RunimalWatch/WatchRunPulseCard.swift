@@ -10,92 +10,174 @@ struct WatchRunPulseCard: View {
     let reaction: MutationRuntimeReactionSnapshot?
 
     var body: some View {
-        GameSurface(title: "러닝 상태", accent: accent, compact: true) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    TraitChip(label: feedback.label.uppercased(), accent: accent)
-                    TraitChip(
-                        label: interactionPreview.projectedPotentialExperience > 0
-                            ? "잠재 +\(interactionPreview.projectedPotentialExperience)"
-                            : "잠재 대기",
-                        accent: accent.opacity(0.72)
-                    )
-                    Spacer(minLength: 8)
+        GameSurface(title: nil, accent: accent, compact: true) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    TraitChip(label: feedbackBadgeLabel, accent: accent)
+                    levelBadge
+                    Spacer(minLength: 0)
                     Text("\(Int(feedback.intensity * 100))%")
                         .font(.caption.monospacedDigit().weight(.black))
-                        .foregroundStyle(GameBoyPalette.mediumDark)
+                        .foregroundStyle(GameBoyPalette.darkest)
                 }
-
-                if let level = companion?.companionLevel,
-                   let stageLabel = companion?.companionStageLabel {
-                    HStack(spacing: 6) {
-                        TraitChip(label: "Lv.\(level)", accent: accent.opacity(0.82))
-                        TraitChip(label: stageLabel, accent: .white.opacity(0.14))
-                        Spacer(minLength: 6)
-                        Text("활성 \(activePotentialCount)건")
-                            .font(.caption2.monospaced().weight(.black))
-                            .foregroundStyle(GameBoyPalette.mediumDark)
-                    }
-                }
-
-                Text(interactionPreview.headline)
-                    .font(.headline.monospaced().weight(.black))
-                    .foregroundStyle(GameBoyPalette.darkest)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.82)
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("지금 반응")
-                        .font(.caption2.monospaced().weight(.black))
-                        .foregroundStyle(GameBoyPalette.mediumDark)
-                    Text(interactionPreview.detail)
-                        .font(.caption2.monospaced())
+                    Text(pulseHeadline)
+                        .font(.subheadline.monospaced().weight(.black))
                         .foregroundStyle(GameBoyPalette.darkest)
                         .lineLimit(2)
-                        .minimumScaleFactor(0.82)
-                }
+                        .minimumScaleFactor(0.72)
 
-                Text(feedback.headline)
-                    .font(.caption2.monospaced().weight(.black))
-                    .foregroundStyle(GameBoyPalette.mediumDark)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.82)
-
-                VStack(alignment: .leading, spacing: 5) {
-                    ForEach(Array(interactionPreview.cues.prefix(3))) { cue in
-                        cueRow(cue)
-                    }
-                }
-
-                if let reaction, interactionPreview.cues.contains(where: { $0.id == reaction.id }) == false {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(reaction.title)
-                            .font(.caption2.monospaced().weight(.black))
-                            .foregroundStyle(GameBoyPalette.mediumDark)
-                        Text(reaction.detail)
-                            .font(.caption2.monospaced())
-                            .foregroundStyle(GameBoyPalette.darkest)
-                            .lineLimit(2)
-                            .minimumScaleFactor(0.82)
-                    }
-                }
-
-                if badges.isEmpty == false {
-                    HStack(spacing: 6) {
-                        ForEach(Array(badges.prefix(2).enumerated()), id: \.offset) { _, badge in
-                            TraitChip(label: badge, accent: accent.opacity(0.82))
-                        }
-                    }
-                }
-
-                if let nextPotentialCue {
-                    Text("다음 열림: \(nextPotentialCue.title)")
+                    Text(feedbackHeadline)
                         .font(.caption2.monospaced().weight(.black))
                         .foregroundStyle(GameBoyPalette.mediumDark)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.82)
+                        .minimumScaleFactor(0.72)
+                }
+
+                spotlightBand
+
+                if let activeCue = interactionPreview.cues.first(where: \.isActive) ?? interactionPreview.cues.first {
+                    signalRow(
+                        title: activeCue.title,
+                        status: activeCue.statusLabel,
+                        detail: activeCue.detail,
+                        progress: activeCue.progress,
+                        accent: accent
+                    )
+                }
+
+                if companion?.companionStageLabel != nil || activePotentialCount > 0 {
+                    footerBand
                 }
             }
+        }
+    }
+
+    private var levelBadge: some View {
+        Text(levelBadgeLabel)
+            .font(.caption2.monospaced().weight(.black))
+            .foregroundStyle(GameBoyPalette.darkest)
+            .lineLimit(1)
+            .minimumScaleFactor(0.72)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 4)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(GameBoyPalette.lightest.opacity(0.84))
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(GameBoyPalette.darkest, lineWidth: 1)
+                    )
+            )
+    }
+
+    private var spotlightBand: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Text(reaction?.title ?? "현재 반응")
+                    .font(.caption2.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.darkest)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                Spacer(minLength: 4)
+                Text(projectedPotentialLabel)
+                    .font(.caption2.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.mediumDark)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+            }
+
+            Text(spotlightDetailLabel)
+                .font(.caption2.monospaced())
+                .foregroundStyle(GameBoyPalette.darkest)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+
+            RunimalProgressBar(progress: feedback.intensity, accent: accent, height: 8)
+                .frame(height: 8)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 7)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(GameBoyPalette.lightest.opacity(0.84))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(GameBoyPalette.darkest, lineWidth: 1)
+                )
+        )
+    }
+
+    private var footerBand: some View {
+        HStack(spacing: 6) {
+            if let stageLabel = companion?.companionStageLabel {
+                TraitChip(label: stageLabel, accent: accent.opacity(0.82))
+            }
+            Spacer(minLength: 0)
+            Text("활성 \(activePotentialCount)건")
+                .font(.caption2.monospaced().weight(.black))
+                .foregroundStyle(GameBoyPalette.mediumDark)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+        }
+    }
+
+    private var projectedPotentialLabel: String {
+        if interactionPreview.projectedPotentialExperience > 0 {
+            return "잠재 +\(interactionPreview.projectedPotentialExperience)"
+        }
+        return "잠재 대기"
+    }
+
+    private var feedbackBadgeLabel: String {
+        switch feedback.label {
+        case "Rare Window":
+            return "RARE"
+        case "Surge":
+            return "SURGE"
+        case "Stable":
+            return "FLOW"
+        case "Recover":
+            return "CALM"
+        default:
+            return "LIVE"
+        }
+    }
+
+    private var levelBadgeLabel: String {
+        if let level = companion?.companionLevel {
+            return "Lv.\(level)"
+        }
+        return "WATCH"
+    }
+
+    private var pulseHeadline: String {
+        reaction?.title ?? interactionPreview.headline
+    }
+
+    private var feedbackHeadline: String {
+        if feedback.label == "Rare Window" {
+            return "희귀 변이 창이 열려 있습니다"
+        }
+        return feedback.headline
+    }
+
+    private var spotlightDetailLabel: String {
+        if feedback.label == "Rare Window" {
+            return "희귀 변이 창이 가까워졌어요"
+        }
+        guard let reaction else {
+            return "지금 리듬을 안정적으로 유지 중"
+        }
+        switch reaction.axis {
+        case .body:
+            return "힘이 올라오며 반응이 선명해져요"
+        case .ecology:
+            return "호흡과 주변 흐름이 안정되고 있어요"
+        case .rhythm:
+            return "페이스와 케이던스가 잘 맞고 있어요"
         }
     }
 
@@ -103,39 +185,42 @@ struct WatchRunPulseCard: View {
         interactionPreview.cues.filter { $0.category == .potential && $0.isActive }.count
     }
 
-    private var nextPotentialCue: LiveCompanionInteractionCue? {
-        interactionPreview.cues.first { $0.category == .potential && $0.isActive == false }
-    }
-
-    private func cueRow(_ cue: LiveCompanionInteractionCue) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
+    private func signalRow(
+        title: String,
+        status: String,
+        detail: String,
+        progress: Double,
+        accent: Color
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
-                Text(cue.title)
+                Text(title)
                     .font(.caption2.monospaced().weight(.black))
                     .foregroundStyle(GameBoyPalette.darkest)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.72)
                 Spacer(minLength: 6)
-                Text(cue.statusLabel)
+                Text(status)
                     .font(.caption2.monospacedDigit().weight(.black))
-                    .foregroundStyle(cue.isActive ? accent : GameBoyPalette.mediumDark)
+                    .foregroundStyle(accent)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
             }
 
-            GeometryReader { proxy in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(GameBoyPalette.mediumLight.opacity(0.55))
-                    Capsule()
-                        .fill(cue.isActive ? accent : GameBoyPalette.mediumDark.opacity(0.7))
-                        .frame(width: max(proxy.size.width * cue.progress, cue.progress > 0 ? 8 : 0))
-                }
-            }
-            .frame(height: 5)
+            RunimalProgressBar(progress: progress, accent: accent, height: 6)
+                .frame(height: 6)
 
-            Text(cue.detail)
-                .font(.caption2.monospaced())
-                .foregroundStyle(GameBoyPalette.mediumDark)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
         }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(GameBoyPalette.mediumLight.opacity(0.34))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(GameBoyPalette.darkest, lineWidth: 1)
+                )
+        )
     }
 }
