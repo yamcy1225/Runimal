@@ -10,7 +10,7 @@ CAPTURE_PHONE="${CAPTURE_PHONE:-1}"
 CAPTURE_WATCH="${CAPTURE_WATCH:-1}"
 CAPTURE_MAC="${CAPTURE_MAC:-1}"
 PHONE_DEVICE_NAME="${PHONE_DEVICE_NAME:-iPhone 17 Pro}"
-WATCH_DEVICE_NAME="${WATCH_DEVICE_NAME:-Apple Watch Series 11 (46mm)}"
+WATCH_DEVICE_NAME="${WATCH_DEVICE_NAME:-Apple Watch Ultra 3 (49mm)}"
 BOOT_TIMEOUT_SECONDS="${BOOT_TIMEOUT_SECONDS:-90}"
 CAPTURE_SETTLE_SECONDS="${CAPTURE_SETTLE_SECONDS:-6}"
 PHONE_BUNDLE_ID="com.jaw.runimal.phone"
@@ -102,7 +102,7 @@ fi
 if [[ "$CAPTURE_WATCH" == "1" ]]; then
   watch_device_id="$(resolve_device_id "$WATCH_DEVICE_NAME")"
   if [[ -z "$watch_device_id" ]]; then
-    watch_device_id="$(first_available_device_id "Apple Watch")"
+    watch_device_id="$(first_available_device_id "Apple Watch Ultra|Apple Watch Series 11|Apple Watch")"
   fi
 fi
 
@@ -218,6 +218,7 @@ if [[ "$CAPTURE_WATCH" == "1" ]]; then
     rm -f "$output_path"
     SIMCTL_CHILD_RUNIMAL_WATCH_UI_CAPTURE_SCENARIO="$scenario" \
     SIMCTL_CHILD_RUNIMAL_WATCH_UI_CAPTURE_OUTPUT_PATH="$output_path" \
+    SIMCTL_CHILD_RUNIMAL_WATCH_CAPTURE_DEVICE_NAME="$WATCH_DEVICE_NAME" \
       xcrun simctl launch --terminate-running-process "$watch_device_id" "$WATCH_BUNDLE_ID" >/dev/null
     started_at="$(date +%s)"
     while [[ ! -f "$output_path" ]]; do

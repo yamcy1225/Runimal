@@ -68,6 +68,8 @@ struct RunimalSignalBadge: View {
             Text(label.uppercased())
                 .font(.caption2.monospaced().weight(.black))
                 .tracking(0.8)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)

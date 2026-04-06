@@ -74,7 +74,8 @@ struct WatchCompanionHeroCard: View {
             accent: accent,
             eyebrow: "GPS",
             headerGauge: .init(progress: gpsSignalStrength, fill: gpsSignalColor),
-            compact: true
+            compact: true,
+            showsFrameChrome: false
         ) {
             VStack(spacing: 8) {
                 WatchCompanionActionField(

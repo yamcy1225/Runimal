@@ -12,6 +12,7 @@ struct WatchDashboardView: View {
     @State private var hatchBurstScale: CGFloat = 0.9
     @State private var countdownValue: Int?
     @State private var selectedPage = 0
+    @State private var captureViewportProfile = WatchViewportProfile.resolve(containerSize: CGSize(width: 211, height: 257))
 
     init(captureScenario: WatchUICaptureScenario? = nil) {
         self.captureScenario = captureScenario
@@ -75,55 +76,63 @@ struct WatchDashboardView: View {
     }
 
     var body: some View {
-        WatchDashboardPages(
-            runtimeAlert: runSessionManager.runtimeAlert,
-            mainCompanionContext: mainCompanionContext,
-            stageAccent: stageAccent,
-            sessionStateLabel: runSessionManager.sessionStateLabel,
-            heartResonance: heartResonance,
-            growthRatio: growthRatio,
-            latestSnapshot: runSessionManager.latestSnapshot,
-            latestGPSAccuracyMeters: runSessionManager.latestGPSAccuracyMeters,
-            gpsLastUpdatedAt: runSessionManager.gpsLastUpdatedAt,
-            locationStatusLabel: runSessionManager.locationStatusLabel,
-            liveFeedback: liveFeedback,
-            mutationReaction: runSessionManager.mutationReaction,
-            liveInteractionPreview: runSessionManager.liveInteractionPreview,
-            stageBadges: stageBadges,
-            offlineMapPacks: offlineMapCatalog.packs,
-            selectedOfflineMapPackID: offlineMapCatalog.selectedPackID,
-            storedOfflineMapPackIDs: connectivityManager.offlineMapStorage.storedPackIDs,
-            offlineMapStorage: connectivityManager.offlineMapStorage,
-            routePreview: runSessionManager.liveRoutePreview,
-            reward: runSessionManager.lastReward,
-            hatchBurstScale: hatchBurstScale,
-            countdownValue: countdownValue,
-            showsAuxiliaryPages: captureScenario == nil,
-            selectedPage: $selectedPage,
-            onRefreshCompanion: captureScenario == nil ? connectivityManager.refreshMainCompanionContext : {},
-            onStartRun: startRunWithCountdown,
-            onEndRun: endRun
-        )
-        .overlay {
-            if let countdownValue {
-                WatchRunCountdownOverlay(
-                    value: countdownValue,
-                    accent: stageAccent
-                )
+        GeometryReader { proxy in
+            WatchDashboardPages(
+                runtimeAlert: runSessionManager.runtimeAlert,
+                mainCompanionContext: mainCompanionContext,
+                stageAccent: stageAccent,
+                sessionStateLabel: runSessionManager.sessionStateLabel,
+                heartResonance: heartResonance,
+                growthRatio: growthRatio,
+                latestSnapshot: runSessionManager.latestSnapshot,
+                latestGPSAccuracyMeters: runSessionManager.latestGPSAccuracyMeters,
+                gpsLastUpdatedAt: runSessionManager.gpsLastUpdatedAt,
+                locationStatusLabel: runSessionManager.locationStatusLabel,
+                liveFeedback: liveFeedback,
+                mutationReaction: runSessionManager.mutationReaction,
+                liveInteractionPreview: runSessionManager.liveInteractionPreview,
+                stageBadges: stageBadges,
+                offlineMapPacks: offlineMapCatalog.packs,
+                selectedOfflineMapPackID: offlineMapCatalog.selectedPackID,
+                storedOfflineMapPackIDs: connectivityManager.offlineMapStorage.storedPackIDs,
+                offlineMapStorage: connectivityManager.offlineMapStorage,
+                routePreview: runSessionManager.liveRoutePreview,
+                reward: runSessionManager.lastReward,
+                interactionSummaryLabel: runSessionManager.liveInteractionBonusLabel,
+                pendingHomeBonusLabel: runSessionManager.pendingHomeBonusLabel,
+                hatchBurstScale: hatchBurstScale,
+                countdownValue: countdownValue,
+                showsAuxiliaryPages: captureScenario == nil,
+                selectedPage: $selectedPage,
+                onRefreshCompanion: captureScenario == nil ? connectivityManager.refreshMainCompanionContext : {},
+                onStartRun: startRunWithCountdown,
+                onEndRun: endRun,
+                onCompanionInteraction: runSessionManager.registerCompanionInteraction
+            )
+            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
+            .overlay {
+                if let countdownValue {
+                    WatchRunCountdownOverlay(
+                        value: countdownValue,
+                        accent: stageAccent
+                    )
+                }
             }
+            .background(
+                ZStack {
+                    LinearGradient(
+                        colors: [GameBoyPalette.mediumLight, GameBoyPalette.lightest, GameBoyPalette.mediumLight.opacity(0.88)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    GameBoyLCDOverlay()
+                        .opacity(0.7)
+                }
+                .ignoresSafeArea()
+            )
         }
-        .background(
-            ZStack {
-                LinearGradient(
-                    colors: [GameBoyPalette.mediumLight, GameBoyPalette.lightest, GameBoyPalette.mediumLight.opacity(0.88)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                GameBoyLCDOverlay()
-                    .opacity(0.7)
-            }
-            .ignoresSafeArea()
-        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .ignoresSafeArea()
         .task {
             if let captureScenario {
                 applyCaptureScenario(captureScenario)
@@ -256,6 +265,8 @@ private struct WatchDashboardPages: View {
     let offlineMapStorage: WatchOfflineMapPackStorage
     let routePreview: [RoutePoint]
     let reward: RunRewardSummary?
+    let interactionSummaryLabel: String?
+    let pendingHomeBonusLabel: String?
     let hatchBurstScale: CGFloat
     let countdownValue: Int?
     let showsAuxiliaryPages: Bool
@@ -263,15 +274,25 @@ private struct WatchDashboardPages: View {
     let onRefreshCompanion: () -> Void
     let onStartRun: () -> Void
     let onEndRun: () -> Void
+    let onCompanionInteraction: (WatchCompanionInteractionStyle) -> WatchInteractionAwardFeedback?
 
     var body: some View {
-        TabView(selection: $selectedPage) {
-            WatchSingleCardPage {
-                VStack(spacing: 10) {
-                    if selectedPage == 0, let runtimeAlert {
-                        WatchRuntimeAlertBanner(alert: runtimeAlert)
-                    }
+        WatchPager(
+            pages: pageViews,
+            selectedPage: $selectedPage
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .onChange(of: pageViews.count) { _, count in
+            guard count > 0 else { return }
+            selectedPage = min(max(selectedPage, 0), count - 1)
+        }
+    }
 
+    private var pageViews: [AnyView] {
+        var pages: [AnyView] = [
+            AnyView(
+                WatchSingleCardPage(runtimePageIndex: 0) {
+                ZStack(alignment: .top) {
                     WatchLaunchPageCard(
                         companion: mainCompanionContext,
                         accent: stageAccent,
@@ -282,14 +303,23 @@ private struct WatchDashboardPages: View {
                         locationStatusLabel: locationStatusLabel,
                         mutationReaction: mutationReaction,
                         countdownValue: countdownValue,
+                        interactionSummaryLabel: interactionSummaryLabel,
+                        pendingHomeBonusLabel: pendingHomeBonusLabel,
                         onPrimaryAction: sessionStateLabel == "running" ? onEndRun : onStartRun,
-                        onRefreshCompanion: onRefreshCompanion
+                        onRefreshCompanion: onRefreshCompanion,
+                        onCompanionInteraction: onCompanionInteraction
                     )
+                    .padding(.top, runtimeAlert == nil ? 0 : 24)
+
+                    if let runtimeAlert {
+                        WatchRuntimeAlertBanner(alert: runtimeAlert)
+                            .padding(.horizontal, 4)
+                    }
                 }
             }
-            .tag(0)
-
-            WatchSingleCardPage {
+            ),
+            AnyView(
+                WatchSingleCardPage(runtimePageIndex: 1) {
                 WatchRunStatsPanel(
                     snapshot: latestSnapshot,
                     gpsAccuracyMeters: latestGPSAccuracyMeters,
@@ -300,57 +330,36 @@ private struct WatchDashboardPages: View {
                     accent: stageAccent
                 )
             }
-            .tag(1)
-
-            WatchSingleCardPage {
+            ),
+            AnyView(
+                WatchSingleCardPage(runtimePageIndex: 2) {
                 WatchRunPulseCard(
                     feedback: liveFeedback,
                     accent: stageAccent,
                     interactionPreview: liveInteractionPreview,
                     companion: mainCompanionContext,
                     badges: Array(stageBadges.prefix(2)),
-                    reaction: mutationReaction
+                    reaction: mutationReaction,
+                    interactionBonusLabel: interactionSummaryLabel
                 )
             }
-            .tag(2)
+            )
+        ]
 
-            if showsAuxiliaryPages && (offlineMapPacks.isEmpty == false || routePreview.isEmpty == false) {
-                WatchSingleCardPage {
-                    WatchOfflineMapPreviewCard(
-                        selectedPack: selectedOfflineMapPack,
-                        isStoredLocally: selectedOfflineMapPack.map { storedOfflineMapPackIDs.contains($0.id) } ?? false,
-                        storage: offlineMapStorage,
-                        route: routePreview,
-                        accent: stageAccent
-                    )
-                }
-                .tag(3)
-            }
-
-            if showsAuxiliaryPages && offlineMapPacks.count > 1 {
-                WatchSingleCardPage {
-                    WatchOfflineMapPackCard(
-                        packs: offlineMapPacks,
-                        selectedPackID: selectedOfflineMapPackID,
-                        storedPackIDs: storedOfflineMapPackIDs,
-                        storage: offlineMapStorage,
-                        accent: stageAccent
-                    )
-                }
-                .tag(4)
-            }
-
-            if showsAuxiliaryPages, let reward {
-                WatchSingleCardPage {
-                    WatchRewardSection(
-                        reward: reward,
-                        hatchBurstScale: hatchBurstScale
-                    )
-                }
-                .tag(5)
-            }
+        if showsAuxiliaryPages, let reward {
+            pages.append(
+                AnyView(
+                    WatchSingleCardPage(runtimePageIndex: 3) {
+                        WatchRewardSection(
+                            reward: reward,
+                            hatchBurstScale: hatchBurstScale
+                        )
+                    }
+                )
+            )
         }
-        .tabViewStyle(.page(indexDisplayMode: .automatic))
+
+        return pages
     }
 
     private var selectedOfflineMapPack: OfflineMapPackSummary? {
@@ -359,8 +368,55 @@ private struct WatchDashboardPages: View {
     }
 }
 
+private struct WatchPager: View {
+    let pages: [AnyView]
+    @Binding var selectedPage: Int
+
+    var body: some View {
+        GeometryReader { proxy in
+            let count = max(pages.count, 1)
+            let clampedSelection = min(max(selectedPage, 0), count - 1)
+            let currentPage = pages[clampedSelection]
+
+            ZStack {
+                currentPage
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+                    .id(clampedSelection)
+                    .transition(.asymmetric(insertion: .opacity, removal: .opacity))
+                    .animation(.spring(response: 0.28, dampingFraction: 0.88), value: clampedSelection)
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+            .clipped()
+            .contentShape(Rectangle())
+            .highPriorityGesture(
+                DragGesture(minimumDistance: 3, coordinateSpace: .local)
+                    .onEnded { value in
+                        guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                        let width = max(proxy.size.width, 1)
+                        let projectedProgress = -value.predictedEndTranslation.width / width
+                        let translationProgress = -value.translation.width / width
+                        let progress = abs(projectedProgress) > abs(translationProgress) ? projectedProgress : translationProgress
+                        let threshold: CGFloat = 0.07
+
+                        if progress > threshold {
+                            selectedPage = min(clampedSelection + 1, count - 1)
+                        } else if progress < -threshold {
+                            selectedPage = max(clampedSelection - 1, 0)
+                        }
+                    },
+                including: .all
+            )
+        }
+    }
+
+}
+
 private extension WatchDashboardView {
     func applyCaptureScenario(_ scenario: WatchUICaptureScenario) {
+        captureViewportProfile = WatchViewportProfile.resolve(
+            containerSize: CGSize(width: 211, height: 257),
+            captureDeviceName: ProcessInfo.processInfo.environment["RUNIMAL_WATCH_CAPTURE_DEVICE_NAME"]
+        )
         let companionContext = WatchUICaptureFixtures.companionContext
         displayedMainCompanionContext = companionContext
         connectivityManager.mainCompanionContext = companionContext
@@ -415,11 +471,17 @@ private extension WatchDashboardView {
                 liveInteractionPreview: runSessionManager.liveInteractionPreview,
                 stageBadges: stageBadges,
                 reward: runSessionManager.lastReward,
+                interactionSummaryLabel: runSessionManager.liveInteractionBonusLabel,
+                pendingHomeBonusLabel: runSessionManager.pendingHomeBonusLabel,
                 hatchBurstScale: hatchBurstScale,
                 countdownValue: countdownValue,
-                selectedPage: selectedPage
+                selectedPage: selectedPage,
+                captureProfile: captureViewportProfile
             )
-            .frame(width: 208, height: 248)
+            .frame(
+                width: captureViewportProfile.captureCanvasSize.width,
+                height: captureViewportProfile.captureCanvasSize.height
+            )
 
             let renderer = ImageRenderer(content: renderView)
             renderer.scale = 2
@@ -464,18 +526,23 @@ private struct WatchDashboardCaptureRootView: View {
     let liveInteractionPreview: LiveCompanionInteractionPreview
     let stageBadges: [String]
     let reward: RunRewardSummary?
+    let interactionSummaryLabel: String?
+    let pendingHomeBonusLabel: String?
     let hatchBurstScale: CGFloat
     let countdownValue: Int?
     let selectedPage: Int
+    let captureProfile: WatchViewportProfile
 
     var body: some View {
-        WatchSingleCardPage {
-            VStack(spacing: 10) {
+        WatchSingleCardPage(captureProfile: captureProfile) {
+            ZStack(alignment: .top) {
+                capturePageContent
+                    .padding(.top, selectedPage == 0 && runtimeAlert != nil ? 24 : 0)
+
                 if selectedPage == 0, let runtimeAlert {
                     WatchRuntimeAlertBanner(alert: runtimeAlert)
+                        .padding(.horizontal, 4)
                 }
-
-                capturePageContent
             }
         }
         .overlay {
@@ -514,8 +581,11 @@ private struct WatchDashboardCaptureRootView: View {
                 locationStatusLabel: locationStatusLabel,
                 mutationReaction: mutationReaction,
                 countdownValue: countdownValue,
+                interactionSummaryLabel: interactionSummaryLabel,
+                pendingHomeBonusLabel: pendingHomeBonusLabel,
                 onPrimaryAction: {},
-                onRefreshCompanion: {}
+                onRefreshCompanion: {},
+                onCompanionInteraction: { _ in nil }
             )
         case 1:
             WatchRunStatsPanel(
@@ -534,7 +604,8 @@ private struct WatchDashboardCaptureRootView: View {
                 interactionPreview: liveInteractionPreview,
                 companion: mainCompanionContext,
                 badges: Array(stageBadges.prefix(2)),
-                reaction: mutationReaction
+                reaction: mutationReaction,
+                interactionBonusLabel: interactionSummaryLabel
             )
         default:
             if let reward {
@@ -553,8 +624,11 @@ private struct WatchDashboardCaptureRootView: View {
                     locationStatusLabel: locationStatusLabel,
                     mutationReaction: mutationReaction,
                     countdownValue: countdownValue,
+                    interactionSummaryLabel: interactionSummaryLabel,
+                    pendingHomeBonusLabel: pendingHomeBonusLabel,
                     onPrimaryAction: {},
-                    onRefreshCompanion: {}
+                    onRefreshCompanion: {},
+                    onCompanionInteraction: { _ in nil }
                 )
             }
         }
@@ -593,21 +667,53 @@ private struct WatchRunCountdownOverlay: View {
 }
 
 private struct WatchSingleCardPage<Content: View>: View {
+    let captureProfile: WatchViewportProfile?
+    let runtimePageIndex: Int?
     @ViewBuilder let content: Content
+
+    init(
+        captureProfile: WatchViewportProfile? = nil,
+        runtimePageIndex: Int? = nil,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.captureProfile = captureProfile
+        self.runtimePageIndex = runtimePageIndex
+        self.content = content()
+    }
 
     var body: some View {
         GeometryReader { proxy in
-            VStack {
-                Spacer(minLength: 2)
+            let isCapture = captureProfile != nil
+            let profile = captureProfile ?? WatchViewportProfile.resolve(containerSize: proxy.size)
+            let baseRect = isCapture
+                ? profile.visibleRect(in: proxy.size)
+                : profile.runtimeRect(in: proxy.size)
+            let frameRect = adjustedRect(
+                from: baseRect,
+                in: proxy.size,
+                isCapture: isCapture
+            )
+
+            ZStack(alignment: .topLeading) {
                 content
-                    .frame(maxWidth: proxy.size.width - 2)
-                Spacer(minLength: 6)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .frame(width: frameRect.width, height: frameRect.height, alignment: .topLeading)
+                    .offset(x: frameRect.minX, y: frameRect.minY)
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
-        .padding(.horizontal, 2)
-        .padding(.top, 2)
-        .padding(.bottom, 6)
+    }
+
+    private func adjustedRect(from rect: CGRect, in size: CGSize, isCapture: Bool) -> CGRect {
+        guard isCapture == false,
+              let runtimePageIndex,
+              runtimePageIndex > 0 else {
+            return rect
+        }
+
+        let shiftedX = min(max(rect.minX - 1, 0), max(size.width - rect.width, 0))
+        let shiftedY = min(max(rect.minY + 5, 0), max(size.height - rect.height, 0))
+        return CGRect(x: shiftedX, y: shiftedY, width: rect.width, height: rect.height)
     }
 }
 
@@ -616,7 +722,7 @@ private struct WatchRewardSection: View {
     let hatchBurstScale: CGFloat
 
     var body: some View {
-        GameSurface(title: "생성 결과", compact: true) {
+        GameSurface(title: "생성 결과", compact: true, showsFrameChrome: false) {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
                     ZStack {
@@ -684,7 +790,7 @@ private struct WatchRuntimeAlertBanner: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 7)
+        .padding(.vertical, 5)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(GameBoyPalette.lightest)

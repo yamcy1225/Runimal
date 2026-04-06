@@ -11,7 +11,7 @@ struct WatchRunStatsPanel: View {
     let accent: Color
 
     var body: some View {
-        GameSurface(title: nil, accent: accent, compact: true) {
+        GameSurface(title: nil, accent: accent, compact: true, showsFrameChrome: false) {
             VStack(alignment: .leading, spacing: 6) {
                 heroBand
 

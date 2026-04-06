@@ -12,7 +12,7 @@ struct WatchCompanionActionField: View {
             case .compact:
                 68
             case .hero:
-                112
+                78
             }
         }
 
@@ -21,7 +21,7 @@ struct WatchCompanionActionField: View {
             case .compact:
                 0
             case .hero:
-                0.2
+                0.24
             }
         }
     }
@@ -35,6 +35,7 @@ struct WatchCompanionActionField: View {
         let label: String
         let symbol: String
         let delighted: Bool
+        let xpLabel: String?
     }
 
     let companion: WatchMainCompanionContext
@@ -43,6 +44,7 @@ struct WatchCompanionActionField: View {
     let isRunning: Bool
     var presentation: Presentation = .compact
     var reaction: MutationRuntimeReactionSnapshot? = nil
+    var onInteraction: ((WatchCompanionInteractionStyle) -> WatchInteractionAwardFeedback?)? = nil
 
     @State private var lastTouchPoint: CGPoint?
     @State private var lastTouchDate: Date?
@@ -59,9 +61,9 @@ struct WatchCompanionActionField: View {
             GeometryReader { geometry in
                 let size = geometry.size
                 let spriteSize = min(
-                    size.width * (presentation == .hero ? 0.42 : 0.36),
-                    size.height * 0.74,
-                    presentation == .hero ? 58 : 46
+                    size.width * (presentation == .hero ? 0.46 : 0.36),
+                    size.height * (presentation == .hero ? 0.82 : 0.74),
+                    presentation == .hero ? 60 : 46
                 )
                 let basePosition = companion.selection.kind == .egg
                     ? eggPosition(in: size, spriteSize: spriteSize, phase: phase)
@@ -200,15 +202,29 @@ struct WatchCompanionActionField: View {
         let rhythmBoost = CGFloat(Double(visualState?.rhythmStage ?? 0) * 0.018)
         let reactionRhythmBoost = reaction?.axis == .rhythm ? CGFloat(0.05) : 0
         let speedBoost = reaction?.axis == .rhythm ? 0.26 : 0
-        let presenceBoost = presentation == .hero ? CGFloat(0.14) : 0
-        let xAmplitude = max((size.width - spriteSize) * ((isRunning ? 0.26 : 0.2) + rhythmBoost + reactionRhythmBoost + presenceBoost), 10)
-        let yAmplitude = max((size.height - spriteSize) * ((isRunning ? 0.18 : 0.12) + rhythmBoost * 0.7 + reactionRhythmBoost * 0.8 + presenceBoost * 0.66), 6)
+        let isHero = presentation == .hero
+        let xAmplitude = max(
+            (size.width - spriteSize) * (
+                (isHero ? (isRunning ? 0.16 : 0.12) : (isRunning ? 0.26 : 0.2))
+                + rhythmBoost * (isHero ? 0.68 : 1.0)
+                + reactionRhythmBoost * (isHero ? 0.7 : 1.0)
+            ),
+            isHero ? 6 : 10
+        )
+        let yAmplitude = max(
+            (size.height - spriteSize) * (
+                (isHero ? (isRunning ? 0.12 : 0.08) : (isRunning ? 0.18 : 0.12))
+                + rhythmBoost * (isHero ? 0.5 : 0.7)
+                + reactionRhythmBoost * (isHero ? 0.56 : 0.8)
+            ),
+            isHero ? 4 : 6
+        )
         let x = size.width / 2
             + CGFloat(sin(phase * ((isRunning ? 1.15 : 0.84) + speedBoost))) * xAmplitude
-            + CGFloat(sin(phase * 2.1)) * 5
-        let y = size.height / 2
+            + CGFloat(sin(phase * 2.1)) * (isHero ? 2.5 : 5)
+        let y = (isHero ? size.height * 0.5 : size.height / 2)
             + CGFloat(cos(phase * ((isRunning ? 1.42 : 1.08) + speedBoost * 0.8))) * yAmplitude
-            + CGFloat(sin(phase * 2.6)) * 3
+            + CGFloat(sin(phase * 2.6)) * (isHero ? 1.6 : 3)
         return CGPoint(
             x: min(max(x, spriteSize / 2 + 8), size.width - spriteSize / 2 - 8),
             y: min(max(y, spriteSize / 2 + 8), size.height - spriteSize / 2 - 8)
@@ -238,7 +254,7 @@ struct WatchCompanionActionField: View {
             if presentation == .hero {
                 Ellipse()
                     .fill(accent.opacity(0.10 + ecologyBoost * 0.4))
-                    .frame(width: size.width * 0.78, height: size.height * 0.5)
+                    .frame(width: size.width * 0.82, height: size.height * 0.56)
                     .blur(radius: 10)
 
                 WatchCountryOutlineShape(countryCode: currentCountryCode)
@@ -251,8 +267,8 @@ struct WatchCompanionActionField: View {
                             lineJoin: .round
                         )
                     )
-                    .frame(width: size.width * 0.82, height: size.height * 0.58)
-                    .offset(x: size.width * 0.02, y: -2)
+                    .frame(width: size.width * 0.86, height: size.height * 0.64)
+                    .offset(x: size.width * 0.01, y: -1)
 
                 WatchCountryOutlineShape(countryCode: currentCountryCode)
                     .trim(from: 0.08, to: 0.82)
@@ -264,8 +280,14 @@ struct WatchCompanionActionField: View {
                             lineJoin: .round
                         )
                     )
-                    .frame(width: size.width * 0.76, height: size.height * 0.52)
-                    .offset(x: size.width * 0.015, y: -1)
+                    .frame(width: size.width * 0.8, height: size.height * 0.58)
+                    .offset(x: size.width * 0.012, y: 0)
+
+                Capsule(style: .continuous)
+                    .fill(accent.opacity(0.12 + ecologyBoost * 0.28))
+                    .frame(width: size.width * 0.42, height: 10)
+                    .blur(radius: 7)
+                    .offset(y: size.height * 0.22)
             } else {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(GameBoyPalette.lightest.opacity(0.7))
@@ -333,14 +355,14 @@ struct WatchCompanionActionField: View {
             if presentation == .hero {
                 Circle()
                     .fill(accent.opacity(glow * 0.3))
-                    .frame(width: size.width * 0.18, height: size.width * 0.18)
+                    .frame(width: size.width * 0.2, height: size.width * 0.2)
                     .blur(radius: 8)
 
                 Circle()
                     .fill(GameBoyPalette.lightest.opacity(0.16 + ecologyStage * 0.01))
-                    .frame(width: size.width * 0.11, height: size.width * 0.11)
+                    .frame(width: size.width * 0.12, height: size.width * 0.12)
                     .blur(radius: 6)
-                    .offset(x: size.width * 0.14, y: size.height * 0.08)
+                    .offset(x: size.width * 0.13, y: size.height * 0.07)
             } else {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .stroke(accent.opacity(glow), lineWidth: 2)
@@ -436,6 +458,10 @@ struct WatchCompanionActionField: View {
         HStack(spacing: 5) {
             Text(reaction.symbol)
             Text(reaction.label)
+            if let xpLabel = reaction.xpLabel {
+                Text(xpLabel)
+                    .foregroundStyle(.orange)
+            }
         }
         .font(.caption2.monospaced().weight(.black))
         .padding(.horizontal, 8)
@@ -458,36 +484,40 @@ struct WatchCompanionActionField: View {
         )
         lastTouchDate = Date()
         touchBurstSeed += 1
-        activeTouchReaction = nextReaction(style: style)
-        RunimalCuePlayer.playCompanionTouchCue(isDelighted: activeTouchReaction?.delighted == true)
+        let interactionStyle: WatchCompanionInteractionStyle = style == .bond ? .bond : .tap
+        let awardFeedback = onInteraction?(interactionStyle)
+        activeTouchReaction = nextReaction(style: style, awardFeedback: awardFeedback)
+        RunimalCuePlayer.playCompanionTouchCue(
+            isDelighted: activeTouchReaction?.delighted == true || awardFeedback != nil
+        )
     }
 
-    private func nextReaction(style: InteractionStyle) -> TouchReaction {
+    private func nextReaction(style: InteractionStyle, awardFeedback: WatchInteractionAwardFeedback?) -> TouchReaction {
         if companion.selection.kind == .egg {
             let options = [
-                TouchReaction(label: "꼬물", symbol: "~", delighted: false),
-                TouchReaction(label: "두근", symbol: "o", delighted: true),
-                TouchReaction(label: "꿈틀", symbol: "*", delighted: false),
+                TouchReaction(label: "꼬물", symbol: "~", delighted: false, xpLabel: awardFeedback?.bubbleLabel),
+                TouchReaction(label: "두근", symbol: "o", delighted: true, xpLabel: awardFeedback?.bubbleLabel),
+                TouchReaction(label: "꿈틀", symbol: "*", delighted: false, xpLabel: awardFeedback?.bubbleLabel),
             ]
             return options[touchBurstSeed % options.count]
         }
 
         let tapOptions = isRunning
             ? [
-                TouchReaction(label: "좋아!", symbol: "*", delighted: true),
-                TouchReaction(label: "계속 가자", symbol: ">", delighted: true),
-                TouchReaction(label: "리듬 맞았어", symbol: "~", delighted: true),
+                TouchReaction(label: "좋아!", symbol: "*", delighted: true, xpLabel: awardFeedback?.bubbleLabel),
+                TouchReaction(label: "계속 가자", symbol: ">", delighted: true, xpLabel: awardFeedback?.bubbleLabel),
+                TouchReaction(label: "리듬 맞았어", symbol: "~", delighted: true, xpLabel: awardFeedback?.bubbleLabel),
             ]
             : [
-                TouchReaction(label: "반가워", symbol: "o", delighted: true),
-                TouchReaction(label: "토닥 좋다", symbol: "*", delighted: false),
-                TouchReaction(label: "같이 놀자", symbol: "+", delighted: true),
+                TouchReaction(label: "반가워", symbol: "o", delighted: true, xpLabel: awardFeedback?.bubbleLabel),
+                TouchReaction(label: "토닥 좋다", symbol: "*", delighted: false, xpLabel: awardFeedback?.bubbleLabel),
+                TouchReaction(label: "같이 놀자", symbol: "+", delighted: true, xpLabel: awardFeedback?.bubbleLabel),
             ]
 
         let bondOptions = [
-            TouchReaction(label: "곁에 있을게", symbol: "o", delighted: true),
-            TouchReaction(label: "오늘도 같이", symbol: "*", delighted: true),
-            TouchReaction(label: "기다렸어", symbol: "+", delighted: true),
+            TouchReaction(label: "곁에 있을게", symbol: "o", delighted: true, xpLabel: awardFeedback?.bubbleLabel),
+            TouchReaction(label: "오늘도 같이", symbol: "*", delighted: true, xpLabel: awardFeedback?.bubbleLabel),
+            TouchReaction(label: "기다렸어", symbol: "+", delighted: true, xpLabel: awardFeedback?.bubbleLabel),
         ]
 
         let options = style == .bond ? bondOptions : tapOptions

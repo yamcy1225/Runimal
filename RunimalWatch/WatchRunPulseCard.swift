@@ -8,14 +8,18 @@ struct WatchRunPulseCard: View {
     let companion: WatchMainCompanionContext?
     let badges: [String]
     let reaction: MutationRuntimeReactionSnapshot?
+    let interactionBonusLabel: String?
 
     var body: some View {
-        GameSurface(title: nil, accent: accent, compact: true) {
-            VStack(alignment: .leading, spacing: 6) {
+        GameSurface(title: nil, accent: accent, compact: true, showsFrameChrome: false) {
+            VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 6) {
                     TraitChip(label: feedbackBadgeLabel, accent: accent)
                     levelBadge
                     Spacer(minLength: 0)
+                    if companion?.pet != nil {
+                        companionGlyph
+                    }
                     Text("\(Int(feedback.intensity * 100))%")
                         .font(.caption.monospacedDigit().weight(.black))
                         .foregroundStyle(GameBoyPalette.darkest)
@@ -72,6 +76,32 @@ struct WatchRunPulseCard: View {
             )
     }
 
+    private var companionGlyph: some View {
+        ZStack {
+            Circle()
+                .fill(accent.opacity(0.18))
+                .frame(width: 24, height: 24)
+
+            Circle()
+                .stroke(accent.opacity(0.6), lineWidth: 1.2)
+                .frame(width: 24, height: 24)
+
+            if let pet = companion?.pet {
+                PixelPetView(
+                    pet: pet,
+                    pixelSize: 1.7,
+                    growthStageIndex: companion?.growthStageIndex,
+                    mutationVisualState: MutationVisualState(
+                        bodyStage: companion?.mutationBodyStage ?? 0,
+                        ecologyStage: companion?.mutationEcologyStage ?? 0,
+                        rhythmStage: companion?.mutationRhythmStage ?? 0
+                    )
+                )
+                .scaleEffect(0.95)
+            }
+        }
+    }
+
     private var spotlightBand: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
@@ -115,10 +145,13 @@ struct WatchRunPulseCard: View {
             if let stageLabel = companion?.companionStageLabel {
                 TraitChip(label: stageLabel, accent: accent.opacity(0.82))
             }
+            if let interactionBonusLabel {
+                TraitChip(label: interactionBonusLabel, accent: .green.opacity(0.78))
+            }
             Spacer(minLength: 0)
-            Text("활성 \(activePotentialCount)건")
+            Text(activePotentialCount > 0 ? "활성 \(activePotentialCount)건" : "잠재 대기")
                 .font(.caption2.monospaced().weight(.black))
-                .foregroundStyle(GameBoyPalette.mediumDark)
+                .foregroundStyle(activePotentialCount > 0 ? accent : GameBoyPalette.mediumDark)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
         }
@@ -159,25 +192,25 @@ struct WatchRunPulseCard: View {
 
     private var feedbackHeadline: String {
         if feedback.label == "Rare Window" {
-            return "희귀 변이 창이 열려 있습니다"
+            return "희귀 변이 창 접근 중"
         }
         return feedback.headline
     }
 
     private var spotlightDetailLabel: String {
         if feedback.label == "Rare Window" {
-            return "희귀 변이 창이 가까워졌어요"
+            return "지금 리듬이면 희귀 변이 창이 열립니다"
         }
         guard let reaction else {
             return "지금 리듬을 안정적으로 유지 중"
         }
         switch reaction.axis {
         case .body:
-            return "힘이 올라오며 반응이 선명해져요"
+            return "힘이 살아나며 반응이 또렷해져요"
         case .ecology:
             return "호흡과 주변 흐름이 안정되고 있어요"
         case .rhythm:
-            return "페이스와 케이던스가 잘 맞고 있어요"
+            return "페이스와 케이던스가 정확히 맞고 있어요"
         }
     }
 
@@ -209,6 +242,12 @@ struct WatchRunPulseCard: View {
 
             RunimalProgressBar(progress: progress, accent: accent, height: 6)
                 .frame(height: 6)
+
+            Text(detail)
+                .font(.caption2.monospaced())
+                .foregroundStyle(GameBoyPalette.mediumDark)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
 
         }
         .padding(.horizontal, 8)

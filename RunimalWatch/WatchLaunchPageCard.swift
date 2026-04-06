@@ -11,8 +11,11 @@ struct WatchLaunchPageCard: View {
     let locationStatusLabel: String
     let mutationReaction: MutationRuntimeReactionSnapshot?
     let countdownValue: Int?
+    let interactionSummaryLabel: String?
+    let pendingHomeBonusLabel: String?
     let onPrimaryAction: () -> Void
     let onRefreshCompanion: () -> Void
+    let onCompanionInteraction: (WatchCompanionInteractionStyle) -> WatchInteractionAwardFeedback?
 
     private var primaryButtonLabel: String {
         sessionStateLabel == "running" ? "러닝 종료" : "러닝 시작"
@@ -64,8 +67,8 @@ struct WatchLaunchPageCard: View {
     }
 
     var body: some View {
-        GameSurface(compact: true) {
-            VStack(spacing: 6) {
+        GameSurface(compact: true, showsFrameChrome: false) {
+            VStack(spacing: 4) {
                 statusHeader
                 companionField
                 companionSummary
@@ -118,7 +121,8 @@ struct WatchLaunchPageCard: View {
                     heartResonance: heartResonance,
                     isRunning: sessionStateLabel == "running",
                     presentation: .hero,
-                    reaction: mutationReaction
+                    reaction: mutationReaction,
+                    onInteraction: onCompanionInteraction
                 )
                 .padding(.horizontal, 4)
                 .padding(.vertical, 2)
@@ -137,22 +141,30 @@ struct WatchLaunchPageCard: View {
                 }
             }
         }
-        .frame(height: 100)
+        .frame(height: 76)
     }
 
     private var companionFieldAtmosphere: some View {
-        Ellipse()
-            .fill(accent.opacity(0.10))
-            .frame(width: 138, height: 60)
-            .blur(radius: 12)
+        ZStack {
+            Ellipse()
+                .fill(accent.opacity(0.12))
+                .frame(width: 150, height: 62)
+                .blur(radius: 12)
+
+            Capsule(style: .continuous)
+                .fill(accent.opacity(0.08))
+                .frame(width: 116, height: 20)
+                .blur(radius: 7)
+                .offset(y: 24)
+        }
     }
 
     private var companionSummary: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(companion?.displayName ?? "동행 대기")
-                        .font(.subheadline.monospaced().weight(.black))
+                        .font(.footnote.monospaced().weight(.black))
                         .foregroundStyle(GameBoyPalette.darkest)
                         .lineLimit(1)
                         .minimumScaleFactor(0.72)
@@ -166,20 +178,32 @@ struct WatchLaunchPageCard: View {
 
                 Spacer(minLength: 4)
 
-                if let levelBadgeLabel {
-                    statusPill(label: levelBadgeLabel, accent: accent.opacity(0.8))
+                HStack(spacing: 4) {
+                    if let stageBadgeLabel, !(sessionStateLabel != "running" && pendingHomeBonusLabel != nil) {
+                        stageBadge(label: stageBadgeLabel)
+                    }
+                    if let pendingHomeBonusLabel, sessionStateLabel != "running" {
+                        stageBadge(label: pendingHomeBonusLabel, accentOverride: .green)
+                    }
                 }
             }
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
-                    Text(sessionStateLabel == "running" ? "교감 강도" : "출발 준비")
+                    Text(summaryMeterTitle)
                         .font(.caption2.monospaced().weight(.black))
                         .foregroundStyle(GameBoyPalette.mediumDark)
                     Spacer(minLength: 6)
-                    Text(summaryMeterLabel)
-                        .font(.caption2.monospaced().weight(.black))
-                        .foregroundStyle(GameBoyPalette.darkest)
+                    HStack(spacing: 4) {
+                        if let interactionSummaryLabel, sessionStateLabel == "running" {
+                            Text(interactionSummaryLabel)
+                                .font(.caption2.monospaced().weight(.black))
+                                .foregroundStyle(accent)
+                        }
+                        Text(summaryMeterLabel)
+                            .font(.caption2.monospaced().weight(.black))
+                            .foregroundStyle(GameBoyPalette.darkest)
+                    }
                 }
 
                 RunimalProgressBar(
@@ -190,68 +214,70 @@ struct WatchLaunchPageCard: View {
                 .frame(height: 7)
             }
 
-            Text(companionFooterLine)
-                .font(.caption2.monospaced())
-                .foregroundStyle(GameBoyPalette.mediumDark)
-                .lineLimit(1)
-                .minimumScaleFactor(0.68)
+            if let companionFooterLine {
+                Text(companionFooterLine)
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(GameBoyPalette.mediumDark)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.68)
+            }
+
         }
     }
 
     private var summaryTitle: String {
         if companion?.selection.kind == .egg {
-            return sessionStateLabel == "running" ? "부화 신호 추적 중" : "첫 생명 준비 완료"
+            return sessionStateLabel == "running" ? "부화 파동" : "첫 생명 준비"
         }
-        return sessionStateLabel == "running" ? "탭 즉시 반응" : "함께 달릴 준비"
+        return sessionStateLabel == "running" ? "탭 반응" : "함께 달릴 준비"
     }
 
-    private var levelBadgeLabel: String? {
+    private var stageBadgeLabel: String? {
         guard let level = companion?.companionLevel else { return nil }
         return "Lv.\(level)"
     }
 
-    private var companionFooterLine: String {
+    private var companionFooterLine: String? {
         guard let companion else {
             return "첫 친구를 불러오는 중"
         }
 
         if companion.selection.kind == .egg {
-            return "탭하면 알이 바로 반응"
+            return sessionStateLabel == "running" ? "탭하면 알이 흔들려요" : nil
         }
 
         if sessionStateLabel == "running" {
-            return "탭 반응 · 길게 눌러 교감"
+            return nil
         }
 
-        if let level = companion.companionLevel,
-           let stageLabel = companion.companionStageLabel {
-            return "Lv.\(level) · \(stageLabel)"
-        }
+        return nil
+    }
 
-        return companion.petHeadline ?? "탭하면 바로 반응"
+    private var summaryMeterTitle: String {
+        sessionStateLabel == "running" ? "교감 강도" : "출발 신호"
     }
 
     private var summaryMeterLabel: String {
         if sessionStateLabel == "running" {
             return "\(Int(heartResonance * 100))%"
         }
-        return gpsStatusLabel
+        return launchStatusLabel
     }
 
-    private var gpsStatusLabel: String {
+    private var launchStatusLabel: String {
         if locationStatusLabel.contains("denied") || locationStatusLabel.contains("restricted") {
             return "GPS OFF"
         }
         if isGPSStale {
-            return "GPS WAIT"
+            return "위치 잡는 중"
         }
         switch gpsSignalStrength {
         case 0.85...:
-            return "GPS READY"
+            return "출발 가능"
         case 0.45...:
-            return "GPS FAIR"
+            return "보정 중"
         default:
-            return "GPS SOFT"
+            return "신호 약함"
         }
     }
 
@@ -280,7 +306,7 @@ struct WatchLaunchPageCard: View {
                 Text(primaryButtonLabel)
                     .font(.caption.monospaced().weight(.black))
             }
-            .frame(maxWidth: .infinity, minHeight: 30)
+            .frame(maxWidth: .infinity, minHeight: 26)
         }
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -294,6 +320,24 @@ struct WatchLaunchPageCard: View {
         .buttonStyle(.plain)
         .disabled(countdownValue != nil)
         .opacity(countdownValue != nil ? 0.55 : 1)
+    }
+
+    private func stageBadge(label: String, accentOverride: Color? = nil) -> some View {
+        Text(label)
+            .font(.caption2.monospaced().weight(.black))
+            .foregroundStyle(GameBoyPalette.darkest)
+            .lineLimit(1)
+            .minimumScaleFactor(0.72)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 4)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(GameBoyPalette.lightest.opacity(0.84))
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke((accentOverride ?? accent).opacity(0.88), lineWidth: 1)
+                    )
+            )
     }
 
     private func statusPill(label: String, accent: Color) -> some View {
