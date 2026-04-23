@@ -13,3 +13,4 @@ Additional v2 notes:
 
 - `design-prototype-track.md` — `$imagegen` and OpenGame guardrails for expert design/prototype work.
 - `design-briefs-v2.md` — first expert-level `$imagegen` prompt briefs and OpenGame prototype briefs.
+- `watch-adapter-v2.md` — tested boundary from v1 `WorkoutSessionArchive` to v2 `CompletedRunArchive` / sync envelope.
