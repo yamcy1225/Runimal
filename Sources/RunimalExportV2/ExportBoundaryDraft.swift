@@ -1,6 +1,7 @@
 import Foundation
+import RunimalDomainV2
 
-/// Draft external workout interoperability boundary.
+/// External workout interoperability boundary.
 public enum RunimalExportV2 {
     public enum ExternalWorkoutFormat: String, Codable, Sendable {
         case fit
@@ -30,6 +31,29 @@ public enum RunimalExportV2 {
             self.canonicalArchiveID = canonicalArchiveID
             self.createdAt = createdAt
             self.warning = warning
+        }
+    }
+
+    public struct ExportRequest: Codable, Equatable, Identifiable, Sendable {
+        public let id: UUID
+        public let archiveID: UUID
+        public let requestedFormat: ExternalWorkoutFormat
+        public let createdAt: Date
+
+        public init(
+            id: UUID = UUID(),
+            archiveID: UUID,
+            requestedFormat: ExternalWorkoutFormat,
+            createdAt: Date = Date()
+        ) {
+            self.id = id
+            self.archiveID = archiveID
+            self.requestedFormat = requestedFormat
+            self.createdAt = createdAt
+        }
+
+        public init(archive: RunimalDomainV2.CompletedRunArchive, requestedFormat: ExternalWorkoutFormat, createdAt: Date = Date()) {
+            self.init(archiveID: archive.id, requestedFormat: requestedFormat, createdAt: createdAt)
         }
     }
 }

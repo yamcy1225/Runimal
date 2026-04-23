@@ -12,3 +12,4 @@ The first v2 lane is intentionally non-destructive: define new boundaries beside
 Additional v2 notes:
 
 - `design-prototype-track.md` — `$imagegen` and OpenGame guardrails for expert design/prototype work.
+- `design-briefs-v2.md` — first expert-level `$imagegen` prompt briefs and OpenGame prototype briefs.
