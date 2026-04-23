@@ -19,3 +19,6 @@ Additional v2 notes:
 - `phone-app-integration-preflight-v2.md` — app-target wiring order and JSON sidecar storage contract before touching `RunimalPhone`.
 - `runtime-resource-ledger-verification-v2.md` — simulator app-target check for sidecar creation, manual spend marking, and prune/preserve behavior.
 - `resource-allocation-ui-v2.md` — first post-run resource allocation card design plan plus imagegen/OpenGame prompt boundaries.
+- `design-direction-v2.md` — Runimal v2 visual hierarchy, imagegen policy, and production design quality bar.
+- `imagegen-briefs-v2.md` — executable expert-level prompts for Watch HUD, iPhone route detail, resource allocation, companion growth, and app icon candidates.
+- `ui-upgrade-plan-v2.md` — phased path from generated candidates to SwiftUI implementation without weakening the recording/sync/resource loop.
