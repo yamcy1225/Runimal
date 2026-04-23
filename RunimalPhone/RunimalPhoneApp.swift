@@ -4,7 +4,13 @@ import SwiftUI
 struct RunimalPhoneApp: App {
     var body: some Scene {
         WindowGroup {
-            PhoneDashboardView()
+            if let runtimeCheck = PhoneRuntimeCheck.current {
+                PhoneRuntimeCheckRoot(check: runtimeCheck)
+            } else if let scenario = PhoneUICaptureScenario.current {
+                PhoneUICaptureHarnessRoot(scenario: scenario)
+            } else {
+                PhoneDashboardView()
+            }
         }
     }
 }

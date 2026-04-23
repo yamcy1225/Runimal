@@ -29,6 +29,7 @@ struct PhoneHomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     headerDeck
+                    fantasyPulseCard
                     worldFrontierCard
                     heroCard
                     if let sanctuary = store.sanctuaryReward {
@@ -102,7 +103,7 @@ struct PhoneHomeView: View {
 
     private var headerDeck: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("오늘의 동행")
+            Text("오늘의 동행 루프")
                 .font(.caption.monospaced().weight(.black))
                 .tracking(1.4)
                 .foregroundStyle(GameBoyPalette.mediumDark)
@@ -125,6 +126,33 @@ struct PhoneHomeView: View {
                     TraitChip(label: store.mainSelection?.kind == .egg ? "지금 선택한 알" : "지금 선택한 동행", accent: .white.opacity(0.16))
                 }
             }
+
+            Text("달린 기록은 알과 성장 자원이 되고, 지금 선택한 동행은 그 결과를 살아 있는 존재처럼 보여 줍니다.")
+                .font(.footnote.monospaced())
+                .foregroundStyle(GameBoyPalette.mediumDark)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var fantasyPulseCard: some View {
+        GameSurface(title: "러닝이 생명이 되는 순간", accent: store.mainAccentColor, eyebrow: "RUNIMAL V1") {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("첫 러닝은 첫 알, 둘째 러닝은 첫 부화, 첫 의미 있는 먹이 주기는 첫 성장으로 바로 읽혀야 합니다.")
+                    .font(.headline.monospaced().weight(.black))
+                    .foregroundStyle(GameBoyPalette.darkest)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                HStack(spacing: 10) {
+                    ritualColumn(
+                        title: "러닝 중",
+                        detail: "Apple Watch에서 실시간 동행과 리듬을 확인"
+                    )
+                    ritualColumn(
+                        title: "러닝 후",
+                        detail: "iPhone에서 기록을 알, 부화, 성장 보상으로 전환"
+                    )
+                }
+            }
         }
     }
 
@@ -132,26 +160,41 @@ struct PhoneHomeView: View {
         GameSurface(accent: store.mainAccentColor, eyebrow: store.mainSelection?.kind == .egg ? "지금 선택한 알" : "지금 선택한 동행") {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .center, spacing: 16) {
-                    if store.mainSelection?.kind == .egg {
-                        TraceEggView(
-                            accent: store.mainAccentColor,
-                            shell: store.mainEgg?.shell,
-                            pixelSize: 12,
-                            cracked: store.mainEgg?.readyToHatch == true,
-                            resonance: store.mainEggResonance
-                        )
-                    } else {
-                        let renderState = store.pixelRenderState(for: store.featuredCompanion)
-                        PixelPetView(
-                            pet: store.pet,
-                            pixelSize: 12,
-                            growthStageIndex: renderState.growthStageIndex,
-                            mutationForm: renderState.mutationForm,
-                            mutationHistory: renderState.mutationHistory,
-                            mutationVisualState: renderState.mutationVisualState,
-                            seasonalLayers: store.seasonalLayers
-                        )
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 28, style: .continuous)
+                            .fill(store.mainAccentColor.opacity(0.12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                                    .stroke(store.mainAccentColor.opacity(0.26), lineWidth: 1.4)
+                            )
+
+                        Circle()
+                            .fill(store.mainAccentColor.opacity(0.18))
+                            .frame(width: 90, height: 90)
+                            .blur(radius: 16)
+
+                        if store.mainSelection?.kind == .egg {
+                            TraceEggView(
+                                accent: store.mainAccentColor,
+                                shell: store.mainEgg?.shell,
+                                pixelSize: 12,
+                                cracked: store.mainEgg?.readyToHatch == true,
+                                resonance: store.mainEggResonance
+                            )
+                        } else {
+                            let renderState = store.pixelRenderState(for: store.featuredCompanion)
+                            PixelPetView(
+                                pet: store.pet,
+                                pixelSize: 12,
+                                growthStageIndex: renderState.growthStageIndex,
+                                mutationForm: renderState.mutationForm,
+                                mutationHistory: renderState.mutationHistory,
+                                mutationVisualState: renderState.mutationVisualState,
+                                seasonalLayers: store.seasonalLayers
+                            )
+                        }
                     }
+                    .frame(width: 132, height: 140)
 
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
@@ -189,6 +232,11 @@ struct PhoneHomeView: View {
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.82)
                         }
+
+                        Text(heroMomentDetail)
+                            .font(.caption.monospaced().weight(.black))
+                            .foregroundStyle(store.mainAccentColor.opacity(0.94))
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
 
@@ -196,6 +244,23 @@ struct PhoneHomeView: View {
                     statPillar(title: "XP", value: "\(store.evolutionProgress.totalExperience)")
                     statPillar(title: "단계", value: store.evolutionProgress.stageLabel)
                     statPillar(title: "시즌", value: store.weeklyBoard.season.title)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        RunimalSignalBadge(
+                            icon: store.mainSelection?.kind == .egg ? "sparkles" : "figure.run",
+                            label: heroMomentTitle,
+                            accent: store.mainAccentColor
+                        )
+                        Spacer(minLength: 8)
+                        TraitChip(label: store.mainSelection?.kind == .egg ? "부화 루프" : "성장 루프", accent: .white.opacity(0.18))
+                    }
+
+                    Text(heroMomentSupport)
+                        .font(.footnote.monospaced())
+                        .foregroundStyle(GameBoyPalette.mediumDark)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 if let egg = store.mainEgg, store.mainSelection?.kind == .egg {
@@ -415,4 +480,49 @@ struct PhoneHomeView: View {
         )
     }
 
+    private func ritualColumn(title: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.caption.monospaced().weight(.black))
+                .tracking(1.2)
+                .foregroundStyle(store.mainAccentColor.opacity(0.92))
+            Text(detail)
+                .font(.caption.monospaced())
+                .foregroundStyle(GameBoyPalette.mediumDark)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(GameBoyPalette.mediumLight.opacity(0.16))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(GameBoyPalette.darkest.opacity(0.18), lineWidth: 1)
+                )
+        )
+    }
+
+    private var heroMomentTitle: String {
+        if store.mainSelection?.kind == .egg {
+            return store.mainEgg?.readyToHatch == true ? "둘째 러닝 보상 도착" : "첫 알 부화 준비"
+        }
+        return store.hasUnlockedNonTraceStage ? "성장 결과 반영" : "첫 성장 보장 구간"
+    }
+
+    private var heroMomentDetail: String {
+        if store.mainSelection?.kind == .egg {
+            return store.mainEgg?.readyToHatch == true ? "이제 바로 깨워서 첫 동행을 확보할 수 있습니다." : "운동 기록은 알의 공명도와 부화 준비도를 밀어 올립니다."
+        }
+        return store.hasUnlockedNonTraceStage
+            ? "실시간 동행은 워치에서, 성장 반영과 수집은 아이폰에서 분명하게 나눕니다."
+            : "첫 의미 있는 보상은 반드시 눈에 띄는 성장으로 이어져야 합니다."
+    }
+
+    private var heroMomentSupport: String {
+        if store.mainSelection?.kind == .egg {
+            return "운동 기록은 그대로 남기고, 알 화면에서는 생성과 부화 상태만 또렷하게 보여 줍니다."
+        }
+        return "이번 허브 화면은 현재 동행, 다음 성장 목표, 그리고 시즌 보상을 한 번에 읽는 데 집중합니다."
+    }
 }

@@ -19,6 +19,7 @@ struct GameSurface<Content: View>: View {
     let eyebrow: String?
     let headerGauge: HeaderGauge?
     let compact: Bool
+    let showsFrameChrome: Bool
     @ViewBuilder var content: Content
 
     init(
@@ -27,6 +28,7 @@ struct GameSurface<Content: View>: View {
         eyebrow: String? = nil,
         headerGauge: HeaderGauge? = nil,
         compact: Bool = false,
+        showsFrameChrome: Bool = true,
         @ViewBuilder content: () -> Content
     ) {
         self.title = title
@@ -34,6 +36,7 @@ struct GameSurface<Content: View>: View {
         self.eyebrow = eyebrow
         self.headerGauge = headerGauge
         self.compact = compact
+        self.showsFrameChrome = showsFrameChrome
         self.content = content()
     }
 
@@ -41,7 +44,7 @@ struct GameSurface<Content: View>: View {
         let cornerRadius: CGFloat = compact ? 14 : 18
         let headerAccent = accent ?? GameBoyPalette.mediumDark
 
-        VStack(alignment: .leading, spacing: compact ? 8 : 12) {
+        VStack(alignment: .leading, spacing: compact ? 7 : 12) {
             if title != nil || eyebrow != nil {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: compact ? 2 : 4) {
@@ -88,29 +91,34 @@ struct GameSurface<Content: View>: View {
             content
                 .foregroundStyle(GameBoyPalette.darkest)
         }
-        .padding(compact ? 12 : 18)
-        .background(
-            ZStack {
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(GameBoyPalette.lightest)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .padding(compact ? (showsFrameChrome ? 10 : 6) : 18)
+        .background {
+            if showsFrameChrome {
+                ZStack {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .fill(GameBoyPalette.lightest)
 
-                RoundedRectangle(cornerRadius: cornerRadius - 4, style: .continuous)
-                    .fill(GameBoyPalette.mediumLight.opacity(0.22))
-                    .padding(4)
+                    RoundedRectangle(cornerRadius: cornerRadius - 4, style: .continuous)
+                        .fill(GameBoyPalette.mediumLight.opacity(0.22))
+                        .padding(4)
 
-                GameBoyLCDOverlay()
-                    .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                    GameBoyLCDOverlay()
+                        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
 
-                RoundedRectangle(cornerRadius: cornerRadius - 5, style: .continuous)
-                    .stroke(headerAccent.opacity(0.34), lineWidth: 1)
-                    .padding(6)
+                    RoundedRectangle(cornerRadius: cornerRadius - 5, style: .continuous)
+                        .stroke(headerAccent.opacity(0.34), lineWidth: 1)
+                        .padding(6)
+                }
             }
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .strokeBorder(GameBoyPalette.darkest, lineWidth: 2)
-        )
-        .shadow(color: GameBoyPalette.darkest.opacity(0.12), radius: 0, x: 1, y: 2)
+        }
+        .overlay {
+            if showsFrameChrome {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(GameBoyPalette.darkest, lineWidth: 2)
+            }
+        }
+        .shadow(color: showsFrameChrome ? GameBoyPalette.darkest.opacity(0.12) : .clear, radius: 0, x: 1, y: 2)
     }
 
     private func headerGaugeWidth(progress: Double, compact: Bool) -> CGFloat {
@@ -128,8 +136,11 @@ struct TraitChip: View {
         Text(label.uppercased())
             .font(.caption2.monospaced().weight(.black))
             .tracking(0.8)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .lineLimit(1)
+            .minimumScaleFactor(0.66)
+            .allowsTightening(true)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 4)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(GameBoyPalette.lightest)

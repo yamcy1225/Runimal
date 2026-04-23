@@ -1,6 +1,8 @@
 import Foundation
 import Observation
 import RunimalCore
+import RunimalPhoneAdapterV2
+import RunimalRewardV2
 
 struct CompanionFeedProjection {
     let runID: String
@@ -65,6 +67,7 @@ final class PhoneProgressStore {
 
     private let defaults: UserDefaults
     private let archivePersistence: PhoneWorkoutArchivePersistence
+    private let resourceLedgerPersistence: PhoneRunResourceLedgerPersistence
     var journal: [RunJournalEntry] = []
     var completedRuns: [CompletedRunRecord] = []
     var ownedCompanions: [PetCollectionEntry] = []
@@ -90,15 +93,18 @@ final class PhoneProgressStore {
     var duplicatePriority: SnapshotDuplicatePriority = .newestWins
     var lastSanctuaryReward: SanctuaryRewardEvent?
     var workoutArchives: [WorkoutSessionArchive] = []
+    var runResourceLedger = RunimalRewardV2.RunResourceLedger()
     var autoPauseEnabled = true
     var worldProgressSnapshot: WorldProgressSnapshot = .empty
 
     init(
         defaults: UserDefaults = .standard,
-        archivePersistence: PhoneWorkoutArchivePersistence = PhoneWorkoutArchivePersistence()
+        archivePersistence: PhoneWorkoutArchivePersistence = PhoneWorkoutArchivePersistence(),
+        resourceLedgerPersistence: PhoneRunResourceLedgerPersistence = PhoneRunResourceLedgerPersistence()
     ) {
         self.defaults = defaults
         self.archivePersistence = archivePersistence
+        self.resourceLedgerPersistence = resourceLedgerPersistence
     }
 
     func load() {
@@ -197,6 +203,7 @@ final class PhoneProgressStore {
         workoutArchives = archivePersistence.loadWorkoutArchives(
             fallbackData: defaults.data(forKey: Keys.workoutArchives)
         )
+        runResourceLedger = resourceLedgerPersistence.loadLedger()
 
         if defaults.object(forKey: Keys.autoPauseEnabled) == nil {
             autoPauseEnabled = true
@@ -343,6 +350,11 @@ final class PhoneProgressStore {
         if computation.forgeBonus.consumeSeasonSigil {
             seasonSigils = max(seasonSigils - 1, 0)
         }
+        spendRunResourceIfPresent(
+            runID: run.id,
+            target: .companion,
+            targetID: companion.id
+        )
         save()
         return CompanionFeedOutcome(
             runID: run.id,
@@ -369,9 +381,8 @@ final class PhoneProgressStore {
         activeEffects: [WeeklyRewardEffect],
         season: WeeklySeason
     ) -> CompanionFeedComputation? {
-        if growthRecords.flatMap(\.assignedRunIDs).contains(run.id) {
-            return nil
-        }
+        guard unassignedRuns(from: completedRuns).contains(where: { $0.id == run.id }) else { return nil }
+        guard canSpendRunResourceIfPresent(runID: run.id) else { return nil }
 
         let currentRecord = growthRecord(for: companion.id)
         let beforeSnapshot = RunimalCompanionGrowthEngine.progressionSnapshot(
@@ -474,38 +485,43 @@ final class PhoneProgressStore {
             interactionBonus.bonusExperience +
             lateGrowthBonus.bonusExperience +
             potentialSpend
-        let starterStageGuarantee = (currentRecord?.feedCount ?? 0) == 0 &&
-            (currentRecord?.totalExperience ?? 0) >= 100 &&
-            beforeProgress.stageLabel == RunimalBalanceConfig.eggStageLabel
+        let starterStageGuarantee = RunimalStarterLoopEngine.shouldGuaranteeFirstVisibleStageAdvance(
+            record: currentRecord,
+            currentStageLabel: beforeProgress.stageLabel,
+            run: run
+        )
         let stageLock = RunimalRewardPulseEngine.stageLock(
             currentProgress: beforeProgress,
             proposedExperience: rawExperience
         )
+        let currentExperience = currentRecord?.totalExperience ?? 0
         let uncappedExperience: Int
 
         if starterStageGuarantee {
-            let firstThreshold = RunimalBalanceConfig.evolutionThresholds(for: companion.pet.species)[1]
             uncappedExperience = max(
                 rawExperience + stageLock.bonusExperience,
-                max(0, firstThreshold - (currentRecord?.totalExperience ?? 0))
+                RunimalStarterLoopEngine.guaranteedFirstVisibleStageGain(
+                    currentExperience: currentExperience,
+                    species: companion.pet.species
+                )
             )
         } else {
             uncappedExperience = rawExperience + stageLock.bonusExperience
         }
 
-        let currentExperience = currentRecord?.totalExperience ?? 0
         let gainedExperience = RunimalBalanceConfig.cappedExperienceGain(
             currentExperience: currentExperience,
-            proposedGain: uncappedExperience,
+            proposedGain: starterStageGuarantee ? 0 : uncappedExperience,
             currentLevel: levelBefore,
             runDistanceKm: run.distanceMeters / 1000
         )
-        let growthCapApplied = gainedExperience < uncappedExperience
+        let resolvedGainedExperience = starterStageGuarantee ? uncappedExperience : gainedExperience
+        let growthCapApplied = starterStageGuarantee == false && gainedExperience < uncappedExperience
 
         let remainingStoredPotentialExperience = max(storedPotential - potentialSpend, 0)
         let updatedRecord = CompanionGrowthRecord(
             companionID: companion.id,
-            totalExperience: currentExperience + gainedExperience,
+            totalExperience: currentExperience + resolvedGainedExperience,
             storedPotentialExperience: remainingStoredPotentialExperience,
             feedCount: (currentRecord?.feedCount ?? 0) + 1,
             assignedRunIDs: (currentRecord?.assignedRunIDs ?? []) + [run.id],
@@ -525,6 +541,7 @@ final class PhoneProgressStore {
         let bonusLabels = stageLock.bonusLabels +
             interactionBonus.labels +
             lateGrowthBonus.labels +
+            (starterStageGuarantee ? ["첫 성장 고정"] : []) +
             (growthCapApplied ? ["10km 미만 1레벨 상한"] : []) +
             retainedGrowthLabels +
             (potentialSpend > 0 ? ["동행 잠재 사용 +\(potentialSpend)"] : [])
@@ -538,7 +555,7 @@ final class PhoneProgressStore {
             storedPotentialExperience: storedPotential,
             potentialExperienceSpent: potentialSpend,
             remainingStoredPotentialExperience: remainingStoredPotentialExperience,
-            gainedExperience: gainedExperience,
+            gainedExperience: resolvedGainedExperience,
             beforeSnapshot: beforeSnapshot,
             afterSnapshot: afterSnapshot,
             beforeProgress: beforeProgress,
@@ -768,9 +785,11 @@ final class PhoneProgressStore {
         )
         guard !importedIDs.isEmpty else { return }
 
+        let removedArchives = workoutArchives.filter { importedIDs.contains($0.runID) }
         completedRuns.removeAll { importedIDs.contains($0.id) }
         workoutArchives.removeAll { importedIDs.contains($0.runID) }
         journal.removeAll { importedIDs.contains($0.id) }
+        removeUnspentRunResources(for: removedArchives)
         growthRecords = growthRecords.map { record in
             CompanionGrowthRecord(
                 companionID: record.companionID,
@@ -821,9 +840,11 @@ final class PhoneProgressStore {
     ) -> Bool {
         guard canDeleteRun(id: id) else { return false }
 
+        let removedArchives = workoutArchives.filter { $0.runID == id }
         completedRuns.removeAll(where: { $0.id == id })
         workoutArchives.removeAll(where: { $0.runID == id })
         journal.removeAll(where: { $0.id == id })
+        removeUnspentRunResources(for: removedArchives)
 
         do {
             try archivePersistence.removeWorkoutPackageFiles(forRunID: id)
@@ -834,6 +855,42 @@ final class PhoneProgressStore {
         rebuildWorldProgress(pack: pack)
         save()
         return true
+    }
+
+    private func removeUnspentRunResources(for archives: [WorkoutSessionArchive]) {
+        let archiveIDs = Set(archives.map { archive in
+            RunimalPhoneAdapterV2.resourceArchiveID(forExistingCoreArchiveID: archive.id)
+        })
+        runResourceLedger.removeUnspentResources(forArchiveIDs: archiveIDs)
+    }
+
+    @discardableResult
+    func spendRunResourceIfPresent(
+        runID: String,
+        target: RunimalRewardV2.SpendTarget,
+        targetID: String,
+        createdAt: Date = Date()
+    ) -> RunimalRewardV2.SpendValidation? {
+        guard let archive = workoutArchive(for: runID) else { return nil }
+        let archiveID = RunimalPhoneAdapterV2.resourceArchiveID(forExistingCoreArchiveID: archive.id)
+        let appliedSpend = RunimalPhoneAdapterV2.SpendApplication.apply(
+            .init(
+                archiveID: archiveID,
+                target: target,
+                targetID: targetID,
+                createdAt: createdAt
+            ),
+            to: .init(resourceLedger: runResourceLedger)
+        )
+        runResourceLedger = appliedSpend.state.resourceLedger
+        return appliedSpend.validation
+    }
+
+    func canSpendRunResourceIfPresent(runID: String) -> Bool {
+        guard let archive = workoutArchive(for: runID) else { return true }
+        let archiveID = RunimalPhoneAdapterV2.resourceArchiveID(forExistingCoreArchiveID: archive.id)
+        guard let resource = runResourceLedger.resource(forArchiveID: archiveID) else { return true }
+        return resource.isSpent == false
     }
 
     func rebuildWorldProgress(pack: WorldContentPack = DefaultWorldContent.pack) {
@@ -1120,6 +1177,7 @@ final class PhoneProgressStore {
         journal = []
         completedRuns = []
         workoutArchives = []
+        runResourceLedger = RunimalRewardV2.RunResourceLedger()
         ownedCompanions = []
         eggInventory = []
         unlockedEggAchievementIDs = []
@@ -1178,7 +1236,7 @@ final class PhoneProgressStore {
             return true
         }
 
-        return archivePersistence.hasPersistedData()
+        return archivePersistence.hasPersistedData() || resourceLedgerPersistence.hasPersistedData()
     }
 
     func save() {
@@ -1205,6 +1263,13 @@ final class PhoneProgressStore {
             if let archiveData = try? JSONEncoder().encode(workoutArchives) {
                 defaults.set(archiveData, forKey: Keys.workoutArchives)
             }
+        }
+
+        do {
+            try resourceLedgerPersistence.saveLedger(runResourceLedger)
+        } catch {
+            // Keep the existing archive/defaults saves canonical; ledger persistence
+            // will retry on the next save.
         }
 
         if let data = try? JSONEncoder().encode(ownedCompanions) {

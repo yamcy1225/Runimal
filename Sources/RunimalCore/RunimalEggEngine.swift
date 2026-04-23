@@ -107,6 +107,10 @@ public enum RunimalEggEngine {
         for run: CompletedRunRecord,
         egg: EggInventoryEntry
     ) -> Int {
+        if let guaranteedGain = RunimalStarterLoopEngine.guaranteedStarterHatchGain(for: run, egg: egg) {
+            return guaranteedGain
+        }
+
         return run.reward.experience
     }
 

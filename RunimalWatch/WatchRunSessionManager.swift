@@ -7,6 +7,103 @@ import RunimalCore
 import WeatherKit
 import WatchKit
 
+enum WatchUICaptureScenario: String {
+    case dashboard
+    case runningCompanion = "running-companion"
+    case runningMetrics = "running-metrics"
+    case runningPulse = "running-pulse"
+
+    static var current: WatchUICaptureScenario? {
+        ProcessInfo.processInfo.environment["RUNIMAL_WATCH_UI_CAPTURE_SCENARIO"].flatMap(Self.init(rawValue:))
+    }
+}
+
+enum WatchUICaptureFixtures {
+    static let captureDate = Calendar(identifier: .gregorian).date(
+        from: DateComponents(year: 2026, month: 4, day: 5, hour: 6, minute: 24)
+    ) ?? Date(timeIntervalSince1970: 0)
+
+    static let companion = GeneratedPet(
+        species: .windrunner,
+        element: .light,
+        palette: PetSpecies.windrunner.paletteName(rareVariant: .loopSigil),
+        rareVariant: .loopSigil,
+        explanation: ["watch capture"],
+        stats: PetStats(vitality: 13, agility: 16, dexterity: 12, focus: 14, defense: 9)
+    )
+
+    static let companionContext = WatchMainCompanionContext(
+        selection: MainCompanionSelection(kind: .pet, targetID: "watch-capture-companion"),
+        pet: companion,
+        petName: companion.displayName,
+        petHeadline: "워치에서 실시간으로 반응하는 동행",
+        detailText: "러닝 중에는 이 화면이 리듬과 반응을 바로 보여 줍니다.",
+        companionLevel: 12,
+        companionStageLabel: "유아기",
+        growthStageIndex: 1,
+        mutationBodyStage: 1,
+        mutationEcologyStage: 1,
+        mutationRhythmStage: 2,
+        mutationRhythmBranchID: "loop-sigil",
+        updatedAt: captureDate
+    )
+
+    static let activeEffects = [
+        WeeklyRewardEffect(id: "growth-feed", title: "Growth Feed", detail: "첫 성장 보상을 또렷하게 고정"),
+        WeeklyRewardEffect(id: "field-cycle", title: "Field Cycle", detail: "리듬 반응을 빠르게 드러냄"),
+    ]
+
+    static let dashboardSnapshot = LiveRunSnapshot(
+        elapsedSeconds: 0,
+        distanceMeters: 0,
+        currentHeartRate: 102,
+        cadence: nil,
+        elevationGainM: 0,
+        averagePaceSeconds: nil
+    )
+
+    static let runningSnapshot = LiveRunSnapshot(
+        elapsedSeconds: 23 * 60 + 18,
+        distanceMeters: 4860,
+        currentHeartRate: 154,
+        cadence: 173,
+        elevationGainM: 28,
+        averagePaceSeconds: 308
+    )
+
+    static let runningReaction = MutationRuntimeReactionSnapshot(
+        id: "watch-capture-rhythm",
+        axis: .rhythm,
+        stage: 2,
+        title: "리듬 반응",
+        detail: "페이스와 케이던스가 맞아 박동 문양이 살아납니다."
+    )
+
+    static let runningObjective = LiveCompanionObjectiveSnapshot(
+        title: "첫 성장 리듬 유지",
+        detail: "3분 더 유지하면 잠재와 성장 신호가 모두 고정됩니다.",
+        progress: 0.76
+    )
+
+    static let runningPreview = RunimalRunCoreGrowthBalanceEngine.liveInteractionPreview(
+        snapshot: runningSnapshot,
+        routePointCount: 18,
+        gpsAccuracyMeters: 6,
+        isGPSFresh: true,
+        environmentCondition: .clear,
+        rareEventCompleted: false,
+        isNightWindow: false,
+        mutationReaction: runningReaction,
+        objective: runningObjective
+    )
+
+    static let runtimeAlert = WatchRuntimeAlert(
+        title: "성장 신호 유지",
+        detail: "지금 리듬이면 첫 성장 보상이 확정됩니다.",
+        kind: .goal
+    )
+}
+
 struct WatchRuntimeAlert: Identifiable, Equatable {
     enum Kind {
         case goal
@@ -37,9 +134,14 @@ private struct WatchSuddenEvent: Equatable {
 @MainActor
 @Observable
 final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorkoutSessionDelegate, HKLiveWorkoutBuilderDelegate {
+    private enum StorageKeys {
+        static let interactionBonusBuffer = "runimal.watch.interactionBonusBuffer"
+    }
+
     private let healthStore = HKHealthStore()
     private let locationManager = CLLocationManager()
     private let pedometer = CMPedometer()
+    private let defaults = UserDefaults.standard
     private var workoutSession: HKWorkoutSession?
     private var workoutBuilder: HKLiveWorkoutBuilder?
     private var routeBuilder: HKWorkoutRouteBuilder?
@@ -74,6 +176,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     private var lastMutationReactionID: String?
     private var lastMutationReactionAt: Date?
     private var highestProjectedPotentialExperience = 0
+    private var interactionBonusBuffer = WatchRunSessionManager.loadInteractionBonusBuffer()
     var autoPauseEnabled = true
 
     var authorizationStatus = "not requested"
@@ -98,8 +201,17 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     var runtimeAlert: WatchRuntimeAlert?
     var mutationReaction: MutationRuntimeReactionSnapshot?
     var liveInteractionPreview: LiveCompanionInteractionPreview = .empty
+    var latestInteractionAward: WatchInteractionAwardFeedback?
     var isDemoMode: Bool {
         ProcessInfo.processInfo.environment["RUNIMAL_AUTOPLAY_DEMO"] == "1"
+    }
+
+    var pendingHomeBonusLabel: String? {
+        sessionStateLabel == "running" ? nil : interactionBonusBuffer.pendingHomeLabel
+    }
+
+    var liveInteractionBonusLabel: String? {
+        sessionStateLabel == "running" ? interactionBonusBuffer.runCounterLabel : nil
     }
 
     var suddenEventLabel: String {
@@ -120,6 +232,7 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         locationManager.activityType = .fitness
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
         locationManager.distanceFilter = 5
+        persistInteractionBonusBuffer()
     }
 
     var sessionShell: EggShellType {
@@ -217,6 +330,9 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             lastMutationReactionAt = nil
             highestProjectedPotentialExperience = 0
             liveInteractionPreview = .empty
+            latestInteractionAward = nil
+            interactionBonusBuffer.prepareForRun()
+            persistInteractionBonusBuffer()
             logSessionEvent("run start", "HealthKit session started")
 
             startLocationCaptureIfAuthorized()
@@ -249,7 +365,8 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             let finalizedSnapshot = finalizedSnapshot(from: workout, builder: workoutBuilder)
             latestSnapshot = finalizedSnapshot
             sessionStateLabel = "finished"
-            let reward = RunimalGameEngine.evaluateReward(for: finalizedSnapshot, claimedRewardIDs: claimedWeeklyRewardIDs)
+            let baseReward = RunimalGameEngine.evaluateReward(for: finalizedSnapshot, claimedRewardIDs: claimedWeeklyRewardIDs)
+            let reward = interactionAdjustedReward(from: baseReward)
             let averageHeartRate = finalizedAverageHeartRate(using: workoutBuilder)
             let environmentCondition = await captureEnvironmentCondition()
 
@@ -309,6 +426,38 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
     func autoplayDemoIfNeeded() {
         guard isDemoMode, demoTask == nil, sessionStateLabel == "idle" else { return }
         startDemoRun()
+    }
+
+    func applyCaptureScenario(_ scenario: WatchUICaptureScenario) {
+        demoTask?.cancel()
+        demoTask = nil
+        authorizationStatus = "demo"
+        locationStatusLabel = "gps stable"
+        latestGPSAccuracyMeters = 6
+        lastGPSUpdateAt = WatchUICaptureFixtures.captureDate
+        lastReward = nil
+        lastCompletedRun = nil
+        lastWorkoutArchive = nil
+        lastSavedWorkoutLabel = "Capture preview ready"
+        routePreview = []
+        runtimeAlert = nil
+        latestInteractionAward = nil
+
+        switch scenario {
+        case .dashboard:
+            sessionStateLabel = "idle"
+            latestSnapshot = WatchUICaptureFixtures.dashboardSnapshot
+            mutationReaction = nil
+            liveInteractionPreview = .empty
+            interactionBonusBuffer.resetForCapture(pendingHomeXP: 1, inRunXP: 0)
+        case .runningCompanion, .runningMetrics, .runningPulse:
+            sessionStateLabel = "running"
+            latestSnapshot = WatchUICaptureFixtures.runningSnapshot
+            mutationReaction = WatchUICaptureFixtures.runningReaction
+            liveInteractionPreview = WatchUICaptureFixtures.runningPreview
+            runtimeAlert = WatchUICaptureFixtures.runtimeAlert
+            interactionBonusBuffer.resetForCapture(pendingHomeXP: 1, inRunXP: 3)
+        }
     }
 
     var livePet: GeneratedPet {
@@ -388,6 +537,9 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         lastMutationReactionAt = nil
         highestProjectedPotentialExperience = 0
         liveInteractionPreview = .empty
+        latestInteractionAward = nil
+        interactionBonusBuffer.prepareForRun()
+        persistInteractionBonusBuffer()
 
         demoTask?.cancel()
         demoTask = Task { @MainActor in
@@ -417,7 +569,8 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
         demoTask?.cancel()
         demoTask = nil
         sessionStateLabel = "finished"
-        let reward = RunimalGameEngine.evaluateReward(for: latestSnapshot, claimedRewardIDs: claimedWeeklyRewardIDs)
+        let baseReward = RunimalGameEngine.evaluateReward(for: latestSnapshot, claimedRewardIDs: claimedWeeklyRewardIDs)
+        let reward = interactionAdjustedReward(from: baseReward)
         let endedAt = Date()
         let startedAt = endedAt.addingTimeInterval(-Double(latestSnapshot.elapsedSeconds))
         let runID = UUID().uuidString
@@ -691,6 +844,87 @@ final class WatchRunSessionManager: NSObject, CLLocationManagerDelegate, HKWorko
             title: "잠재 상승",
             detail: "지금 종료하면 저장 잠재 +\(preview.projectedPotentialExperience) XP 예상",
             kind: .goal
+        )
+    }
+
+    func registerCompanionInteraction(_ style: WatchCompanionInteractionStyle) -> WatchInteractionAwardFeedback? {
+        let source: WatchInteractionAwardSource = sessionStateLabel == "running" ? .running : .home
+        let now = Date()
+        guard interactionBonusBuffer.canAward(source: source, at: now) else { return nil }
+
+        let resolvedAward = resolvedInteractionAward(for: source, style: style)
+        guard let feedback = interactionBonusBuffer.applyAward(resolvedAward, source: source, at: now) else { return nil }
+
+        latestInteractionAward = feedback
+        persistInteractionBonusBuffer()
+        logSessionEvent("interaction xp", "\(feedback.summaryLabel) · \(style.rawValue)")
+        return feedback
+    }
+
+    private func resolvedInteractionAward(
+        for source: WatchInteractionAwardSource,
+        style: WatchCompanionInteractionStyle
+    ) -> Int {
+        let roll = Int.random(in: 0..<100)
+
+        switch (source, style) {
+        case (.home, .tap):
+            return roll < 34 ? 1 : 0
+        case (.home, .bond):
+            return roll < 58 ? 1 : 0
+        case (.running, .tap):
+            if roll < 14 { return 2 }
+            if roll < 48 { return 1 }
+            return 0
+        case (.running, .bond):
+            if roll < 24 { return 2 }
+            if roll < 64 { return 1 }
+            return 0
+        }
+    }
+
+    private func interactionAdjustedReward(from reward: RunRewardSummary) -> RunRewardSummary {
+        let consumed = interactionBonusBuffer.consumeForCompletedRun()
+        latestInteractionAward = nil
+        persistInteractionBonusBuffer()
+        guard consumed.totalXP > 0 else { return reward }
+
+        var bonusLabels = reward.bonusLabels
+        if consumed.homeXP > 0 {
+            bonusLabels.append("교감 예열 +\(consumed.homeXP)")
+        }
+        if consumed.runXP > 0 {
+            bonusLabels.append("실시간 교감 +\(consumed.runXP)")
+        }
+        let uniqueLabels = Array(NSOrderedSet(array: bonusLabels)) as? [String] ?? bonusLabels
+
+        return RunRewardSummary(
+            pet: reward.pet,
+            coreLabel: reward.coreLabel,
+            experience: reward.experience + consumed.totalXP,
+            completedQuestCount: reward.completedQuestCount,
+            flavorText: reward.flavorText,
+            bonusLabels: uniqueLabels
+        )
+    }
+
+    private func persistInteractionBonusBuffer() {
+        if let data = try? JSONEncoder().encode(interactionBonusBuffer) {
+            defaults.set(data, forKey: StorageKeys.interactionBonusBuffer)
+        }
+    }
+
+    private static func loadInteractionBonusBuffer() -> WatchInteractionBonusBuffer {
+        guard let data = UserDefaults.standard.data(forKey: StorageKeys.interactionBonusBuffer),
+              let decoded = try? JSONDecoder().decode(WatchInteractionBonusBuffer.self, from: data) else {
+            return WatchInteractionBonusBuffer()
+        }
+
+        return WatchInteractionBonusBuffer(
+            pendingHomeXP: decoded.pendingHomeXP,
+            inRunXP: 0,
+            lastHomeAwardAt: decoded.lastHomeAwardAt,
+            lastRunAwardAt: nil
         )
     }
 

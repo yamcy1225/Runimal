@@ -271,6 +271,10 @@ struct PhoneRunRecordDetailSheet: View {
                     }
                 }
 
+                if !run.reward.bonusLabels.isEmpty {
+                    rewardBonusRail(labels: run.reward.bonusLabels, accent: accent)
+                }
+
                 Text(run.startedAt.formatted(date: .abbreviated, time: .shortened))
                     .font(.subheadline.monospaced())
                     .foregroundStyle(GameBoyPalette.mediumDark)
@@ -631,6 +635,17 @@ struct PhoneRunRecordDetailSheet: View {
                     .font(.footnote.monospaced())
                     .foregroundStyle(GameBoyPalette.mediumDark)
             }
+        }
+    }
+
+    private func rewardBonusRail(labels: [String], accent: Color) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(labels, id: \.self) { label in
+                    RunimalSignalBadge(icon: "sparkles", label: label, accent: accent.opacity(0.82))
+                }
+            }
+            .padding(.vertical, 1)
         }
     }
 

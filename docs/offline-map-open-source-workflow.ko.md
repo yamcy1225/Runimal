@@ -50,7 +50,7 @@ tiles/
 이 경우 아래 스크립트로 바로 MBTiles를 만든다.
 
 ```bash
-cd /Users/heobella/jaw-bot-2/apps/runimal-apple
+cd /Users/heobella/jaw-bot-4/apps/runimal-apple
 python3 scripts/offline_maps/build_mbtiles_from_xyz.py \
   --tiles-root /path/to/tiles \
   --output /path/to/gapyeong.mbtiles \

@@ -6,7 +6,7 @@ struct WatchGoalTrackCard: View {
     let accent: Color
 
     var body: some View {
-        GameSurface(title: "목표", accent: accent, compact: true) {
+        GameSurface(title: "목표", accent: accent, compact: true, showsFrameChrome: false) {
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(goals.prefix(1)) { goal in
                     VStack(alignment: .leading, spacing: 4) {

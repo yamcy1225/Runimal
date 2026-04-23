@@ -15,7 +15,7 @@ struct WatchOfflineMapPreviewCard: View {
     @State private var autoZoomEnabled = true
 
     var body: some View {
-        GameSurface(title: "지도", accent: accent, compact: true) {
+        GameSurface(title: "지도", accent: accent, compact: true, showsFrameChrome: false) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 6) {
                     Text(compactPackTitle)

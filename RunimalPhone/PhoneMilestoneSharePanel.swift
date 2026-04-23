@@ -39,11 +39,17 @@ struct PhoneMilestoneSharePanel: View {
 
     var body: some View {
         GameSurface(title: "공유 쇼케이스", accent: featuredCompanion.pet.accentColor, eyebrow: "공유 준비") {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .center) {
-                    Text("가치가 가장 높은 순간만 시그널 포스터로 정리합니다.")
-                        .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.68))
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("가치가 가장 높은 순간만 시그널 포스터로 정리합니다.")
+                            .font(.footnote)
+                            .foregroundStyle(GameBoyPalette.darkest)
+                        Text("첫 부화, 희귀 변이, 최종 진화 중 지금 가장 가까운 장면을 바로 공유 카드로 확인합니다.")
+                            .font(.caption.monospaced())
+                            .foregroundStyle(GameBoyPalette.mediumDark)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
 
                     Spacer(minLength: 12)
 
@@ -73,7 +79,7 @@ struct PhoneMilestoneSharePanel: View {
                         .padding(14)
                     }
                 }
-                .frame(height: 436)
+                .frame(height: 456)
             }
         }
         .sheet(isPresented: $isShowingShareSheet) {
@@ -288,14 +294,14 @@ struct PhoneMilestoneSharePanel: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(card.title)
                     .font(.title2.weight(.black))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(GameBoyPalette.darkest)
                     .lineLimit(2)
                     .minimumScaleFactor(0.9)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Text(card.detail)
                     .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.72))
+                    .foregroundStyle(GameBoyPalette.mediumDark)
                     .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -357,7 +363,7 @@ struct PhoneMilestoneSharePanel: View {
 
             Text("다음 진행")
                 .font(.caption.monospaced().weight(.black))
-                .foregroundStyle(.white.opacity(0.78))
+                .foregroundStyle(GameBoyPalette.mediumDark)
 
             guidanceRow(title: card.target.focusTitle, detail: card.target.focusDetail, accent: accent)
             guidanceRow(title: card.target.actionTitle, detail: card.target.actionDetail, accent: accent)
@@ -394,18 +400,18 @@ struct PhoneMilestoneSharePanel: View {
                 Spacer(minLength: 8)
                 Text("\(Int((card.progressState.progress * 100).rounded()))%")
                     .font(.caption2.monospacedDigit().weight(.black))
-                    .foregroundStyle(.white.opacity(0.72))
+                    .foregroundStyle(GameBoyPalette.mediumDark)
             }
 
             RunimalProgressBar(progress: card.progressState.progress, accent: accent, height: 8)
 
             Text(card.progressState.label)
                 .font(.caption.weight(.black))
-                .foregroundStyle(.white)
+                .foregroundStyle(GameBoyPalette.darkest)
 
             Text(card.progressState.detail)
                 .font(.caption2)
-                .foregroundStyle(.white.opacity(0.72))
+                .foregroundStyle(GameBoyPalette.mediumDark)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(10)
@@ -426,7 +432,7 @@ struct PhoneMilestoneSharePanel: View {
                 .foregroundStyle(accent.opacity(0.92))
             Text(detail)
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.74))
+                .foregroundStyle(GameBoyPalette.mediumDark)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -471,8 +477,8 @@ struct PhoneMilestoneSharePanel: View {
                     LinearGradient(
                         colors: [
                             .black.opacity(0.92),
-                            card.accent.opacity(0.26),
-                            card.supportAccent.opacity(0.18),
+                            card.accent.opacity(0.34),
+                            card.supportAccent.opacity(0.24),
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -485,28 +491,49 @@ struct PhoneMilestoneSharePanel: View {
 
             Circle()
                 .fill(card.supportAccent.opacity(0.22))
-                .frame(width: 88, height: 88)
-                .blur(radius: 20)
+                .frame(width: 104, height: 104)
+                .blur(radius: 22)
                 .offset(x: 12, y: 4)
 
+            Circle()
+                .fill(card.accent.opacity(0.18))
+                .frame(width: 140, height: 140)
+                .blur(radius: 28)
+                .offset(x: 84, y: -28)
+
             VStack(alignment: .leading, spacing: 8) {
-                Text(card.badge)
-                    .font(.caption2.weight(.black))
-                    .tracking(1.4)
-                    .foregroundStyle(.white.opacity(0.88))
+                HStack {
+                    Text(card.badge)
+                        .font(.caption2.weight(.black))
+                        .tracking(1.4)
+                        .foregroundStyle(.white.opacity(0.88))
+                    Spacer(minLength: 8)
+                    Text(card.isUnlocked ? "POST READY" : "LOCKED TARGET")
+                        .font(.caption2.monospaced().weight(.black))
+                        .foregroundStyle(.black.opacity(0.84))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Capsule().fill(.white.opacity(0.9)))
+                }
                 Spacer()
                 card.previewView
-                    .scaleEffect(1.12)
+                    .scaleEffect(1.18)
                     .frame(maxWidth: .infinity)
-                Text(card.title)
-                    .font(.caption.weight(.black))
-                    .lineLimit(1)
-                    .foregroundStyle(.white)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(card.title)
+                        .font(.headline.weight(.black))
+                        .lineLimit(1)
+                        .foregroundStyle(.white)
+                    Text(card.isUnlocked ? "바로 공유 가능한 시그널 포스터" : "잠금 해제 직전 목표를 미리보기로 확인")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.68))
+                        .lineLimit(2)
+                }
             }
             .padding(14)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 188)
+        .frame(height: 212)
         .shadow(color: card.accent.opacity(0.1), radius: 8, y: 4)
     }
 

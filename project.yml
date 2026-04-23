@@ -68,6 +68,10 @@ targets:
     dependencies:
       - package: RunimalPackage
         product: RunimalCore
+      - package: RunimalPackage
+        product: RunimalRewardV2
+      - package: RunimalPackage
+        product: RunimalPhoneAdapterV2
       - package: FitDataProtocol
         product: FitDataProtocol
       - target: RunimalWatch

@@ -8,13 +8,19 @@ struct PhoneRareVariantShowcasePanel: View {
 
     var body: some View {
         GameSurface(title: "희귀 변이 쇼케이스", accent: .orange.opacity(0.86), eyebrow: "5종 변이") {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(variants, id: \.self) { variant in
-                        variantCard(for: variant)
-                    }
+            VStack(alignment: .leading, spacing: 14) {
+                if let activeVariant {
+                    spotlightCard(for: activeVariant)
                 }
-                .padding(.horizontal, 1)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(variants, id: \.self) { variant in
+                            variantCard(for: variant)
+                        }
+                    }
+                    .padding(.horizontal, 1)
+                }
             }
         }
     }
@@ -58,6 +64,55 @@ struct PhoneRareVariantShowcasePanel: View {
             TraitChip(label: RareVariantMeta.badges[variant] ?? "VARIANT", accent: accent.opacity(0.82))
         }
         .frame(width: 148)
+    }
+
+    private func spotlightCard(for variant: RareVariant) -> some View {
+        let accent = showcaseColor(for: variant)
+
+        return HStack(alignment: .center, spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(accent.opacity(0.18))
+                    .frame(width: 86, height: 86)
+                    .blur(radius: 16)
+
+                PixelPetView(pet: showcasePet(for: variant), pixelSize: 8)
+            }
+            .frame(width: 96, height: 96)
+            .background(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(accent.opacity(0.10))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .stroke(accent.opacity(0.32), lineWidth: 1.2)
+                    )
+            )
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    RunimalSignalBadge(icon: "sparkles", label: "ACTIVE SIGNAL", accent: accent)
+                    TraitChip(label: RareVariantMeta.badges[variant] ?? "VARIANT", accent: .white.opacity(0.18))
+                }
+
+                Text(RareVariantMeta.labels[variant] ?? variant.rawValue)
+                    .font(.headline.weight(.black))
+                    .foregroundStyle(GameBoyPalette.darkest)
+
+                Text("희귀 변이는 숫자 보너스보다 먼저 한눈에 다른 존재처럼 읽혀야 합니다. 현재 활성 변이를 메인 배너에서 바로 확인합니다.")
+                    .font(.caption)
+                    .foregroundStyle(GameBoyPalette.mediumDark)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(.white.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(accent.opacity(0.18), lineWidth: 1)
+                )
+        )
     }
 
     private func showcasePet(for variant: RareVariant) -> GeneratedPet {

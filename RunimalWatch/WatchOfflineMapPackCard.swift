@@ -9,7 +9,7 @@ struct WatchOfflineMapPackCard: View {
     let accent: Color
 
     var body: some View {
-        GameSurface(title: "지도", accent: accent, compact: true) {
+        GameSurface(title: "지도", accent: accent, compact: true, showsFrameChrome: false) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("수신된 팩")

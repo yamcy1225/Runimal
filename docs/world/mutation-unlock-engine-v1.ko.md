@@ -6,13 +6,13 @@
 
 ## 핵심 원칙
 
-- 기본 종 판정은 [SpeciesRuleEngine.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/Sources/RunimalCore/SpeciesRuleEngine.swift)에서 결정한다.
+- 기본 종 판정은 [SpeciesRuleEngine.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/Sources/RunimalCore/SpeciesRuleEngine.swift)에서 결정한다.
 - 변이 해금은 별도 엔진에서 `누적 러닝 묶음`을 해석해 branch를 고른다.
 - 최종 form은 `body + ecology + rhythm` 3개 branch의 조합으로 결정한다.
 
 ## 사용 함수
 
-- [SpeciesMutationUnlockEngine.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/Sources/RunimalCore/SpeciesMutationUnlockEngine.swift)
+- [SpeciesMutationUnlockEngine.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/Sources/RunimalCore/SpeciesMutationUnlockEngine.swift)
   - `buildProfile(from:)`
   - `resolveForm(for:preferredSpecies:blueprints:)`
   - `resolveForm(speciesID:profile:blueprints:)`
@@ -72,7 +72,7 @@
 
 ## 검증
 
-- [SpeciesMutationUnlockEngineTests.swift](/Users/heobella/jaw-bot-2/apps/runimal-apple/Tests/RunimalCoreTests/SpeciesMutationUnlockEngineTests.swift)
+- [SpeciesMutationUnlockEngineTests.swift](/Users/heobella/jaw-bot-4/apps/runimal-apple/Tests/RunimalCoreTests/SpeciesMutationUnlockEngineTests.swift)
   - Windrunner 장거리 왕복
   - Stoneback 오르막 강풍
   - Sparkfang 야간 신호 코스

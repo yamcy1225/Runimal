@@ -1,9 +1,9 @@
 import AppKit
 import Foundation
 
-let outputDir = URL(fileURLWithPath: "/Users/heobella/jaw-bot-2/apps/runimal-apple/demo/frames", isDirectory: true)
-let phoneImageURL = URL(fileURLWithPath: "/Users/heobella/jaw-bot-2/screenshots/runimal-phone-current.png")
-let watchImageURL = URL(fileURLWithPath: "/Users/heobella/jaw-bot-2/screenshots/runimal-watch-current.png")
+let outputDir = URL(fileURLWithPath: "/Users/heobella/jaw-bot-4/apps/runimal-apple/demo/frames", isDirectory: true)
+let phoneImageURL = URL(fileURLWithPath: "/Users/heobella/jaw-bot-4/screenshots/runimal-phone-current.png")
+let watchImageURL = URL(fileURLWithPath: "/Users/heobella/jaw-bot-4/screenshots/runimal-watch-current.png")
 
 try? FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
 

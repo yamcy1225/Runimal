@@ -26,6 +26,10 @@ struct PhoneFeedCinematicPanel: View {
     }
 
     private var stageHeadline: String {
+        if outcome.bonusLabels.contains("첫 성장 고정") {
+            return "첫 성장 완료"
+        }
+
         if mythicReached {
             return "성년기 도달"
         }
@@ -47,12 +51,50 @@ struct PhoneFeedCinematicPanel: View {
         )
     }
 
+    private var signalBannerTitle: String {
+        if outcome.bonusLabels.contains("첫 성장 고정") {
+            return "FIRST STAGE UP"
+        }
+
+        return outcome.stageAdvanced ? "STAGE ADVANCED" : "RUN APPLIED"
+    }
+
+    private var signalBannerDetail: String {
+        if outcome.bonusLabels.contains("첫 성장 고정") {
+            return "첫 의미 있는 먹이 주기는 반드시 눈에 띄는 성장으로 연결됩니다."
+        }
+
+        return outcome.stageAdvanced
+            ? "이번 기록은 레벨 상승을 넘어서 단계 변화를 확실하게 보여 줍니다."
+            : "이번 기록의 핵심 보상과 저장 잠재를 지금 성장에 반영했습니다."
+    }
+
     var body: some View {
         GameSurface(title: "성장 연출", accent: accent, eyebrow: "기록 반영") {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        RunimalSignalBadge(icon: outcome.stageAdvanced ? "sparkles" : "bolt.fill", label: signalBannerTitle, accent: accent)
+                        Spacer(minLength: 8)
+                        if outcome.stageAdvanced {
+                            TraitChip(label: mythicReached ? mythicTitle : "VISIBLE PAYOFF", accent: .orange.opacity(0.82))
+                        }
+                    }
+
+                    Text(signalBannerDetail)
+                        .font(.footnote.monospaced())
+                        .foregroundStyle(GameBoyPalette.mediumDark)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 HStack(alignment: .center, spacing: 16) {
                     ZStack {
                         HatchBurstView(accent: accent, pet: pet, scale: glow ? 1.08 : 0.9)
+
+                        Circle()
+                            .fill(.white.opacity(glow ? 0.1 : 0.04))
+                            .frame(width: 132, height: 132)
+                            .blur(radius: 22)
 
                         Circle()
                             .fill(accent.opacity(glow ? 0.28 : 0.16))
@@ -89,22 +131,23 @@ struct PhoneFeedCinematicPanel: View {
                             .scaleEffect(xpScale)
                             .offset(y: 56)
                     }
-                    .frame(width: 132, height: 132)
+                    .frame(width: 140, height: 140)
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text(stageHeadline)
                             .font(.title3.weight(.black))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(GameBoyPalette.darkest)
 
                         Text("\(outcome.coreLabel)을 반영해 Lv.\(outcome.beforeSnapshot.level)에서 Lv.\(outcome.afterSnapshot.level), \(outcome.beforeProgress.totalExperience) XP에서 \(outcome.afterProgress.totalExperience) XP로 올랐습니다.")
                             .font(.footnote)
-                            .foregroundStyle(.white.opacity(0.76))
+                            .foregroundStyle(GameBoyPalette.mediumDark)
+                            .fixedSize(horizontal: false, vertical: true)
 
                         HStack {
                             TraitChip(label: "Lv.\(outcome.beforeSnapshot.level)", accent: .white.opacity(0.14))
                             TraitChip(label: outcome.beforeProgress.stageLabel, accent: .white.opacity(0.2))
                             Image(systemName: "arrow.right")
-                                .foregroundStyle(.white.opacity(0.45))
+                                .foregroundStyle(GameBoyPalette.mediumDark)
                             TraitChip(label: "Lv.\(outcome.afterSnapshot.level)", accent: accent.opacity(0.22))
                             TraitChip(label: outcome.afterProgress.stageLabel, accent: accent)
                             if outcome.stageAdvanced {
@@ -121,11 +164,11 @@ struct PhoneFeedCinematicPanel: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(momentNarrative.title)
                                 .font(.caption.weight(.black))
-                                .foregroundStyle(.white.opacity(0.9))
+                                .foregroundStyle(GameBoyPalette.darkest)
 
                             Text(momentNarrative.detail)
                                 .font(.caption2)
-                                .foregroundStyle(.white.opacity(0.72))
+                                .foregroundStyle(GameBoyPalette.mediumDark)
                                 .lineSpacing(2)
 
                             HStack(spacing: 8) {
@@ -147,13 +190,13 @@ struct PhoneFeedCinematicPanel: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("진화 게이지")
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(.white.opacity(0.72))
+                        .foregroundStyle(GameBoyPalette.mediumDark)
 
                     RunimalProgressBar(progress: shownProgress, accent: accent, height: 12)
 
                     Text(outcome.afterProgress.headline)
                         .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.72))
+                        .foregroundStyle(GameBoyPalette.mediumDark)
 
                     if outcome.potentialExperienceSpent > 0 {
                         Text(
@@ -233,7 +276,7 @@ struct PhoneFeedCinematicPanel: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("이번 반영")
                 .font(.caption.weight(.bold))
-                .foregroundStyle(.white.opacity(0.72))
+                .foregroundStyle(GameBoyPalette.mediumDark)
 
             HStack(spacing: 8) {
                 breakdownChip("기본 +\(outcome.baseExperience)", accent: .white.opacity(0.16))
@@ -254,17 +297,17 @@ struct PhoneFeedCinematicPanel: View {
                     : "이번 반영은 기록 XP와 일반 보너스만으로 진행됐습니다."
             )
             .font(.caption)
-            .foregroundStyle(.white.opacity(0.72))
+            .foregroundStyle(GameBoyPalette.mediumDark)
 
             if let nextMilestone = outcome.afterSnapshot.nextEvolutionMilestone {
                 Text("다음 진화 기준은 Lv.\(nextMilestone.requiredLevel) · \(nextMilestone.requiredExperience) XP입니다.")
                     .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.58))
+                    .foregroundStyle(GameBoyPalette.mediumDark.opacity(0.84))
             } else if let nextLateGrowth = outcome.afterSnapshot.lateGrowthWindow.last,
                       outcome.afterSnapshot.level < nextLateGrowth.requiredLevel {
                 Text("다음 후반 해금은 Lv.\(nextLateGrowth.requiredLevel) \(nextLateGrowth.title)입니다.")
                     .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.58))
+                    .foregroundStyle(GameBoyPalette.mediumDark.opacity(0.84))
             }
         }
         .padding(12)
@@ -282,15 +325,15 @@ struct PhoneFeedCinematicPanel: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("다음 진행")
                 .font(.caption.weight(.bold))
-                .foregroundStyle(.white.opacity(0.72))
+                .foregroundStyle(GameBoyPalette.mediumDark)
 
             Text(followUpTarget.title)
                 .font(.headline.weight(.black))
-                .foregroundStyle(.white)
+                .foregroundStyle(GameBoyPalette.darkest)
 
             Text(followUpTarget.detail)
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.72))
+                .foregroundStyle(GameBoyPalette.mediumDark)
                 .lineSpacing(2)
 
             guidanceRow(title: followUpTarget.focusTitle, detail: followUpTarget.focusDetail)
@@ -326,7 +369,7 @@ struct PhoneFeedCinematicPanel: View {
                 .foregroundStyle(accent.opacity(0.94))
             Text(detail)
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.74))
+                .foregroundStyle(GameBoyPalette.mediumDark)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -334,7 +377,7 @@ struct PhoneFeedCinematicPanel: View {
     private func breakdownChip(_ title: String, accent: Color) -> some View {
         Text(title)
             .font(.caption2.monospaced().weight(.black))
-            .foregroundStyle(.white.opacity(0.92))
+            .foregroundStyle(GameBoyPalette.darkest)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(
