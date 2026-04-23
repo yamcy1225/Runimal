@@ -72,3 +72,22 @@ Prompt artifact:
 | Species-locked growth | `runimal-v2-companion-growth-species-locked-pixel-concept.png` | Strong Mosshop/Zen Bloom reference: growth stages, rare variant card, resource receipt, and audit log are not conflated. |
 
 Adoption note: use this batch over the earlier generic pixel batch when translating Runimal companions into SwiftUI. Character implementation must preserve species silhouette, species base color, and variant-as-overlay separation before UI chrome polish.
+
+## Base evolution pixel candidate batch — 2026-04-23
+
+Generated after reviewing `docs/companion-evolution-levels.ko.md`, `docs/world/current-character-design-lock.ko.md`, `docs/world/base-species-visual-framework.ko.md`, `docs/world/species-color-identity.ko.md`, and `Sources/RunimalCore/SpeciesVisualBlueprints.swift`. This batch focuses on clean base-species growth only: no rare variants, no Shadebit, no seasonal overlays.
+
+Prompt artifact:
+
+- `runimal-v2-ui-evolution-briefs.jsonl` — prompt records for the 5 species × 5 growth-stage matrix and one per-species evolution sheet.
+
+| Candidate | File | Initial read |
+| --- | --- | --- |
+| 5 species × 5 stages matrix | `runimal-v2-evolution-matrix-5x5-pixel-concept.png` | Best overview of all 25 base states: Egg, Infant, Young, Teen/Companion Complete, and Adult/Signature Form for each base species. |
+| Windrunner evolution | `runimal-v2-windrunner-evolution-pixel-concept.png` | Strong crest/side-fin/tail-flow continuity for the long-distance cruising species. |
+| Stoneback evolution | `runimal-v2-stoneback-evolution-pixel-concept.png` | Strong low, broad, shell-backed growth continuity for the endurance/guard species. |
+| Sparkfang evolution | `runimal-v2-sparkfang-evolution-pixel-concept.png` | Strong prankish infant to sharp pursuit-form progression for the tempo/sprint species. |
+| Mosshop evolution | `runimal-v2-mosshop-evolution-pixel-concept.png` | Strong round body, leaf-canopy, and core-glow continuity for the recovery species. |
+| Seedle evolution | `runimal-v2-seedle-evolution-pixel-concept.png` | Strong seed-core to sprout-tail progression for the starter/adaptation species. |
+
+Adoption note: these images are reference candidates only. Production should translate the accepted silhouettes back into `SpeciesVisualRenderProfile`, `DefaultSpeciesVisualBlueprints.growthStageBlueprints`, and SwiftUI/vector/pixel assets rather than embedding generated bitmaps directly.
