@@ -52,3 +52,23 @@ Prompt artifact:
 | Pixel app icon | `runimal-v2-app-icon-pixel-concept.png` | Strong silhouette reference for path+paw+tiny companion; should be redrawn as vector/pixel asset and small-size tested before adoption. |
 
 Adoption note: this batch is the preferred design direction if Runimal moves toward a nostalgic digital-pet identity. Production should not embed the bitmap mockups directly; extract palette, panel rhythm, pixel borders, metric hierarchy, and companion silhouettes into SwiftUI/vector/pixel assets.
+
+## Species-locked pixel candidate batch — 2026-04-23
+
+Generated after reviewing the Runimal character/world guides, including `docs/world/current-character-design-lock.ko.md`, `docs/world/base-species-visual-framework.ko.md`, `docs/world/species-color-identity.ko.md`, `docs/world/species-and-mutation-bible.ko.md`, `docs/world/species-visual-anatomy-bible.ko.md`, `docs/world/five-base-species-expansion-architecture.ko.md`, `docs/world/runimal-world-master-bible.ko.md`, and the external Runimal World research note under `/Users/heobella/Downloads/`.
+
+This batch corrects the previous pixel batch: the UI can retain LCD / handheld virtual-pet styling, but Runimal characters must follow the five base species, fixed species colors, distinct silhouettes, and five rare-variant overlay rules.
+
+Prompt artifact:
+
+- `runimal-v2-ui-species-locked-briefs.jsonl` — prompt records and source-doc links for the species-locked matrix and UI candidates.
+
+| Candidate | File | Initial read |
+| --- | --- | --- |
+| 5 species × 5 rare variants matrix | `runimal-v2-species-variant-matrix-pixel-concept.png` | Best validation image for species identity: base colors/silhouettes remain visible while Tempo Surge, Zen Bloom, Summit Heart, Eclipse Mark, and Loop Sigil act as overlays. |
+| Species-locked Watch HUD | `runimal-v2-watch-hud-species-locked-pixel-concept.png` | Keeps Watch metrics first while the companion reads closer to Windrunner/Aeralith than a generic green pet. |
+| Species-locked route detail | `runimal-v2-phone-route-detail-species-locked-pixel-concept.png` | Strong Stoneback/Summit Heart direction: route evidence, audited result, species identity, and rare overlay are separated. |
+| Species-locked allocation | `runimal-v2-resource-allocation-species-locked-pixel-concept.png` | Better roster/choice reference: all five species chips are visible and manual spending stays separate from variant/growth. |
+| Species-locked growth | `runimal-v2-companion-growth-species-locked-pixel-concept.png` | Strong Mosshop/Zen Bloom reference: growth stages, rare variant card, resource receipt, and audit log are not conflated. |
+
+Adoption note: use this batch over the earlier generic pixel batch when translating Runimal companions into SwiftUI. Character implementation must preserve species silhouette, species base color, and variant-as-overlay separation before UI chrome polish.

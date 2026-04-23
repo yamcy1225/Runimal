@@ -55,3 +55,26 @@ Accepted candidates must pass all of these checks:
 - GPS path drawing이 기록의 중심으로 보인다.
 - 성장 카드는 가챠/lootbox처럼 보이지 않는다.
 - SwiftUI로 재현 가능한 레이아웃이다.
+
+## Species-locked companion art direction
+
+The pixel / handheld virtual-pet direction is acceptable only if companion art remains locked to the Runimal world guides:
+
+- Base species are five: Windrunner/Aeralith, Stoneback/Cragmantle, Sparkfang/Cinderlash, Mosshop/Mossveil, and Seedle/Dawnsprig.
+- Shadebit is a twilight special form, not a sixth base species.
+- Species identity must come from silhouette, body proportion, cheek/body line, top accent, and fixed base color rather than arbitrary decoration.
+- Rare variants are overlays/signatures, not replacement species: Tempo Surge, Zen Bloom, Summit Heart, Eclipse Mark, and Loop Sigil must sit on top of the base species color and silhouette.
+- Growth stage and variant state must be shown as separate concepts in the UI.
+- Labels, badges, and roster chips must never cover the character.
+
+Current source-of-truth docs for companion UI work:
+
+- `docs/world/current-character-design-lock.ko.md`
+- `docs/world/base-species-visual-framework.ko.md`
+- `docs/world/species-color-identity.ko.md`
+- `docs/world/species-and-mutation-bible.ko.md`
+- `docs/world/species-visual-anatomy-bible.ko.md`
+- `docs/world/five-base-species-expansion-architecture.ko.md`
+- `docs/world/runimal-world-master-bible.ko.md`
+
+Design candidates that do not preserve these constraints should be treated as mood references only, not production references.
