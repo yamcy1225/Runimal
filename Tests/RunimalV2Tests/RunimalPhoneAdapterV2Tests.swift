@@ -307,3 +307,77 @@ struct RunimalPhoneIngestPersistenceDraftV2Tests {
         )
     }
 }
+
+struct RunimalPhoneCoreArchiveIngestPlanV2Tests {
+    @Test
+    func coreArchiveIngestPlanPreservesExistingPhoneArchiveIdentity() throws {
+        let archive = makeCoreArchive(id: "legacy-core-archive", runID: "legacy-run-id")
+
+        let plan = RunimalPhoneAdapterV2.ingestPlan(
+            forExistingCoreArchive: archive,
+            options: .init(existingArchiveRunIDs: ["legacy-run-id"], receiverDeviceID: "iphone-001"),
+            liveCompanionID: "companion-windrunner"
+        )
+        let secondPlan = RunimalPhoneAdapterV2.ingestPlan(forExistingCoreArchive: archive)
+
+        #expect(plan.archiveForPersistence == archive)
+        #expect(plan.archiveForPersistence.id == "legacy-core-archive")
+        #expect(plan.archiveForPersistence.runID == "legacy-run-id")
+        #expect(plan.disposition == .replaceExistingArchive)
+        #expect(plan.runResource.archiveID == secondPlan.runResource.archiveID)
+        #expect(plan.runResource.liveCompanionID == "companion-windrunner")
+        #expect(plan.runResource.isSpent == false)
+        #expect(plan.auditEvents.contains { $0.code == "phone-ingest-v2.stable-core-archive-id" })
+    }
+
+    private var baseDate: Date { Date(timeIntervalSince1970: 80_000) }
+
+    private func makeCoreArchive(id: String, runID: String) -> WorkoutSessionArchive {
+        let points = [
+            WorkoutTrackPoint(
+                timestamp: baseDate,
+                latitude: 37.5,
+                longitude: 127.0,
+                altitude: 10,
+                horizontalAccuracy: 8,
+                speedMetersPerSecond: 3.2,
+                heartRate: 150,
+                cadence: 174,
+                gpsPoor: false,
+                paused: false
+            ),
+            WorkoutTrackPoint(
+                timestamp: baseDate.addingTimeInterval(60),
+                latitude: 37.501,
+                longitude: 127.001,
+                altitude: 14,
+                horizontalAccuracy: 8,
+                speedMetersPerSecond: 3.2,
+                heartRate: 152,
+                cadence: 176,
+                gpsPoor: false,
+                paused: false
+            ),
+        ]
+        return WorkoutSessionArchive(
+            id: id,
+            runID: runID,
+            startedAt: baseDate,
+            endedAt: baseDate.addingTimeInterval(600),
+            elapsedTimeSeconds: 600,
+            timerTimeSeconds: 600,
+            movingTimeSeconds: 590,
+            distanceMeters: 1_500,
+            averageHeartRate: 151,
+            averageCadence: 175,
+            averagePaceSeconds: 400,
+            elevationGainM: 20,
+            source: "watch-healthkit",
+            trackPoints: points,
+            rawTrackPoints: points,
+            displayTrackPoints: [],
+            laps: [],
+            events: []
+        )
+    }
+}

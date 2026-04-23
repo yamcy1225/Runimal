@@ -1,5 +1,6 @@
 import Foundation
 import RunimalCore
+import RunimalPhoneAdapterV2
 
 extension PhoneDashboardStore {
     var latestWorkoutArchive: WorkoutSessionArchive? {
@@ -18,7 +19,22 @@ extension PhoneDashboardStore {
         guard let archive = connectivity.lastWorkoutArchive else { return }
         let worldPack = contentCatalog.worldContentPack()
         let canonicalArchive = WorkoutArchiveCanonicalizer.canonicalize(archive)
-        progress.append(workoutArchive: canonicalArchive)
+        let ingestPlan = RunimalPhoneAdapterV2.ingestPlan(
+            forExistingCoreArchive: canonicalArchive,
+            options: .init(
+                existingArchiveRunIDs: Set(progress.workoutArchives.map(\.runID)),
+                receiverDeviceID: progress.deviceID
+            )
+        )
+        let appliedIngest = RunimalPhoneAdapterV2.IngestApplication.apply(
+            ingestPlan,
+            to: .init(
+                workoutArchives: progress.workoutArchives,
+                resourceLedger: progress.runResourceLedger
+            )
+        )
+        progress.workoutArchives = appliedIngest.state.workoutArchives
+        progress.runResourceLedger = appliedIngest.state.resourceLedger
         connectivity.lastWorkoutArchive = canonicalArchive
 
         let preferredRun = connectivity.lastCompletedRun?.id == canonicalArchive.runID
@@ -33,7 +49,10 @@ extension PhoneDashboardStore {
         let snapshot = progress.snapshot()
         vault.save(snapshot: snapshot)
         cloudMirror.mirror(snapshot: snapshot)
-        telemetry.log("workout_archive_ingested", detail: canonicalArchive.runID)
+        telemetry.log(
+            "workout_archive_ingested",
+            detail: "\(canonicalArchive.runID):\(appliedIngest.resourceDisposition.rawValue)"
+        )
     }
 
     func canDeleteRunRecord(_ run: CompletedRunRecord) -> Bool {

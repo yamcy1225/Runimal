@@ -134,6 +134,48 @@ public enum RunimalPhoneAdapterV2 {
         )
     }
 
+    /// Creates an ingest plan for an already-canonical `RunimalCore` archive.
+    ///
+    /// This is the safe first app-target wiring path because it keeps the existing
+    /// phone archive payload byte-shape and `runID` intact. V2 still receives an
+    /// unspent `RunResource`, keyed by a stable UUID derived from the core archive ID
+    /// when the archive ID is not already a UUID.
+    public static func ingestPlan(
+        forExistingCoreArchive archive: WorkoutSessionArchive,
+        options: IngestOptions = .init(),
+        liveCompanionID: String? = nil
+    ) -> IngestPlan {
+        let disposition: ArchiveDisposition = options.existingArchiveRunIDs.contains(archive.runID)
+            ? .replaceExistingArchive
+            : .insertNewArchive
+        let archiveID = stableArchiveID(from: archive.id)
+        let runResource = RunimalDomainV2.RunResource(
+            archiveID: archiveID,
+            liveCompanionID: liveCompanionID,
+            isSpent: false
+        )
+        var auditEvents = auditEvents(
+            forCoreArchive: archive,
+            stableArchiveID: archiveID,
+            disposition: disposition,
+            receiverDeviceID: options.receiverDeviceID
+        )
+
+        if archive.id != archiveID.uuidString {
+            auditEvents.append(AuditEvent(
+                code: "phone-ingest-v2.stable-core-archive-id",
+                message: "Derived stable v2 archive UUID \(archiveID.uuidString) from core archive ID \(archive.id)."
+            ))
+        }
+
+        return IngestPlan(
+            archiveForPersistence: archive,
+            runResource: runResource,
+            disposition: disposition,
+            auditEvents: auditEvents
+        )
+    }
+
     private static func workoutTrackPoint(
         from sample: RunimalDomainV2.RunSamplePoint
     ) -> WorkoutTrackPoint? {
@@ -210,5 +252,97 @@ public enum RunimalPhoneAdapterV2 {
         }
 
         return events
+    }
+
+    private static func auditEvents(
+        forCoreArchive archive: WorkoutSessionArchive,
+        stableArchiveID: UUID,
+        disposition: ArchiveDisposition,
+        receiverDeviceID: String?
+    ) -> [AuditEvent] {
+        var events: [AuditEvent] = [
+            AuditEvent(
+                code: "phone-ingest-v2.core-archive-candidate",
+                message: "Prepared existing core archive \(archive.id) for phone persistence as run \(archive.runID)."
+            ),
+            AuditEvent(
+                code: "phone-ingest-v2.resource-unspent",
+                message: "Created unspent RunResource candidate for archive \(stableArchiveID.uuidString)."
+            ),
+        ]
+
+        switch disposition {
+        case .insertNewArchive:
+            events.append(AuditEvent(
+                code: "phone-ingest-v2.insert",
+                message: "No existing phone archive matched run \(archive.runID)."
+            ))
+        case .replaceExistingArchive:
+            events.append(AuditEvent(
+                code: "phone-ingest-v2.replace",
+                message: "Existing phone archive matched run \(archive.runID); replace rather than duplicate."
+            ))
+        }
+
+        if let receiverDeviceID {
+            events.append(AuditEvent(
+                code: "phone-ingest-v2.receiver",
+                message: "Plan prepared for receiver device \(receiverDeviceID)."
+            ))
+        }
+
+        return events
+    }
+
+    private static func stableArchiveID(from value: String) -> UUID {
+        if let uuid = UUID(uuidString: value) {
+            return uuid
+        }
+
+        let digest = fnv128Bytes(for: "runimal-phone-v2:core-archive:\(value)")
+        let bytes = digest.enumerated().map { index, byte -> UInt8 in
+            switch index {
+            case 6:
+                return (byte & 0x0F) | 0x50
+            case 8:
+                return (byte & 0x3F) | 0x80
+            default:
+                return byte
+            }
+        }
+        let uuidString = String(
+            format: "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+            bytes[0], bytes[1], bytes[2], bytes[3],
+            bytes[4], bytes[5],
+            bytes[6], bytes[7],
+            bytes[8], bytes[9],
+            bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]
+        )
+        return UUID(uuidString: uuidString) ?? UUID()
+    }
+
+    private static func fnv128Bytes(for string: String) -> [UInt8] {
+        var high: UInt64 = 0xcbf29ce484222325
+        var low: UInt64 = 0x84222325cbf29ce4
+
+        for byte in string.utf8 {
+            high ^= UInt64(byte)
+            high &*= 0x100000001b3
+            low ^= high.rotatedLeft(13) ^ UInt64(byte)
+            low &*= 0x100000001b3
+        }
+
+        return high.bigEndianBytes + low.bigEndianBytes
+    }
+}
+
+private extension UInt64 {
+    var bigEndianBytes: [UInt8] {
+        var value = bigEndian
+        return withUnsafeBytes(of: &value) { Array($0) }
+    }
+
+    func rotatedLeft(_ amount: Int) -> UInt64 {
+        (self << UInt64(amount)) | (self >> UInt64(64 - amount))
     }
 }

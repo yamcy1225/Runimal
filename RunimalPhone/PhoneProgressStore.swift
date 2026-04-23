@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import RunimalCore
+import RunimalRewardV2
 
 struct CompanionFeedProjection {
     let runID: String
@@ -65,6 +66,7 @@ final class PhoneProgressStore {
 
     private let defaults: UserDefaults
     private let archivePersistence: PhoneWorkoutArchivePersistence
+    private let resourceLedgerPersistence: PhoneRunResourceLedgerPersistence
     var journal: [RunJournalEntry] = []
     var completedRuns: [CompletedRunRecord] = []
     var ownedCompanions: [PetCollectionEntry] = []
@@ -90,15 +92,18 @@ final class PhoneProgressStore {
     var duplicatePriority: SnapshotDuplicatePriority = .newestWins
     var lastSanctuaryReward: SanctuaryRewardEvent?
     var workoutArchives: [WorkoutSessionArchive] = []
+    var runResourceLedger = RunimalRewardV2.RunResourceLedger()
     var autoPauseEnabled = true
     var worldProgressSnapshot: WorldProgressSnapshot = .empty
 
     init(
         defaults: UserDefaults = .standard,
-        archivePersistence: PhoneWorkoutArchivePersistence = PhoneWorkoutArchivePersistence()
+        archivePersistence: PhoneWorkoutArchivePersistence = PhoneWorkoutArchivePersistence(),
+        resourceLedgerPersistence: PhoneRunResourceLedgerPersistence = PhoneRunResourceLedgerPersistence()
     ) {
         self.defaults = defaults
         self.archivePersistence = archivePersistence
+        self.resourceLedgerPersistence = resourceLedgerPersistence
     }
 
     func load() {
@@ -197,6 +202,7 @@ final class PhoneProgressStore {
         workoutArchives = archivePersistence.loadWorkoutArchives(
             fallbackData: defaults.data(forKey: Keys.workoutArchives)
         )
+        runResourceLedger = resourceLedgerPersistence.loadLedger()
 
         if defaults.object(forKey: Keys.autoPauseEnabled) == nil {
             autoPauseEnabled = true
@@ -1126,6 +1132,7 @@ final class PhoneProgressStore {
         journal = []
         completedRuns = []
         workoutArchives = []
+        runResourceLedger = RunimalRewardV2.RunResourceLedger()
         ownedCompanions = []
         eggInventory = []
         unlockedEggAchievementIDs = []
@@ -1184,7 +1191,7 @@ final class PhoneProgressStore {
             return true
         }
 
-        return archivePersistence.hasPersistedData()
+        return archivePersistence.hasPersistedData() || resourceLedgerPersistence.hasPersistedData()
     }
 
     func save() {
@@ -1211,6 +1218,13 @@ final class PhoneProgressStore {
             if let archiveData = try? JSONEncoder().encode(workoutArchives) {
                 defaults.set(archiveData, forKey: Keys.workoutArchives)
             }
+        }
+
+        do {
+            try resourceLedgerPersistence.saveLedger(runResourceLedger)
+        } catch {
+            // Keep the existing archive/defaults saves canonical; ledger persistence
+            // will retry on the next save.
         }
 
         if let data = try? JSONEncoder().encode(ownedCompanions) {

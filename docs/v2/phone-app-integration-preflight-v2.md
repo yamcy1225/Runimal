@@ -49,3 +49,14 @@ When the app target is intentionally modified, use this order:
 - Do not migrate `completed-runs.json` in the first app wiring pass.
 - Do not introduce SwiftData/CoreData for the ledger until JSON sidecar persistence proves the loop.
 - If XcodeGen product wiring is noisy, stop at a thin app-local wrapper and keep the SwiftPM modules as the source of truth until the build is stable.
+
+## Implemented first wiring pass
+
+The first app-target pass now keeps the existing `WorkoutSessionArchive` payload intact and only adds the v2 resource sidecar:
+
+1. `RunimalPhone` depends on `RunimalPhoneAdapterV2` and `RunimalRewardV2`.
+2. `PhoneRunResourceLedgerPersistence` reads/writes `run-resource-ledger-v2.json` beside existing phone support files.
+3. `PhoneProgressStore` loads/saves `RunResourceLedger` with the rest of progress.
+4. `PhoneDashboardStore.ingestLatestWorkoutArchive()` applies a core-archive ingest plan, preserving the existing archive `runID` while upserting the v2 unspent resource.
+
+This pass intentionally still does not create a `CompletedRunRecord` or spend a resource during workout receipt.
