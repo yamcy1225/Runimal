@@ -13,6 +13,7 @@ let package = Package(
         .library(name: "RunimalRewardV2", targets: ["RunimalRewardV2"]),
         .library(name: "RunimalExportV2", targets: ["RunimalExportV2"]),
         .library(name: "RunimalWatchAdapterV2", targets: ["RunimalWatchAdapterV2"]),
+        .library(name: "RunimalPhoneAdapterV2", targets: ["RunimalPhoneAdapterV2"]),
         .executable(name: "RunimalCLI", targets: ["RunimalCLI"]),
         .executable(name: "RunimalSelfCheck", targets: ["RunimalSelfCheck"]),
         .executable(name: "RunimalRewardSimulation", targets: ["RunimalRewardSimulation"]),
@@ -52,6 +53,14 @@ let package = Package(
             ],
             exclude: ["README.md"]
         ),
+        .target(
+            name: "RunimalPhoneAdapterV2",
+            dependencies: [
+                "RunimalCore",
+                "RunimalDomainV2",
+            ],
+            exclude: ["README.md"]
+        ),
         .executableTarget(
             name: "RunimalCLI",
             dependencies: ["RunimalCore"]
@@ -76,6 +85,7 @@ let package = Package(
                 "RunimalRewardV2",
                 "RunimalExportV2",
                 "RunimalWatchAdapterV2",
+                "RunimalPhoneAdapterV2",
             ],
             exclude: ["README.md"]
         ),
