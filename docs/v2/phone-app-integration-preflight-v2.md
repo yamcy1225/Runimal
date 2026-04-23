@@ -1,0 +1,51 @@
+# Phone App Integration Preflight V2
+
+This note defines the next safe app-target wiring step without changing `RunimalPhone` or `project.yml` yet.
+
+## Current tested SwiftPM boundary
+
+The v2 phone ingest path now has three tested pieces:
+
+1. `RunimalPhoneAdapterV2.ingestPlan(for:)`
+   - converts `CompletedRunArchive` into a `WorkoutSessionArchive` persistence candidate;
+   - creates an unspent `RunResource` candidate;
+   - reports insert/replace disposition and audit notes.
+2. `RunimalPhoneAdapterV2.IngestApplication.apply(_:)`
+   - inserts/replaces the archive candidate by `runID`;
+   - upserts the resource into `RunResourceLedger`;
+   - preserves spent resources on duplicate sync.
+3. `RunimalRewardV2.RunResourceLedgerCodec`
+   - encodes/decodes `RunResourceLedgerSnapshot` as deterministic JSON;
+   - reserves `run-resource-ledger-v2.json` as the new phone-side resource ledger file.
+
+## Proposed phone storage mapping
+
+Keep existing files intact:
+
+- `workout-archives.json` remains the archive persistence file.
+- `completed-runs.json` remains the current completed-run/growth-facing file.
+
+Add one new sidecar file when app wiring begins:
+
+- `run-resource-ledger-v2.json`
+  - schema: `RunResourceLedgerSnapshot`
+  - contents: unspent/spent `RunResource` values + `SpendIntent` history
+  - lifecycle: written after archive ingest succeeds
+
+## App-target wiring order
+
+When the app target is intentionally modified, use this order:
+
+1. Add `RunimalPhoneAdapterV2` and `RunimalRewardV2` to the relevant app target dependency flow in `project.yml` only if XcodeGen supports the local SwiftPM product wiring cleanly.
+2. Run `xcodegen generate`.
+3. Add a small phone-side persistence wrapper that reads/writes `run-resource-ledger-v2.json` beside existing phone persistence files.
+4. In the existing workout archive ingest path, build an `IngestPlan`, apply it to the archive list + ledger, persist archives, then persist the ledger.
+5. Do **not** create `CompletedRunRecord` or spend resources during receipt. Spending remains a separate user-intent action.
+6. Run SwiftPM tests and `xcodebuild` for `RunimalPhone`.
+
+## Guardrails
+
+- Do not replace `PhoneWorkoutArchivePersistence` in the first app wiring pass.
+- Do not migrate `completed-runs.json` in the first app wiring pass.
+- Do not introduce SwiftData/CoreData for the ledger until JSON sidecar persistence proves the loop.
+- If XcodeGen product wiring is noisy, stop at a thin app-local wrapper and keep the SwiftPM modules as the source of truth until the build is stable.

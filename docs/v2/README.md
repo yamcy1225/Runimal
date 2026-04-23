@@ -16,3 +16,4 @@ Additional v2 notes:
 - `watch-adapter-v2.md` — tested boundary from v1 `WorkoutSessionArchive` to v2 `CompletedRunArchive` / sync envelope.
 - `phone-ingest-adapter-v2.md` — tested boundary from v2 `CompletedRunArchive` to phone persistence candidate + unspent run resource.
 - `resource-ledger-v2.md` — tested unspent/spent run-resource ledger and phone ingest application ordering.
+- `phone-app-integration-preflight-v2.md` — app-target wiring order and JSON sidecar storage contract before touching `RunimalPhone`.

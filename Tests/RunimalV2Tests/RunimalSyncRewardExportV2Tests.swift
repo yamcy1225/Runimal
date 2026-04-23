@@ -150,3 +150,32 @@ struct RunimalResourceLedgerV2Tests {
         #expect(ledger.resource(forArchiveID: archiveID)?.isSpent == true)
     }
 }
+
+struct RunimalResourceLedgerPersistenceV2Tests {
+    @Test
+    func resourceLedgerSnapshotRoundTripsThroughDeterministicJson() throws {
+        let archiveID = UUID(uuidString: "10101010-1010-1010-1010-101010101010")!
+        let resource = RunimalDomainV2.RunResource(
+            id: UUID(uuidString: "20202020-2020-2020-2020-202020202020")!,
+            archiveID: archiveID,
+            liveCompanionID: "companion-windrunner",
+            isSpent: false
+        )
+        let ledger = RunimalRewardV2.RunResourceLedger(resources: [resource])
+        let snapshot = RunimalRewardV2.RunResourceLedgerSnapshot(
+            savedAt: Date(timeIntervalSince1970: 50_000),
+            ledger: ledger
+        )
+
+        let data = try RunimalRewardV2.RunResourceLedgerCodec.encode(snapshot)
+        let decoded = try RunimalRewardV2.RunResourceLedgerCodec.decode(data)
+        let json = String(decoding: data, as: UTF8.self)
+
+        #expect(decoded == snapshot)
+        #expect(decoded.schemaVersion == 1)
+        #expect(RunimalRewardV2.RunResourceLedgerCodec.defaultFileName == "run-resource-ledger-v2.json")
+        #expect(json.contains("\"schemaVersion\""))
+        #expect(json.contains("\"resources\""))
+        #expect(json.contains("companion-windrunner"))
+    }
+}

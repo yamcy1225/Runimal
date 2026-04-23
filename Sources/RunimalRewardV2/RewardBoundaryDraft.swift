@@ -137,3 +137,40 @@ public extension RunimalRewardV2 {
         }
     }
 }
+
+public extension RunimalRewardV2 {
+    static var runResourceLedgerSchemaVersion: Int { 1 }
+
+    struct RunResourceLedgerSnapshot: Codable, Equatable, Sendable {
+        public let schemaVersion: Int
+        public let savedAt: Date
+        public let ledger: RunResourceLedger
+
+        public init(
+            schemaVersion: Int = RunimalRewardV2.runResourceLedgerSchemaVersion,
+            savedAt: Date = Date(),
+            ledger: RunResourceLedger
+        ) {
+            self.schemaVersion = schemaVersion
+            self.savedAt = savedAt
+            self.ledger = ledger
+        }
+    }
+
+    enum RunResourceLedgerCodec {
+        public static let defaultFileName = "run-resource-ledger-v2.json"
+
+        public static func encode(_ snapshot: RunResourceLedgerSnapshot) throws -> Data {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            return try encoder.encode(snapshot)
+        }
+
+        public static func decode(_ data: Data) throws -> RunResourceLedgerSnapshot {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            return try decoder.decode(RunResourceLedgerSnapshot.self, from: data)
+        }
+    }
+}

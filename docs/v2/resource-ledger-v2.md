@@ -27,3 +27,7 @@ When moving into the app target, preserve the same ordering:
 2. upsert the run resource ledger;
 3. log audit events;
 4. only later, when the user chooses a target, spend the run resource into the growth loop.
+
+## JSON persistence contract
+
+`RunimalRewardV2.RunResourceLedgerSnapshot` wraps the ledger with `schemaVersion` and `savedAt`. `RunimalRewardV2.RunResourceLedgerCodec` encodes it with sorted, pretty JSON and reserves `run-resource-ledger-v2.json` as the app-side sidecar filename.

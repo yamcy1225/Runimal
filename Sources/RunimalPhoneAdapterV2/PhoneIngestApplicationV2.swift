@@ -73,3 +73,41 @@ public extension RunimalPhoneAdapterV2 {
         }
     }
 }
+
+public extension RunimalPhoneAdapterV2 {
+    enum PhoneStorageContract {
+        public static let workoutArchivesFileName = "workout-archives.json"
+        public static let resourceLedgerFileName = RunimalRewardV2.RunResourceLedgerCodec.defaultFileName
+    }
+
+    struct PersistenceDraft: Equatable, Sendable {
+        public let workoutArchivesFileName: String
+        public let resourceLedgerFileName: String
+        public let workoutArchives: [WorkoutSessionArchive]
+        public let resourceLedgerSnapshot: RunimalRewardV2.RunResourceLedgerSnapshot
+
+        public init(
+            workoutArchivesFileName: String = PhoneStorageContract.workoutArchivesFileName,
+            resourceLedgerFileName: String = PhoneStorageContract.resourceLedgerFileName,
+            workoutArchives: [WorkoutSessionArchive],
+            resourceLedgerSnapshot: RunimalRewardV2.RunResourceLedgerSnapshot
+        ) {
+            self.workoutArchivesFileName = workoutArchivesFileName
+            self.resourceLedgerFileName = resourceLedgerFileName
+            self.workoutArchives = workoutArchives
+            self.resourceLedgerSnapshot = resourceLedgerSnapshot
+        }
+    }
+}
+
+public extension RunimalPhoneAdapterV2.AppliedIngest {
+    func persistenceDraft(savedAt: Date = Date()) -> RunimalPhoneAdapterV2.PersistenceDraft {
+        RunimalPhoneAdapterV2.PersistenceDraft(
+            workoutArchives: state.workoutArchives,
+            resourceLedgerSnapshot: RunimalRewardV2.RunResourceLedgerSnapshot(
+                savedAt: savedAt,
+                ledger: state.resourceLedger
+            )
+        )
+    }
+}

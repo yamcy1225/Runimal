@@ -250,3 +250,60 @@ struct RunimalPhoneIngestApplicationV2Tests {
         )
     }
 }
+
+struct RunimalPhoneIngestPersistenceDraftV2Tests {
+    @Test
+    func appliedIngestProducesPhonePersistenceDraftWithoutAppTargetImports() throws {
+        let archive = makeCompletedArchive()
+        let plan = RunimalPhoneAdapterV2.ingestPlan(for: archive)
+        let applied = RunimalPhoneAdapterV2.IngestApplication.apply(plan)
+        let savedAt = Date(timeIntervalSince1970: 60_000)
+
+        let draft = applied.persistenceDraft(savedAt: savedAt)
+        let encodedLedger = try RunimalRewardV2.RunResourceLedgerCodec.encode(draft.resourceLedgerSnapshot)
+        let decodedLedger = try RunimalRewardV2.RunResourceLedgerCodec.decode(encodedLedger)
+
+        #expect(draft.workoutArchivesFileName == "workout-archives.json")
+        #expect(draft.resourceLedgerFileName == "run-resource-ledger-v2.json")
+        #expect(draft.workoutArchives.map(\.runID) == [archive.runID.uuidString])
+        #expect(draft.resourceLedgerSnapshot.savedAt == savedAt)
+        #expect(decodedLedger == draft.resourceLedgerSnapshot)
+        #expect(decodedLedger.ledger.resources.first?.archiveID == archive.id)
+        #expect(decodedLedger.ledger.resources.first?.isSpent == false)
+    }
+
+    private var baseDate: Date { Date(timeIntervalSince1970: 70_000) }
+
+    private func makeCompletedArchive() -> RunimalDomainV2.CompletedRunArchive {
+        let points = [
+            RunimalDomainV2.RunSamplePoint(
+                timestamp: baseDate,
+                latitude: 37.5,
+                longitude: 127.0,
+                altitudeMeters: 10,
+                horizontalAccuracyMeters: 8
+            ),
+            RunimalDomainV2.RunSamplePoint(
+                timestamp: baseDate.addingTimeInterval(60),
+                latitude: 37.501,
+                longitude: 127.001,
+                altitudeMeters: 14,
+                horizontalAccuracyMeters: 8
+            ),
+        ]
+        return RunimalDomainV2.CompletedRunArchive(
+            id: UUID(uuidString: "78787878-7878-7878-7878-787878787878")!,
+            runID: UUID(uuidString: "89898989-8989-8989-8989-898989898989")!,
+            startedAt: baseDate,
+            endedAt: baseDate.addingTimeInterval(600),
+            source: "watch-healthkit-v2",
+            metrics: RunimalDomainV2.RunMetricSummary(
+                distanceMeters: 1_500,
+                elapsedSeconds: 600,
+                movingSeconds: 590
+            ),
+            routePath: RunimalDomainV2.RoutePath(rawPoints: points),
+            createdOnDevice: "watch-001"
+        )
+    }
+}
