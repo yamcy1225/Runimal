@@ -134,6 +134,15 @@ public enum RunimalPhoneAdapterV2 {
         )
     }
 
+    /// Returns the v2 resource archive ID for an existing `RunimalCore` archive ID.
+    ///
+    /// Existing phone/watch archives may use non-UUID string identifiers. The phone
+    /// app needs the same stable mapping both when ingesting an archive and when
+    /// pruning an unspent resource after the user deletes the source run.
+    public static func resourceArchiveID(forExistingCoreArchiveID archiveID: String) -> UUID {
+        stableArchiveID(from: archiveID)
+    }
+
     /// Creates an ingest plan for an already-canonical `RunimalCore` archive.
     ///
     /// This is the safe first app-target wiring path because it keeps the existing
@@ -148,7 +157,7 @@ public enum RunimalPhoneAdapterV2 {
         let disposition: ArchiveDisposition = options.existingArchiveRunIDs.contains(archive.runID)
             ? .replaceExistingArchive
             : .insertNewArchive
-        let archiveID = stableArchiveID(from: archive.id)
+        let archiveID = resourceArchiveID(forExistingCoreArchiveID: archive.id)
         let runResource = RunimalDomainV2.RunResource(
             archiveID: archiveID,
             liveCompanionID: liveCompanionID,

@@ -58,5 +58,10 @@ The first app-target pass now keeps the existing `WorkoutSessionArchive` payload
 2. `PhoneRunResourceLedgerPersistence` reads/writes `run-resource-ledger-v2.json` beside existing phone support files.
 3. `PhoneProgressStore` loads/saves `RunResourceLedger` with the rest of progress.
 4. `PhoneDashboardStore.ingestLatestWorkoutArchive()` applies a core-archive ingest plan, preserving the existing archive `runID` while upserting the v2 unspent resource.
+5. `PhoneProgressStore` prunes unspent resource sidecars when their source workout archives are deleted or cleared as imported external runs.
 
 This pass intentionally still does not create a `CompletedRunRecord` or spend a resource during workout receipt.
+
+## Delete/clear integrity rule
+
+The v2 sidecar is tied to the source archive, not to the current growth record. When a run/archive is removed before the player spends its resource, the unspent `RunResource` must be removed too. Spent resources are preserved for now so future reward audit/history work cannot accidentally erase spend intent evidence.

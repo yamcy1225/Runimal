@@ -95,6 +95,16 @@ public extension RunimalRewardV2 {
         }
 
         @discardableResult
+        public mutating func removeUnspentResources(forArchiveIDs archiveIDs: Set<UUID>) -> Int {
+            guard !archiveIDs.isEmpty else { return 0 }
+            let originalCount = resources.count
+            resources.removeAll { resource in
+                archiveIDs.contains(resource.archiveID) && resource.isSpent == false
+            }
+            return originalCount - resources.count
+        }
+
+        @discardableResult
         public mutating func upsert(_ resource: RunimalDomainV2.RunResource) -> RunResourceUpsertResult {
             guard let index = resources.firstIndex(where: { $0.archiveID == resource.archiveID }) else {
                 resources.insert(resource, at: 0)

@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import RunimalCore
+import RunimalPhoneAdapterV2
 import RunimalRewardV2
 
 struct CompanionFeedProjection {
@@ -780,9 +781,11 @@ final class PhoneProgressStore {
         )
         guard !importedIDs.isEmpty else { return }
 
+        let removedArchives = workoutArchives.filter { importedIDs.contains($0.runID) }
         completedRuns.removeAll { importedIDs.contains($0.id) }
         workoutArchives.removeAll { importedIDs.contains($0.runID) }
         journal.removeAll { importedIDs.contains($0.id) }
+        removeUnspentRunResources(for: removedArchives)
         growthRecords = growthRecords.map { record in
             CompanionGrowthRecord(
                 companionID: record.companionID,
@@ -833,9 +836,11 @@ final class PhoneProgressStore {
     ) -> Bool {
         guard canDeleteRun(id: id) else { return false }
 
+        let removedArchives = workoutArchives.filter { $0.runID == id }
         completedRuns.removeAll(where: { $0.id == id })
         workoutArchives.removeAll(where: { $0.runID == id })
         journal.removeAll(where: { $0.id == id })
+        removeUnspentRunResources(for: removedArchives)
 
         do {
             try archivePersistence.removeWorkoutPackageFiles(forRunID: id)
@@ -846,6 +851,13 @@ final class PhoneProgressStore {
         rebuildWorldProgress(pack: pack)
         save()
         return true
+    }
+
+    private func removeUnspentRunResources(for archives: [WorkoutSessionArchive]) {
+        let archiveIDs = Set(archives.map { archive in
+            RunimalPhoneAdapterV2.resourceArchiveID(forExistingCoreArchiveID: archive.id)
+        })
+        runResourceLedger.removeUnspentResources(forArchiveIDs: archiveIDs)
     }
 
     func rebuildWorldProgress(pack: WorldContentPack = DefaultWorldContent.pack) {

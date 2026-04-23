@@ -149,6 +149,43 @@ struct RunimalResourceLedgerV2Tests {
         #expect(ledger.resource(forArchiveID: archiveID)?.id == spent.id)
         #expect(ledger.resource(forArchiveID: archiveID)?.isSpent == true)
     }
+
+    @Test
+    func resourceLedgerPrunesOnlyUnspentResourcesForDeletedArchives() throws {
+        let deletedArchiveID = UUID(uuidString: "11111111-2222-3333-4444-555555555555")!
+        let keptArchiveID = UUID(uuidString: "66666666-7777-8888-9999-AAAAAAAAAAAA")!
+        let spentArchiveID = UUID(uuidString: "BBBBBBBB-CCCC-DDDD-EEEE-FFFFFFFFFFFF")!
+        let deletedUnspent = RunimalDomainV2.RunResource(
+            id: UUID(uuidString: "12121212-1212-1212-1212-121212121212")!,
+            archiveID: deletedArchiveID,
+            isSpent: false
+        )
+        let keptUnspent = RunimalDomainV2.RunResource(
+            id: UUID(uuidString: "34343434-3434-3434-3434-343434343434")!,
+            archiveID: keptArchiveID,
+            isSpent: false
+        )
+        let spentForDeletedArchive = RunimalDomainV2.RunResource(
+            id: UUID(uuidString: "56565656-5656-5656-5656-565656565656")!,
+            archiveID: spentArchiveID,
+            isSpent: true
+        )
+
+        var ledger = RunimalRewardV2.RunResourceLedger(resources: [
+            deletedUnspent,
+            keptUnspent,
+            spentForDeletedArchive,
+        ])
+        let removedCount = ledger.removeUnspentResources(forArchiveIDs: [
+            deletedArchiveID,
+            spentArchiveID,
+        ])
+
+        #expect(removedCount == 1)
+        #expect(ledger.resource(forArchiveID: deletedArchiveID) == nil)
+        #expect(ledger.resource(forArchiveID: keptArchiveID) == keptUnspent)
+        #expect(ledger.resource(forArchiveID: spentArchiveID) == spentForDeletedArchive)
+    }
 }
 
 struct RunimalResourceLedgerPersistenceV2Tests {

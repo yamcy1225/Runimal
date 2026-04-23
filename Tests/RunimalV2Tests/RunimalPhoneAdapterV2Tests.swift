@@ -319,12 +319,16 @@ struct RunimalPhoneCoreArchiveIngestPlanV2Tests {
             liveCompanionID: "companion-windrunner"
         )
         let secondPlan = RunimalPhoneAdapterV2.ingestPlan(forExistingCoreArchive: archive)
+        let publicArchiveID = RunimalPhoneAdapterV2.resourceArchiveID(
+            forExistingCoreArchiveID: "legacy-core-archive"
+        )
 
         #expect(plan.archiveForPersistence == archive)
         #expect(plan.archiveForPersistence.id == "legacy-core-archive")
         #expect(plan.archiveForPersistence.runID == "legacy-run-id")
         #expect(plan.disposition == .replaceExistingArchive)
         #expect(plan.runResource.archiveID == secondPlan.runResource.archiveID)
+        #expect(plan.runResource.archiveID == publicArchiveID)
         #expect(plan.runResource.liveCompanionID == "companion-windrunner")
         #expect(plan.runResource.isSpent == false)
         #expect(plan.auditEvents.contains { $0.code == "phone-ingest-v2.stable-core-archive-id" })
