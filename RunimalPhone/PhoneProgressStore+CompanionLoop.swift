@@ -54,6 +54,7 @@ extension PhoneProgressStore {
     @discardableResult
     func forgeEgg(from run: CompletedRunRecord) -> EggInventoryEntry? {
         guard unassignedRuns(from: completedRuns).contains(where: { $0.id == run.id }) else { return nil }
+        guard canSpendRunResourceIfPresent(runID: run.id) else { return nil }
         let opportunity = eggOpportunity(for: run)
         guard opportunity.eligible else { return nil }
 
@@ -86,6 +87,11 @@ extension PhoneProgressStore {
         if mainCompanionSelection == nil {
             mainCompanionSelection = MainCompanionSelection(kind: .egg, targetID: entry.id)
         }
+        spendRunResourceIfPresent(
+            runID: run.id,
+            target: .eggForge,
+            targetID: entry.id
+        )
         saveSelectionState()
         return entry
     }
@@ -94,6 +100,7 @@ extension PhoneProgressStore {
     func incubateMainEgg(with run: CompletedRunRecord) -> EggInventoryEntry? {
         guard let egg = mainEggSelection else { return nil }
         guard unassignedRuns(from: completedRuns).contains(where: { $0.id == run.id }) else { return nil }
+        guard canSpendRunResourceIfPresent(runID: run.id) else { return nil }
         let proposedExperience = RunimalEggEngine.incubationExperienceGain(for: run, egg: egg)
         let hatchLock = RunimalRewardPulseEngine.hatchLock(egg: egg, proposedExperience: proposedExperience)
 
@@ -112,6 +119,11 @@ extension PhoneProgressStore {
 
         eggInventory.removeAll(where: { $0.id == egg.id })
         eggInventory.insert(updated, at: 0)
+        spendRunResourceIfPresent(
+            runID: run.id,
+            target: .eggIncubation,
+            targetID: egg.id
+        )
         saveSelectionState()
         return updated
     }

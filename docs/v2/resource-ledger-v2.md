@@ -17,7 +17,7 @@
 1. insert or replace a `WorkoutSessionArchive` candidate by `runID`;
 2. upsert the unspent `RunResource` candidate into `RunResourceLedger`.
 
-This still does not wire into `RunimalPhone`. It gives the future app integration a tested, deterministic boundary before touching `PhoneDashboardStore`, `PhoneProgressStore`, or `project.yml`.
+This gives the app integration a tested, deterministic boundary before mutating `PhoneDashboardStore`, `PhoneProgressStore`, or `project.yml`. The first app-target pass now uses this boundary for archive receipt, and the spend boundary below for user-chosen growth actions.
 
 ## Next app integration candidate
 
@@ -27,6 +27,17 @@ When moving into the app target, preserve the same ordering:
 2. upsert the run resource ledger;
 3. log audit events;
 4. only later, when the user chooses a target, spend the run resource into the growth loop.
+
+## Phone spend seam
+
+`RunimalPhoneAdapterV2.SpendApplication.apply(_:)` is the pure companion to ingest:
+
+1. locate the `RunResource` by archive ID;
+2. create a `SpendIntent` for companion feed, egg forge, or egg incubation;
+3. mark the resource spent and append the intent;
+4. return audit events without importing `RunimalPhone`.
+
+`PhoneProgressStore` uses this seam after the existing growth action succeeds. Old records with no sidecar remain valid; v2 records with an already-spent sidecar are blocked from being consumed again.
 
 ## JSON persistence contract
 

@@ -49,3 +49,5 @@ After app-target tests are scoped, the phone app can wire this plan into the exi
 ## Tested application seam
 
 `RunimalPhoneAdapterV2.IngestApplication.apply(_:)` now proves the app-facing ordering without importing `RunimalPhone`: archive insert/replace first, then `RunResourceLedger` upsert. Duplicate sync replaces the archive candidate but reuses the existing resource, and duplicate sync after spending preserves the spent resource.
+
+`RunimalPhoneAdapterV2.SpendApplication.apply(_:)` now proves the matching manual-spend ordering without importing `RunimalPhone`: find the run resource by archive ID, create a `SpendIntent`, mark the resource spent, and leave missing/already-spent resources non-mutating. The phone app uses this only after an existing user action succeeds.

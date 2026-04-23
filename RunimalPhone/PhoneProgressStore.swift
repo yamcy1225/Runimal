@@ -350,6 +350,11 @@ final class PhoneProgressStore {
         if computation.forgeBonus.consumeSeasonSigil {
             seasonSigils = max(seasonSigils - 1, 0)
         }
+        spendRunResourceIfPresent(
+            runID: run.id,
+            target: .companion,
+            targetID: companion.id
+        )
         save()
         return CompanionFeedOutcome(
             runID: run.id,
@@ -376,9 +381,8 @@ final class PhoneProgressStore {
         activeEffects: [WeeklyRewardEffect],
         season: WeeklySeason
     ) -> CompanionFeedComputation? {
-        if growthRecords.flatMap(\.assignedRunIDs).contains(run.id) {
-            return nil
-        }
+        guard unassignedRuns(from: completedRuns).contains(where: { $0.id == run.id }) else { return nil }
+        guard canSpendRunResourceIfPresent(runID: run.id) else { return nil }
 
         let currentRecord = growthRecord(for: companion.id)
         let beforeSnapshot = RunimalCompanionGrowthEngine.progressionSnapshot(
@@ -858,6 +862,35 @@ final class PhoneProgressStore {
             RunimalPhoneAdapterV2.resourceArchiveID(forExistingCoreArchiveID: archive.id)
         })
         runResourceLedger.removeUnspentResources(forArchiveIDs: archiveIDs)
+    }
+
+    @discardableResult
+    func spendRunResourceIfPresent(
+        runID: String,
+        target: RunimalRewardV2.SpendTarget,
+        targetID: String,
+        createdAt: Date = Date()
+    ) -> RunimalRewardV2.SpendValidation? {
+        guard let archive = workoutArchive(for: runID) else { return nil }
+        let archiveID = RunimalPhoneAdapterV2.resourceArchiveID(forExistingCoreArchiveID: archive.id)
+        let appliedSpend = RunimalPhoneAdapterV2.SpendApplication.apply(
+            .init(
+                archiveID: archiveID,
+                target: target,
+                targetID: targetID,
+                createdAt: createdAt
+            ),
+            to: .init(resourceLedger: runResourceLedger)
+        )
+        runResourceLedger = appliedSpend.state.resourceLedger
+        return appliedSpend.validation
+    }
+
+    func canSpendRunResourceIfPresent(runID: String) -> Bool {
+        guard let archive = workoutArchive(for: runID) else { return true }
+        let archiveID = RunimalPhoneAdapterV2.resourceArchiveID(forExistingCoreArchiveID: archive.id)
+        guard let resource = runResourceLedger.resource(forArchiveID: archiveID) else { return true }
+        return resource.isSpent == false
     }
 
     func rebuildWorldProgress(pack: WorldContentPack = DefaultWorldContent.pack) {

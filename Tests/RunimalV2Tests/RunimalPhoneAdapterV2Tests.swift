@@ -251,6 +251,96 @@ struct RunimalPhoneIngestApplicationV2Tests {
     }
 }
 
+struct RunimalPhoneSpendApplicationV2Tests {
+    @Test
+    func spendsRunResourceByArchiveIDWhenUserChoosesGrowthTarget() throws {
+        let archiveID = UUID(uuidString: "ABABABAB-1111-2222-3333-ABABABABABAB")!
+        let resourceID = UUID(uuidString: "CDCDCDCD-1111-2222-3333-CDCDCDCDCDCD")!
+        let intentID = UUID(uuidString: "EFEFEFEF-1111-2222-3333-EFEFEFEFEFEF")!
+        let createdAt = Date(timeIntervalSince1970: 90_000)
+        let ledger = RunimalRewardV2.RunResourceLedger(resources: [
+            RunimalDomainV2.RunResource(
+                id: resourceID,
+                archiveID: archiveID,
+                liveCompanionID: "live-only",
+                isSpent: false
+            ),
+        ])
+        let request = RunimalPhoneAdapterV2.SpendRequest(
+            archiveID: archiveID,
+            target: .companion,
+            targetID: "companion-windrunner",
+            createdAt: createdAt,
+            intentID: intentID
+        )
+
+        let applied = RunimalPhoneAdapterV2.SpendApplication.apply(
+            request,
+            to: .init(resourceLedger: ledger)
+        )
+
+        #expect(applied.validation == .allowed)
+        #expect(applied.state.resourceLedger.resource(forArchiveID: archiveID)?.isSpent == true)
+        #expect(applied.intent == RunimalRewardV2.SpendIntent(
+            id: intentID,
+            runResourceID: resourceID,
+            archiveID: archiveID,
+            target: .companion,
+            targetID: "companion-windrunner",
+            createdAt: createdAt
+        ))
+        #expect(applied.state.resourceLedger.spendIntents == [applied.intent])
+        #expect(applied.auditEvents.contains { $0.code == "phone-spend-v2.allowed" })
+    }
+
+    @Test
+    func missingResourceSpendDoesNotMutateLedger() throws {
+        let archiveID = UUID(uuidString: "10101010-1111-2222-3333-101010101010")!
+        let ledger = RunimalRewardV2.RunResourceLedger()
+
+        let applied = RunimalPhoneAdapterV2.SpendApplication.apply(
+            .init(
+                archiveID: archiveID,
+                target: .eggForge,
+                targetID: "egg-next"
+            ),
+            to: .init(resourceLedger: ledger)
+        )
+
+        #expect(applied.validation == .missingResource)
+        #expect(applied.intent == nil)
+        #expect(applied.state.resourceLedger == ledger)
+        #expect(applied.auditEvents.contains { $0.code == "phone-spend-v2.missing-resource" })
+    }
+
+    @Test
+    func alreadySpentResourceIsNotSpentAgain() throws {
+        let archiveID = UUID(uuidString: "20202020-1111-2222-3333-202020202020")!
+        let resourceID = UUID(uuidString: "30303030-1111-2222-3333-303030303030")!
+        let ledger = RunimalRewardV2.RunResourceLedger(resources: [
+            RunimalDomainV2.RunResource(
+                id: resourceID,
+                archiveID: archiveID,
+                isSpent: true
+            ),
+        ])
+
+        let applied = RunimalPhoneAdapterV2.SpendApplication.apply(
+            .init(
+                archiveID: archiveID,
+                target: .eggIncubation,
+                targetID: "egg-existing"
+            ),
+            to: .init(resourceLedger: ledger)
+        )
+
+        #expect(applied.validation == .alreadySpent)
+        #expect(applied.intent == nil)
+        #expect(applied.state.resourceLedger == ledger)
+        #expect(applied.auditEvents.contains { $0.code == "phone-spend-v2.already-spent" })
+    }
+}
+
 struct RunimalPhoneIngestPersistenceDraftV2Tests {
     @Test
     func appliedIngestProducesPhonePersistenceDraftWithoutAppTargetImports() throws {

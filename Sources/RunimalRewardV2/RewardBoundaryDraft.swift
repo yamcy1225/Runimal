@@ -11,6 +11,7 @@ public enum RunimalRewardV2 {
 
     public enum SpendValidation: Equatable, Sendable {
         case allowed
+        case missingResource
         case alreadySpent
         case archiveMismatch
     }
