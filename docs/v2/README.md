@@ -17,3 +17,5 @@ Additional v2 notes:
 - `phone-ingest-adapter-v2.md` — tested boundary from v2 `CompletedRunArchive` to phone persistence candidate + unspent run resource.
 - `resource-ledger-v2.md` — tested unspent/spent run-resource ledger and phone ingest application ordering.
 - `phone-app-integration-preflight-v2.md` — app-target wiring order and JSON sidecar storage contract before touching `RunimalPhone`.
+- `runtime-resource-ledger-verification-v2.md` — simulator app-target check for sidecar creation, manual spend marking, and prune/preserve behavior.
+- `resource-allocation-ui-v2.md` — first post-run resource allocation card design plan plus imagegen/OpenGame prompt boundaries.
