@@ -15,3 +15,4 @@ Additional v2 notes:
 - `design-briefs-v2.md` — first expert-level `$imagegen` prompt briefs and OpenGame prototype briefs.
 - `watch-adapter-v2.md` — tested boundary from v1 `WorkoutSessionArchive` to v2 `CompletedRunArchive` / sync envelope.
 - `phone-ingest-adapter-v2.md` — tested boundary from v2 `CompletedRunArchive` to phone persistence candidate + unspent run resource.
+- `resource-ledger-v2.md` — tested unspent/spent run-resource ledger and phone ingest application ordering.

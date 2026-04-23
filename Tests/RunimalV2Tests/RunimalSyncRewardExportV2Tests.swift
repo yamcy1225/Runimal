@@ -73,3 +73,80 @@ struct RunimalSyncRewardExportV2Tests {
         )
     }
 }
+
+struct RunimalResourceLedgerV2Tests {
+    @Test
+    func resourceLedgerDeduplicatesResourcesByArchiveID() throws {
+        let archiveID = UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")!
+        let original = RunimalDomainV2.RunResource(
+            id: UUID(uuidString: "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB")!,
+            archiveID: archiveID,
+            liveCompanionID: "live-companion",
+            isSpent: false
+        )
+        let duplicate = RunimalDomainV2.RunResource(
+            id: UUID(uuidString: "CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC")!,
+            archiveID: archiveID,
+            liveCompanionID: nil,
+            isSpent: false
+        )
+
+        var ledger = RunimalRewardV2.RunResourceLedger()
+        let inserted = ledger.upsert(original)
+        let reused = ledger.upsert(duplicate)
+
+        #expect(inserted.disposition == .inserted)
+        #expect(reused.disposition == .reusedExistingUnspent)
+        #expect(ledger.resources.count == 1)
+        #expect(ledger.resource(forArchiveID: archiveID)?.id == original.id)
+        #expect(ledger.resource(forArchiveID: archiveID)?.liveCompanionID == "live-companion")
+    }
+
+    @Test
+    func resourceLedgerSpendMarksResourceSpentAndRecordsIntent() throws {
+        let archiveID = UUID(uuidString: "DDDDDDDD-DDDD-DDDD-DDDD-DDDDDDDDDDDD")!
+        let resourceID = UUID(uuidString: "EEEEEEEE-EEEE-EEEE-EEEE-EEEEEEEEEEEE")!
+        let resource = RunimalDomainV2.RunResource(id: resourceID, archiveID: archiveID, isSpent: false)
+        let intent = RunimalRewardV2.SpendIntent(
+            id: UUID(uuidString: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")!,
+            runResourceID: resourceID,
+            archiveID: archiveID,
+            target: .companion,
+            targetID: "companion-windrunner",
+            createdAt: Date(timeIntervalSince1970: 30_000)
+        )
+
+        var ledger = RunimalRewardV2.RunResourceLedger(resources: [resource])
+        let validation = ledger.spend(intent)
+
+        #expect(validation == .allowed)
+        #expect(ledger.resource(forResourceID: resourceID)?.isSpent == true)
+        #expect(ledger.spendIntents == [intent])
+        #expect(ledger.spend(intent) == .alreadySpent)
+    }
+
+    @Test
+    func resourceLedgerDoesNotResurrectSpentResourceOnDuplicateSync() throws {
+        let archiveID = UUID(uuidString: "ABABABAB-ABAB-ABAB-ABAB-ABABABABABAB")!
+        let spent = RunimalDomainV2.RunResource(
+            id: UUID(uuidString: "CDCDCDCD-CDCD-CDCD-CDCD-CDCDCDCDCDCD")!,
+            archiveID: archiveID,
+            liveCompanionID: "spent-context",
+            isSpent: true
+        )
+        let duplicateUnspent = RunimalDomainV2.RunResource(
+            id: UUID(uuidString: "EFEFEFEF-EFEF-EFEF-EFEF-EFEFEFEFEFEF")!,
+            archiveID: archiveID,
+            liveCompanionID: "resync-context",
+            isSpent: false
+        )
+
+        var ledger = RunimalRewardV2.RunResourceLedger(resources: [spent])
+        let result = ledger.upsert(duplicateUnspent)
+
+        #expect(result.disposition == .preservedExistingSpent)
+        #expect(ledger.resources.count == 1)
+        #expect(ledger.resource(forArchiveID: archiveID)?.id == spent.id)
+        #expect(ledger.resource(forArchiveID: archiveID)?.isSpent == true)
+    }
+}

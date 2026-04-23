@@ -43,5 +43,9 @@ After app-target tests are scoped, the phone app can wire this plan into the exi
 1. receive `CompletedRunArchive` from v2 sync;
 2. build `RunimalPhoneAdapterV2.IngestPlan`;
 3. replace/insert `archiveForPersistence` through the existing archive persistence path;
-4. store the unspent `RunResource` in a new or migrated resource store;
+4. store the unspent `RunResource` through `RunimalRewardV2.RunResourceLedger`;
 5. create `CompletedRunRecord` only at the explicitly chosen reward/growth boundary.
+
+## Tested application seam
+
+`RunimalPhoneAdapterV2.IngestApplication.apply(_:)` now proves the app-facing ordering without importing `RunimalPhone`: archive insert/replace first, then `RunResourceLedger` upsert. Duplicate sync replaces the archive candidate but reuses the existing resource, and duplicate sync after spending preserves the spent resource.

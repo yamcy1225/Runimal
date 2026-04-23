@@ -3,6 +3,7 @@ import Testing
 @testable import RunimalCore
 @testable import RunimalDomainV2
 @testable import RunimalPhoneAdapterV2
+@testable import RunimalRewardV2
 
 struct RunimalPhoneAdapterV2Tests {
     @Test
@@ -138,6 +139,114 @@ struct RunimalPhoneAdapterV2Tests {
             heartRateBPM: heartRate,
             cadenceSPM: cadence,
             isPaused: isPaused
+        )
+    }
+}
+
+struct RunimalPhoneIngestApplicationV2Tests {
+    @Test
+    func appliesNewPhoneIngestPlanToArchiveListAndResourceLedger() throws {
+        let archive = makeCompletedArchive()
+        let plan = RunimalPhoneAdapterV2.ingestPlan(for: archive)
+
+        let applied = RunimalPhoneAdapterV2.IngestApplication.apply(plan)
+
+        #expect(applied.archiveDisposition == .inserted)
+        #expect(applied.resourceDisposition == .inserted)
+        #expect(applied.state.workoutArchives.map(\.runID) == [archive.runID.uuidString])
+        #expect(applied.state.resourceLedger.resources.count == 1)
+        #expect(applied.state.resourceLedger.resource(forArchiveID: archive.id)?.isSpent == false)
+        #expect(applied.auditEvents.contains { $0.code == "phone-ingest-v2.apply-archive" })
+        #expect(applied.auditEvents.contains { $0.code == "phone-ingest-v2.apply-resource" })
+    }
+
+    @Test
+    func appliesDuplicatePhoneIngestPlanAsArchiveReplacementWithoutResourceDuplication() throws {
+        let firstArchive = makeCompletedArchive(distanceMeters: 1_610)
+        let firstPlan = RunimalPhoneAdapterV2.ingestPlan(for: firstArchive)
+        let firstApplied = RunimalPhoneAdapterV2.IngestApplication.apply(firstPlan)
+
+        let correctedArchive = makeCompletedArchive(distanceMeters: 1_700)
+        let duplicatePlan = RunimalPhoneAdapterV2.ingestPlan(
+            for: correctedArchive,
+            options: .init(existingArchiveRunIDs: [correctedArchive.runID.uuidString])
+        )
+        let secondApplied = RunimalPhoneAdapterV2.IngestApplication.apply(
+            duplicatePlan,
+            to: firstApplied.state
+        )
+
+        #expect(secondApplied.archiveDisposition == .replaced)
+        #expect(secondApplied.resourceDisposition == .reusedExistingUnspent)
+        #expect(secondApplied.state.workoutArchives.count == 1)
+        #expect(secondApplied.state.workoutArchives.first?.distanceMeters == 1_700)
+        #expect(secondApplied.state.resourceLedger.resources.count == 1)
+    }
+
+    @Test
+    func duplicatePhoneIngestDoesNotResurrectSpentRunResource() throws {
+        let archive = makeCompletedArchive()
+        let plan = RunimalPhoneAdapterV2.ingestPlan(for: archive)
+        let ledger = RunimalRewardV2.RunResourceLedger(resources: [
+            RunimalDomainV2.RunResource(
+                id: UUID(uuidString: "12121212-1212-1212-1212-121212121212")!,
+                archiveID: archive.id,
+                liveCompanionID: "already-spent",
+                isSpent: true
+            ),
+        ])
+        let state = RunimalPhoneAdapterV2.IngestState(resourceLedger: ledger)
+
+        let applied = RunimalPhoneAdapterV2.IngestApplication.apply(plan, to: state)
+
+        #expect(applied.archiveDisposition == .inserted)
+        #expect(applied.resourceDisposition == .preservedExistingSpent)
+        #expect(applied.state.resourceLedger.resources.count == 1)
+        #expect(applied.state.resourceLedger.resource(forArchiveID: archive.id)?.isSpent == true)
+    }
+
+    private var baseDate: Date { Date(timeIntervalSince1970: 40_000) }
+
+    private func makeCompletedArchive(distanceMeters: Double = 1_610) -> RunimalDomainV2.CompletedRunArchive {
+        let points = [
+            sample(offset: 0, latitude: 37.5, longitude: 127.0),
+            sample(offset: 60, latitude: 37.501, longitude: 127.001),
+        ]
+        return RunimalDomainV2.CompletedRunArchive(
+            id: UUID(uuidString: "34343434-3434-3434-3434-343434343434")!,
+            runID: UUID(uuidString: "56565656-5656-5656-5656-565656565656")!,
+            startedAt: baseDate,
+            endedAt: baseDate.addingTimeInterval(600),
+            source: "watch-healthkit-v2",
+            metrics: RunimalDomainV2.RunMetricSummary(
+                distanceMeters: distanceMeters,
+                elapsedSeconds: 600,
+                movingSeconds: 580,
+                averagePaceSecondsPerKM: 360,
+                averageHeartRateBPM: 151,
+                averageCadenceSPM: 174,
+                elevationGainMeters: 24
+            ),
+            routePath: RunimalDomainV2.RoutePath(rawPoints: points),
+            createdOnDevice: "watch-001",
+            liveCompanionID: "companion-windrunner"
+        )
+    }
+
+    private func sample(
+        offset: TimeInterval,
+        latitude: Double,
+        longitude: Double
+    ) -> RunimalDomainV2.RunSamplePoint {
+        RunimalDomainV2.RunSamplePoint(
+            timestamp: baseDate.addingTimeInterval(offset),
+            latitude: latitude,
+            longitude: longitude,
+            altitudeMeters: 10 + offset / 10,
+            horizontalAccuracyMeters: 8,
+            speedMetersPerSecond: 3.2,
+            heartRateBPM: 151,
+            cadenceSPM: 174
         )
     }
 }

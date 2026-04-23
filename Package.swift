@@ -58,6 +58,7 @@ let package = Package(
             dependencies: [
                 "RunimalCore",
                 "RunimalDomainV2",
+                "RunimalRewardV2",
             ],
             exclude: ["README.md"]
         ),
